@@ -555,9 +555,9 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Synonyms</p>
-                      <p className="text-base text-teal-800 font-semibold font-sans">{currentActiveWord.synonyms || 'N/A'}</p>
+                      <p className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-relaxed">{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>
 
                     {/* Extra Word Reference */}
