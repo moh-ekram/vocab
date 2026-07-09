@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, CustomFolder } from '../types';
-import { ChevronLeft, ChevronRight, Volume2, CheckCircle, AlertTriangle, XCircle, Info, Tag, Bookmark, Edit3, Keyboard, Sparkles } from 'lucide-react';
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Volume2, 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  Info, 
+  Tag, 
+  Bookmark, 
+  Edit3, 
+  Keyboard, 
+  Sparkles,
+  RotateCcw
+} from 'lucide-react';
 
 interface FlashcardViewerProps {
   words: VocabularyWord[];
@@ -22,10 +36,19 @@ export default function FlashcardViewer({
   initialGroup = null
 }: FlashcardViewerProps) {
   // Filter States
-  const [selectedGroup, setSelectedGroup] = useState<string>(initialGroup ? initialGroup.toString() : 'all');
+  const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
+    if (initialGroup) {
+      return [initialGroup];
+    }
+    return Array.from({ length: 37 }, (_, i) => i + 1);
+  });
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedStatus, setSelectedGroupStatus] = useState<string>('all');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('default'); // 'default', 'alphabetical', 'shuffle'
+  
+  // Study Order Mode: 'serial' (সিরিয়াল), 'alphabetical' (A-Z), 'random' (র্যান্ডম)
+  const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>('serial');
+  const [shuffleKey, setShuffleKey] = useState(0);
 
   // Card orientation
   const [isFlipped, setIsFlipped] = useState(false);
@@ -41,18 +64,19 @@ export default function FlashcardViewer({
   const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
 
   // Filtered List generator
+  const [baseFilteredWords, setBaseFilteredWords] = useState<VocabularyWord[]>([]);
   const [filteredWords, setFilteredWords] = useState<VocabularyWord[]>([]);
 
+  // Phase 1: Filter words by selected groups, tag status, and custom bookmark folder
   useEffect(() => {
     let result = [...words];
 
-    // Filter by group
-    if (selectedGroup !== 'all') {
-      const gNum = parseInt(selectedGroup, 10);
-      result = result.filter(w => w.group === gNum);
+    // Filter by multiple selected groups
+    if (selectedGroups.length < 37) {
+      result = result.filter(w => selectedGroups.includes(w.group));
     }
 
-    // Filter by tag
+    // Filter by tag/status
     if (selectedStatus !== 'all') {
       result = result.filter(w => {
         const status = progress[w.id]?.status || 'unrated';
@@ -60,7 +84,7 @@ export default function FlashcardViewer({
       });
     }
 
-    // Filter by folder/bookmark
+    // Filter by custom folders/bookmark list
     if (selectedFolder !== 'all') {
       result = result.filter(w => {
         const bookmarks = progress[w.id]?.bookmarks || [];
@@ -68,17 +92,34 @@ export default function FlashcardViewer({
       });
     }
 
-    // Sort options
-    if (sortBy === 'alphabetical') {
+    setBaseFilteredWords(result);
+  }, [selectedGroups, selectedStatus, selectedFolder, words, progress]);
+
+  // Track the unique identity/IDs of filtered words to avoid reshuffling on rating updates
+  const wordIdsString = baseFilteredWords.map(w => w.id).join(',');
+
+  // Phase 2: Order/shuffle selected words
+  useEffect(() => {
+    let result = [...baseFilteredWords];
+
+    if (studyOrder === 'random') {
+      // Fisher-Yates shuffle algorithm
+      for (let i = result.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = result[i];
+        result[i] = result[j];
+        result[j] = temp;
+      }
+    } else if (studyOrder === 'alphabetical') {
       result.sort((a, b) => a.word.localeCompare(b.word));
-    } else if (sortBy === 'shuffle') {
-      result.sort(() => Math.random() - 0.5);
+    } else {
+      // 'serial' -> sorted naturally by vocabulary list sequence (Base list is already structured serially by group)
     }
 
     setFilteredWords(result);
     setCurrentIndex(0);
     setIsFlipped(false);
-  }, [selectedGroup, selectedStatus, selectedFolder, sortBy, words, progress]);
+  }, [wordIdsString, studyOrder, shuffleKey]);
 
   // Safe fallback current word definition
   const currentActiveWord: VocabularyWord = filteredWords[currentIndex] || {
@@ -191,20 +232,94 @@ export default function FlashcardViewer({
     <div className="space-y-6" id="flashcard-viewer-container">
       {/* Top Filter and Customization Bar */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-wrap gap-4 items-center justify-between" id="flashcard-filters">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Select Group */}
-          <div className="space-y-1">
+        <div className="flex flex-wrap items-center gap-4">
+          
+          {/* Select Group (Multi-select) */}
+          <div className="space-y-1 relative" id="group-multi-selector">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
-            <select
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
+            <button
+              type="button"
+              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
             >
-              <option value="all">সকল গ্রুপ (১-৩৭)</option>
-              {Array.from({ length: 37 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>গ্রুপ {i + 1}</option>
-              ))}
-            </select>
+              <span className="truncate max-w-[160px]">
+                {selectedGroups.length === 37 
+                  ? 'সকল গ্রুপ (১-৩৭)' 
+                  : selectedGroups.length === 0 
+                  ? 'কোনো গ্রুপ নেই' 
+                  : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
+              </span>
+              <span className="text-[10px] text-slate-400">▼</span>
+            </button>
+
+            {isGroupDropdownOpen && (
+              <>
+                {/* Click outside overlay */}
+                <div className="fixed inset-0 z-10" onClick={() => setIsGroupDropdownOpen(false)} />
+                
+                {/* Dropdown panel */}
+                <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-3 font-sans">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                    <div className="flex gap-2 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
+                        className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
+                      >
+                        সব সিলেক্ট
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGroups([])}
+                        className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
+                      >
+                        সব মুছুন
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grid of 37 Groups */}
+                  <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                    {Array.from({ length: 37 }, (_, i) => {
+                      const gNum = i + 1;
+                      const isSelected = selectedGroups.includes(gNum);
+                      return (
+                        <button
+                          key={gNum}
+                          type="button"
+                          onClick={() => {
+                            setSelectedGroups(prev => 
+                              prev.includes(gNum)
+                                ? prev.filter(x => x !== gNum)
+                                : [...prev, gNum]
+                            );
+                          }}
+                          className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
+                          }`}
+                        >
+                          {gNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsGroupDropdownOpen(false)}
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                    >
+                      ঠিক আছে
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Select Status */}
@@ -213,7 +328,7 @@ export default function FlashcardViewer({
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedGroupStatus(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
             >
               <option value="all">সকল ট্যাগ</option>
               <option value="know">পারি (সবুজ)</option>
@@ -229,7 +344,7 @@ export default function FlashcardViewer({
             <select
               value={selectedFolder}
               onChange={(e) => setSelectedFolder(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
             >
               <option value="all">সকল লিস্ট</option>
               {folders.map(f => (
@@ -238,18 +353,55 @@ export default function FlashcardViewer({
             </select>
           </div>
 
-          {/* Sorting */}
-          <div className="space-y-1">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">সাজানোর নিয়ম</label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
-            >
-              <option value="default">সিরিয়াল নম্বর</option>
-              <option value="alphabetical">বর্ণানুক্রমিক (A-Z)</option>
-              <option value="shuffle">এলোমেলো (Shuffle)</option>
-            </select>
+          {/* Study Order Control */}
+          <div className="space-y-1 font-sans">
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">পড়ার ক্রম (Study Order)</label>
+            <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setStudyOrder('serial')}
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                  studyOrder === 'serial'
+                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                সিরিয়াল
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudyOrder('alphabetical')}
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                  studyOrder === 'alphabetical'
+                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                A-Z
+              </button>
+              <button
+                type="button"
+                onClick={() => setStudyOrder('random')}
+                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                  studyOrder === 'random'
+                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                র্যান্ডম
+              </button>
+            </div>
+            {studyOrder === 'random' && (
+              <button
+                type="button"
+                onClick={() => setShuffleKey(prev => prev + 1)}
+                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-extrabold flex items-center gap-0.5 cursor-pointer transition hover:underline mt-0.5 ml-1 absolute"
+                title="নতুন করে শাফেল করুন"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>পুনরায় শাফেল করুন</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -301,7 +453,7 @@ export default function FlashcardViewer({
           </div>
           <button
             onClick={() => {
-              setSelectedGroup('all');
+              setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1));
               setSelectedGroupStatus('all');
               setSelectedFolder('all');
             }}

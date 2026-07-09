@@ -71,10 +71,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       onAuthSuccess();
       onClose();
     } catch (err: any) {
-      console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError('গুগল দিয়ে লগইন করতে সমস্যা হয়েছে। অনুগ্রহ করে ইমেইল দিয়ে চেষ্টা করুন।');
+      console.error('Google Sign-In Error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setLoading(false);
+        return;
       }
+      
+      let errMsg = 'গুগল দিয়ে লগইন করতে সমস্যা হয়েছে।';
+      if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        errMsg = `এই ডোমেইনটি (${currentDomain}) ফায়ারবেস অথেনটিকেশনে অনুমোদিত (Authorized Domain) হিসেবে যুক্ত করা নেই। ফায়ারবেস কনসোলের Authentication > Settings > Authorized domains ট্যাবে গিয়ে এই ডোমেইনটি যুক্ত করুন।`;
+      } else if (err.code) {
+        errMsg = `${errMsg} (${err.code})`;
+      } else if (err.message) {
+        errMsg = `${errMsg} (${err.message})`;
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
