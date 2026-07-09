@@ -183,11 +183,11 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="charts-and-goals">
         {/* Progress Representation */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs lg:col-span-2 flex flex-col md:flex-row items-center gap-8">
-          <div className="relative flex-shrink-0 w-36 h-36">
+          <div className="relative flex-shrink-0 w-40 h-40">
             {/* SVG Progress Circle */}
-            <svg className="w-full h-full transform -rotate-90">
-              <circle cx="72" cy="72" r="60" className="text-slate-100" strokeWidth="12" stroke="currentColor" fill="transparent" />
-              <circle cx="72" cy="72" r="60" className="text-indigo-600 transition-all duration-500" strokeWidth="12" strokeDasharray={376.8} strokeDashoffset={376.8 - (376.8 * overallCompleteness) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+            <svg viewBox="0 0 160 160" className="w-40 h-40 transform -rotate-90">
+              <circle cx="80" cy="80" r="70" className="text-slate-100" strokeWidth="12" stroke="currentColor" fill="transparent" />
+              <circle cx="80" cy="80" r="70" className="text-indigo-600 transition-all duration-500" strokeWidth="12" strokeDasharray="439.8" strokeDashoffset={439.8 - (439.8 * overallCompleteness) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-3xl font-black text-slate-800 font-sans">{overallCompleteness}%</p>
@@ -201,37 +201,51 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
               শেখার সামগ্রিক বন্টন
             </h3>
 
-
-            {/* Custom Bar Breakdown */}
-            <div className="space-y-3 font-sans">
-              <div>
-                <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-                  <span>পারি (সম্পন্ন)</span>
-                  <span className="text-indigo-600">{knowCount} শব্দ ({totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%)</span>
+            {/* Custom Circular Breakdown for the 3 stats */}
+            <div className="grid grid-cols-3 gap-4 font-sans text-center pt-2">
+              {/* Pari */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-24 h-24 mb-2">
+                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
+                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
+                    <circle cx="48" cy="48" r="38" className="text-indigo-600 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
+                    <span className="text-[9px] text-slate-400 font-bold">{knowCount} শব্দ</span>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-indigo-600 h-full" style={{ width: `${totalWords > 0 ? (knowCount / totalWords) * 100 : 0}%` }}></div>
-                </div>
+                <span className="text-xs font-semibold text-slate-600">পারি (সম্পন্ন)</span>
               </div>
 
-              <div>
-                <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-                  <span>কনফিউশন আছে</span>
-                  <span className="text-amber-600">{confusionCount} শব্দ ({totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%)</span>
+              {/* Confusion */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-24 h-24 mb-2">
+                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
+                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
+                    <circle cx="48" cy="48" r="38" className="text-amber-500 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
+                    <span className="text-[9px] text-slate-400 font-bold">{confusionCount} শব্দ</span>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-amber-400 h-full" style={{ width: `${totalWords > 0 ? (confusionCount / totalWords) * 100 : 0}%` }}></div>
-                </div>
+                <span className="text-xs font-semibold text-slate-600">কনফিউশন আছে</span>
               </div>
 
-              <div>
-                <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
-                  <span>পারি না</span>
-                  <span className="text-rose-600">{dontKnowCount} শব্দ ({totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%)</span>
+              {/* Dont Know */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-24 h-24 mb-2">
+                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
+                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
+                    <circle cx="48" cy="48" r="38" className="text-rose-500 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
+                    <span className="text-[9px] text-slate-400 font-bold">{dontKnowCount} শব্দ</span>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-rose-500 h-full" style={{ width: `${totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0}%` }}></div>
-                </div>
+                <span className="text-xs font-semibold text-slate-600">পারি না</span>
               </div>
             </div>
           </div>
@@ -310,25 +324,25 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2" id="group-grid">
           {filteredGroups.map((g) => (
             <button
-              key={g.group}
-              onClick={() => onSelectGroup(g.group)}
-              className="group relative overflow-hidden rounded-full border border-slate-200 hover:border-indigo-300 hover:shadow-xs bg-slate-50/50 transition flex items-center justify-between px-3 py-2 h-9 cursor-pointer"
+               key={g.group}
+               onClick={() => onSelectGroup(g.group)}
+               className="group relative overflow-hidden rounded-full border border-slate-200 hover:border-emerald-300 hover:shadow-xs bg-slate-50/50 transition flex items-center justify-between px-3 py-2 h-9 cursor-pointer"
             >
               {/* Progress background fill (two-color indicator) */}
               <div 
-                className="absolute top-0 left-0 bottom-0 bg-emerald-500/15 group-hover:bg-emerald-500/20 transition-all duration-300" 
+                className="absolute top-0 left-0 bottom-0 bg-emerald-600/20 group-hover:bg-emerald-600/30 transition-all duration-300" 
                 style={{ width: `${g.percent}%` }} 
               />
               
               {/* Content */}
               <div className="relative z-10 flex items-center justify-between w-full font-sans">
                 <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
                   গ্রুপ {g.group}
                 </span>
                 <div className="flex items-center gap-1 font-sans">
                   <span className="text-[9px] text-slate-400 font-medium">({g.total})</span>
-                  <span className="text-[11px] font-black text-emerald-700">{g.percent}%</span>
+                  <span className="text-[11px] font-black text-emerald-800">{g.percent}%</span>
                 </div>
               </div>
             </button>
