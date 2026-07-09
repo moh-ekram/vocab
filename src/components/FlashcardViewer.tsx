@@ -549,13 +549,12 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Bengali Meaning */}
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider font-sans">বাংলা অর্থ</p>
-                      <p className="text-xl font-bold text-gray-800 font-sans leading-relaxed">{currentActiveWord.meaning}</p>
+                    <div className="text-center py-2">
+                      <p className="text-2xl md:text-3xl font-bold text-slate-800 leading-relaxed">{currentActiveWord.meaning}</p>
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-1 text-center">
+                    <div className="space-y-1 text-center py-2 border-t border-slate-100/60">
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Synonyms</p>
                       <p className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-relaxed">{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>

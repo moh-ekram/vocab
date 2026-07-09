@@ -200,9 +200,7 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
               <TrendingUp className="w-5 h-5 text-indigo-600" />
               শেখার সামগ্রিক বন্টন
             </h3>
-            <p className="text-sm text-slate-500 font-sans leading-relaxed">
-              আপনার অগ্রগতি এবং শেখা শব্দের পরিসংখ্যান। যত বেশি শব্দ সম্পন্ন হবে, আপনার ভোকাবুলারি মেমোরি রিটেনশন তত বাড়বে!
-            </p>
+
 
             {/* Custom Bar Breakdown */}
             <div className="space-y-3 font-sans">
@@ -309,40 +307,28 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
         </div>
 
         {/* Group Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2.5" id="group-grid">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2" id="group-grid">
           {filteredGroups.map((g) => (
             <button
               key={g.group}
               onClick={() => onSelectGroup(g.group)}
-              className="group text-left p-2.5 rounded-xl border border-slate-200/60 hover:border-indigo-300 hover:shadow-sm hover:bg-indigo-50/10 transition flex flex-col justify-between h-[105px] cursor-pointer"
+              className="group relative overflow-hidden rounded-full border border-slate-200 hover:border-indigo-300 hover:shadow-xs bg-slate-50/50 transition flex items-center justify-between px-3 py-2 h-9 cursor-pointer"
             >
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-extrabold rounded-md">
-                    গ্রুপ {g.group}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-sans">{g.total} শব্দ</span>
-                </div>
-                <div className="flex justify-between items-end mb-1 mt-0.5 font-sans text-[10px]">
-                  <span className="text-slate-500">অগ্রগতি</span>
-                  <span className="font-bold text-indigo-600">{g.percent}%</span>
-                </div>
-                {/* Progress bar */}
-                <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
-                  <div className="bg-indigo-600 h-full" style={{ width: `${g.percent}%` }}></div>
-                </div>
-              </div>
-
-              {/* Status Pills */}
-              <div className="grid grid-cols-3 gap-0.5 pt-1.5 border-t border-dashed border-slate-100 font-mono text-[9px] text-center">
-                <div className="text-indigo-600 bg-indigo-50/40 rounded-md py-0.5 font-bold" title="পারি">
-                  ✔ {g.know}
-                </div>
-                <div className="text-amber-600 bg-amber-50/40 rounded-md py-0.5 font-bold" title="কনফিউশন">
-                  ⚠ {g.confusion}
-                </div>
-                <div className="text-rose-600 bg-rose-50/40 rounded-md py-0.5 font-bold" title="পারি না">
-                  ✖ {g.dontKnow}
+              {/* Progress background fill (two-color indicator) */}
+              <div 
+                className="absolute top-0 left-0 bottom-0 bg-emerald-500/15 group-hover:bg-emerald-500/20 transition-all duration-300" 
+                style={{ width: `${g.percent}%` }} 
+              />
+              
+              {/* Content */}
+              <div className="relative z-10 flex items-center justify-between w-full font-sans">
+                <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  গ্রুপ {g.group}
+                </span>
+                <div className="flex items-center gap-1 font-sans">
+                  <span className="text-[9px] text-slate-400 font-medium">({g.total})</span>
+                  <span className="text-[11px] font-black text-emerald-700">{g.percent}%</span>
                 </div>
               </div>
             </button>
