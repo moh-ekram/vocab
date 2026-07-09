@@ -51,6 +51,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         errMsg = 'এই ইমেইলটি ইতিমধ্যে আরেকটি অ্যাকাউন্টে ব্যবহার করা হচ্ছে।';
       } else if (err.code === 'auth/invalid-email') {
         errMsg = 'অনুগ্রহ করে একটি সঠিক ইমেইল আইডি লিখুন।';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        errMsg = 'ফায়ারবেস কনসোলে ইমেইল/পাসওয়ার্ড সাইন-ইন মেথডটি সচল (Enable) করা নেই। নিচে থাকা "গুগল দিয়ে লগইন" বাটনটি ব্যবহার করুন (এটি ইতিমধ্যেই সচল রয়েছে!)।';
       } else if (err.message) {
         errMsg = err.message;
       }
