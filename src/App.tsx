@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
 import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab } from './types';
 import StatsDashboard from './components/StatsDashboard';
@@ -20,8 +20,24 @@ import {
   BookOpen,
   FolderLock,
   RotateCcw,
-  Sparkle
+  Sparkle,
+  Cloud,
+  LogOut,
+  User,
+  AlertCircle
 } from 'lucide-react';
+
+import {
+  auth,
+  db,
+  doc,
+  getDoc,
+  setDoc,
+  onAuthStateChanged,
+  signOut,
+  User as FirebaseUser
+} from './lib/firebase';
+import AuthModal from './components/AuthModal';
 
 const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
 const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
@@ -55,7 +71,13 @@ export default function App() {
     };
   });
 
-  // Save Progress, Folders, & Goals on edit
+  // --- FIREBASE SYNC & AUTH STATES ---
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const isSyncingFromCloud = useRef(false);
+
+  // Local Storage Save
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_PROGRESS_KEY, JSON.stringify(progress));
   }, [progress]);
@@ -67,6 +89,148 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_GOALS_KEY, JSON.stringify(goal));
   }, [goal]);
+
+  // Auth State Listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        setSyncStatus('syncing');
+        isSyncingFromCloud.current = true;
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const docSnap = await getDoc(userDocRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+
+            // Merge cloud progress with local progress
+            if (data.progress) {
+              setProgress(prev => ({ ...prev, ...data.progress }));
+            }
+            if (data.folders && Array.isArray(data.folders)) {
+              setFolders(data.folders);
+            }
+            if (data.goal) {
+              setGoal(prev => ({
+                ...prev,
+                ...data.goal,
+                dailyTarget: data.goal.dailyTarget || prev.dailyTarget,
+                streak: Math.max(prev.streak || 1, data.goal.streak || 1)
+              }));
+            }
+            setSyncStatus('synced');
+          } else {
+            // New user signup: back up current local state to cloud immediately
+            await setDoc(userDocRef, {
+              progress,
+              folders,
+              goal,
+              email: currentUser.email,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
+            setSyncStatus('synced');
+          }
+        } catch (err) {
+          console.error('Error fetching user data from Firestore:', err);
+          setSyncStatus('error');
+        } finally {
+          setTimeout(() => {
+            isSyncingFromCloud.current = false;
+          }, 500);
+        }
+      } else {
+        isSyncingFromCloud.current = false;
+        setSyncStatus('idle');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Sync to Cloud whenever state changes and user is logged in (debounced)
+  useEffect(() => {
+    if (!user) {
+      setSyncStatus('idle');
+      return;
+    }
+
+    if (isSyncingFromCloud.current) {
+      return;
+    }
+
+    const performSync = async () => {
+      setSyncStatus('syncing');
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          progress,
+          folders,
+          goal,
+          email: user.email,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error('Error saving to Firestore:', err);
+        setSyncStatus('error');
+      }
+    };
+
+    const timer = setTimeout(() => {
+      performSync();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [progress, folders, goal, user]);
+
+  const forceSyncToCloud = async () => {
+    if (!user) return;
+    setSyncStatus('syncing');
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        progress,
+        folders,
+        goal,
+        email: user.email,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Manual sync failed:', err);
+      setSyncStatus('error');
+    }
+  };
+
+  const handleLogOut = async () => {
+    if (confirm('আপনি কি নিশ্চিত যে লগআউট করতে চান?')) {
+      try {
+        await signOut(auth);
+        
+        // Reset to local Storage values
+        const savedProgress = localStorage.getItem(LOCAL_STORAGE_PROGRESS_KEY);
+        setProgress(savedProgress ? JSON.parse(savedProgress) : {});
+
+        const savedFolders = localStorage.getItem(LOCAL_STORAGE_FOLDERS_KEY);
+        setFolders(savedFolders ? JSON.parse(savedFolders) : [
+          { id: '1', name: 'গুরুত্বপূর্ণ শব্দ (High Priority)', color: '#ef4444' },
+          { id: '2', name: 'কঠিন সিনোনিম (Hard Synonyms)', color: '#f59e0b' }
+        ]);
+
+        const savedGoal = localStorage.getItem(LOCAL_STORAGE_GOALS_KEY);
+        setGoal(savedGoal ? JSON.parse(savedGoal) : {
+          dailyTarget: 15,
+          streak: 1,
+          lastStudyDate: new Date().toISOString().split('T')[0],
+          history: {}
+        });
+
+        setUser(null);
+      } catch (err) {
+        console.error('Log out failed:', err);
+      }
+    }
+  };
 
   // Handle active streak checks on load
   useEffect(() => {
@@ -335,6 +499,73 @@ export default function App() {
           </nav>
         </div>
 
+        {/* User Account / Cloud Sync panel */}
+        <div className="px-6 py-4 border-t border-slate-100 font-sans space-y-3">
+          {user ? (
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm border border-indigo-100 flex-shrink-0">
+                    {user.email ? user.email[0].toUpperCase() : 'U'}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate" title={user.email || ''}>
+                      {user.displayName || user.email?.split('@')[0]}
+                    </p>
+                    <span className="text-[9px] text-slate-400 font-bold block truncate">
+                      {user.email}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogOut}
+                  className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                  title="লগআউট করুন"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Sync Status Badge */}
+              <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl text-[10px]">
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${
+                    syncStatus === 'synced' ? 'bg-emerald-500 animate-pulse' :
+                    syncStatus === 'syncing' ? 'bg-indigo-500 animate-spin' :
+                    syncStatus === 'error' ? 'bg-rose-500' : 'bg-slate-400'
+                  }`} />
+                  <span className="text-slate-500 font-semibold">
+                    {syncStatus === 'synced' && 'ক্লাউড ব্যাকআপ সচল'}
+                    {syncStatus === 'syncing' && 'সিঙ্ক করা হচ্ছে...'}
+                    {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
+                    {syncStatus === 'idle' && 'অপেক্ষমাণ...'}
+                  </span>
+                </div>
+                <button
+                  onClick={forceSyncToCloud}
+                  className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer"
+                  disabled={syncStatus === 'syncing'}
+                >
+                  {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                পড়ার অগ্রগতি এবং শব্দ তালিকা চিরতরে সুরক্ষিত রাখতে ক্লাউডে ব্যাকআপ নিন।
+              </p>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition border border-indigo-100/30 cursor-pointer"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>ক্লাউড ব্যাকআপ (লগইন)</span>
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Clear/Reset progress panel footer */}
         <div className="p-6 border-t border-slate-100 font-sans space-y-2">
           <button
@@ -431,6 +662,12 @@ export default function App() {
           )}
         </div>
       </main>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onAuthSuccess={() => {}}
+      />
     </div>
   );
 }
