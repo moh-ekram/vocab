@@ -309,39 +309,39 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
         </div>
 
         {/* Group Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="group-grid">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-2.5" id="group-grid">
           {filteredGroups.map((g) => (
             <button
               key={g.group}
               onClick={() => onSelectGroup(g.group)}
-              className="group text-left p-4 rounded-xl border border-slate-200/60 hover:border-indigo-300 hover:shadow-md hover:bg-indigo-50/10 transition flex flex-col justify-between h-36"
+              className="group text-left p-2.5 rounded-xl border border-slate-200/60 hover:border-indigo-300 hover:shadow-sm hover:bg-indigo-50/10 transition flex flex-col justify-between h-[105px] cursor-pointer"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-extrabold rounded-md">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-extrabold rounded-md">
                     গ্রুপ {g.group}
                   </span>
-                  <span className="text-xs text-slate-400 font-sans">{g.total} শব্দ</span>
+                  <span className="text-[10px] text-slate-400 font-sans">{g.total} শব্দ</span>
                 </div>
-                <div className="flex justify-between items-end mb-1 mt-1 font-sans">
-                  <span className="text-xs text-slate-500">অগ্রগতি</span>
-                  <span className="text-xs font-bold text-indigo-600">{g.percent}%</span>
+                <div className="flex justify-between items-end mb-1 mt-0.5 font-sans text-[10px]">
+                  <span className="text-slate-500">অগ্রগতি</span>
+                  <span className="font-bold text-indigo-600">{g.percent}%</span>
                 </div>
                 {/* Progress bar */}
-                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
                   <div className="bg-indigo-600 h-full" style={{ width: `${g.percent}%` }}></div>
                 </div>
               </div>
 
               {/* Status Pills */}
-              <div className="grid grid-cols-3 gap-1 pt-2 border-t border-dashed border-slate-100 font-mono text-[10px] text-center">
-                <div className="text-indigo-600 bg-indigo-50/50 rounded-sm py-0.5 font-bold" title="পারি">
+              <div className="grid grid-cols-3 gap-0.5 pt-1.5 border-t border-dashed border-slate-100 font-mono text-[9px] text-center">
+                <div className="text-indigo-600 bg-indigo-50/40 rounded-md py-0.5 font-bold" title="পারি">
                   ✔ {g.know}
                 </div>
-                <div className="text-amber-600 bg-amber-50/50 rounded-sm py-0.5 font-bold" title="কনফিউশন">
+                <div className="text-amber-600 bg-amber-50/40 rounded-md py-0.5 font-bold" title="কনফিউশন">
                   ⚠ {g.confusion}
                 </div>
-                <div className="text-rose-600 bg-rose-50/50 rounded-sm py-0.5 font-bold" title="পারি না">
+                <div className="text-rose-600 bg-rose-50/40 rounded-md py-0.5 font-bold" title="পারি না">
                   ✖ {g.dontKnow}
                 </div>
               </div>
