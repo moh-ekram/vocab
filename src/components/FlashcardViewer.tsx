@@ -578,13 +578,6 @@ export default function FlashcardViewer({
                     <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-indigo-950 tracking-tight select-none py-1">
                       {currentActiveWord.word}
                     </h1>
-                    {currentActiveWord.extraWord && (
-                      <div className="text-xs font-bold text-amber-700 font-sans select-none tracking-wide flex items-center justify-center gap-1 pb-1">
-                        <span>{currentActiveWord.extraWord}</span>
-                        <span className="text-amber-500 font-extrabold">:</span>
-                        <span className="font-medium text-amber-600">{currentActiveWord.extraMeaning}</span>
-                      </div>
-                    )}
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={(e) => {
@@ -612,6 +605,13 @@ export default function FlashcardViewer({
                         </svg>
                       </a>
                     </div>
+                    {currentActiveWord.extraWord && (
+                      <div className="text-sm sm:text-base font-extrabold text-amber-800 font-sans select-none tracking-wide flex items-center justify-center gap-1.5 pt-1">
+                        <span>{currentActiveWord.extraWord}</span>
+                        <span className="text-amber-500 font-black">:</span>
+                        <span className="font-bold text-amber-700">{currentActiveWord.extraMeaning}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Hints at footer */}
@@ -664,9 +664,6 @@ export default function FlashcardViewer({
 
                     {/* Example Sentences */}
                     <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
-                      <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 font-sans mb-1">
-                        <Quote className="w-3.5 h-3.5 text-indigo-500" /> ব্যবহারের উদাহরণ (Examples)
-                      </p>
                       {sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0 ? (
                         <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
                           {sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
@@ -679,7 +676,7 @@ export default function FlashcardViewer({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-slate-400 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
+                        <p className="text-xs text-slate-450 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
                       )}
                     </div>
                   </div>
