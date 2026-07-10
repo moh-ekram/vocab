@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, CustomFolder } from '../types';
+import sentencesDataRaw from '../data/sentences.json';
+const sentencesData = sentencesDataRaw as Record<string, string[]>;
+
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -13,7 +16,9 @@ import {
   Edit3, 
   Keyboard, 
   Sparkles,
-  RotateCcw
+  RotateCcw,
+  Quote,
+  Loader2
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -67,6 +72,48 @@ export default function FlashcardViewer({
   const [baseFilteredWords, setBaseFilteredWords] = useState<VocabularyWord[]>([]);
   const [filteredWords, setFilteredWords] = useState<VocabularyWord[]>([]);
 
+  // Pending rating confirmation state
+  const [pendingRating, setPendingRating] = useState<{
+    wordId: string;
+    newStatus: WordStatus;
+    oldStatus: WordStatus;
+    wordName: string;
+    autoAdvance: boolean;
+  } | null>(null);
+
+  const rateAndMaybeConfirm = (newStatus: WordStatus, autoAdvance = true) => {
+    if (!currentActiveWord.id) return;
+    const oldStatus = progress[currentActiveWord.id]?.status || 'unrated';
+
+    // Check if word is already in 'know' or another tag, and we try to remove or change it
+    if (oldStatus !== 'unrated' && oldStatus !== newStatus) {
+      setPendingRating({
+        wordId: currentActiveWord.id,
+        newStatus,
+        oldStatus,
+        wordName: currentActiveWord.word,
+        autoAdvance
+      });
+      return;
+    }
+
+    // No confirmation needed: update immediately
+    onRateWord(currentActiveWord.id, newStatus);
+    if (autoAdvance) {
+      handleNext();
+    }
+  };
+
+  const getStatusLabel = (status: WordStatus) => {
+    switch (status) {
+      case 'know': return 'পারি (সবুজ)';
+      case 'confusion': return 'কনফিউশন (হলুদ)';
+      case 'dont_know': return 'পারি না (লাল)';
+      case 'unrated': return 'পড়া হয়নি (ধূসর)';
+      default: return 'পড়া হয়নি';
+    }
+  };
+
   // Phase 1: Filter words by selected groups, tag status, and custom bookmark folder
   useEffect(() => {
     let result = [...words];
@@ -117,8 +164,16 @@ export default function FlashcardViewer({
     }
 
     setFilteredWords(result);
-    setCurrentIndex(0);
+
+    // Find first word that is not marked as 'pari' (know)
+    const firstNonPariIndex = result.findIndex(w => {
+      const status = progress[w.id]?.status || 'unrated';
+      return status !== 'know';
+    });
+
+    setCurrentIndex(firstNonPariIndex !== -1 ? firstNonPariIndex : 0);
     setIsFlipped(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordIdsString, studyOrder, shuffleKey]);
 
   // Safe fallback current word definition
@@ -130,6 +185,26 @@ export default function FlashcardViewer({
     synonyms: '',
     extraWord: '',
     extraMeaning: ''
+  };
+
+  // Helper to parse double asterisks and render bold words
+  const renderSentence = (text: string) => {
+    if (!text) return null;
+    const parts = text.split('**');
+    return (
+      <>
+        {parts.map((part, index) => {
+          if (index % 2 === 1) {
+            return (
+              <strong key={index} className="font-extrabold text-indigo-700 bg-indigo-50/70 px-1.5 py-0.5 rounded-md border border-indigo-100/50">
+                {part}
+              </strong>
+            );
+          }
+          return part;
+        })}
+      </>
+    );
   };
 
   // Sync note text when index shifts
@@ -175,30 +250,19 @@ export default function FlashcardViewer({
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          if (currentActiveWord.id) {
-            onRateWord(currentActiveWord.id, 'dont_know');
-            handleNext();
-          }
+          rateAndMaybeConfirm('dont_know', true);
           break;
         case 'ArrowRight':
           e.preventDefault();
-          if (currentActiveWord.id) {
-            onRateWord(currentActiveWord.id, 'know');
-            handleNext();
-          }
+          rateAndMaybeConfirm('know', true);
           break;
         case 'ArrowUp':
           e.preventDefault();
-          if (currentActiveWord.id) {
-            onRateWord(currentActiveWord.id, 'confusion');
-            handleNext();
-          }
+          rateAndMaybeConfirm('confusion', true);
           break;
         case 'ArrowDown':
           e.preventDefault();
-          if (currentActiveWord.id) {
-            onRateWord(currentActiveWord.id, 'unrated');
-          }
+          rateAndMaybeConfirm('unrated', false);
           break;
         case 'KeyP':
         case 'Enter':
@@ -214,7 +278,7 @@ export default function FlashcardViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredWords, currentIndex, currentActiveWord.id]);
+  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm]);
 
   // Text to Speech
   const speakWord = () => {
@@ -469,7 +533,7 @@ export default function FlashcardViewer({
             {/* The Flash Card Container with Flip Animation */}
             <div
               onClick={() => setIsFlipped(prev => !prev)}
-              className="group cursor-pointer perspective h-96 relative w-full"
+              className="group cursor-pointer perspective h-[28rem] relative w-full"
               id="vocabulary-card-stage"
             >
               <div
@@ -511,7 +575,7 @@ export default function FlashcardViewer({
 
                   {/* Main display word */}
                   <div className="text-center space-y-4">
-                    <h1 className="text-5xl md:text-6xl font-black text-slate-800 tracking-tight select-none">
+                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-indigo-950 tracking-tight select-none py-2">
                       {currentActiveWord.word}
                     </h1>
                     <div className="flex items-center justify-center gap-2">
@@ -581,24 +645,42 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Bengali Meaning */}
-                    <div className="text-center py-1">
-                      <p className="text-xl md:text-2xl font-extrabold text-emerald-600 leading-normal">{currentActiveWord.meaning}</p>
+                    <div className="text-center py-2">
+                      <p className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-emerald-600 leading-normal">{currentActiveWord.meaning}</p>
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-0.5 text-center py-2 border-t border-slate-100/60">
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Synonyms</p>
-                      <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-normal">{currentActiveWord.synonyms || 'N/A'}</p>
+                    <div className="space-y-1 text-center py-3 border-t border-slate-100/60">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Synonyms</p>
+                      <p className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-indigo-950 tracking-tight leading-normal">{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>
 
                     {/* Extra Word Reference */}
                     {currentActiveWord.extraWord && (
-                      <div className="bg-amber-50 border border-amber-100 px-4 py-2 rounded-full text-center max-w-sm mx-auto shadow-2xs">
-                        <p className="text-sm font-bold text-amber-900 font-sans">
-                          {currentActiveWord.extraWord} <span className="text-amber-500 mx-1">:</span> <span className="font-semibold text-amber-800">{currentActiveWord.extraMeaning}</span>
+                      <div className="bg-amber-50 border border-amber-150 px-5 py-2.5 rounded-full text-center max-w-md mx-auto shadow-sm">
+                        <p className="text-base font-extrabold text-amber-900 font-sans">
+                          {currentActiveWord.extraWord} <span className="text-amber-500 mx-1.5">:</span> <span className="font-bold text-amber-850">{currentActiveWord.extraMeaning}</span>
                         </p>
                       </div>
                     )}
+
+                    {/* Example Sentences */}
+                    <div className="pt-3 border-t border-slate-100 mt-2 space-y-2 text-left max-w-xl mx-auto">
+                      <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                        <Quote className="w-3.5 h-3.5 text-indigo-500" /> ব্যবহারের উদাহরণ (Examples)
+                      </p>
+                      {sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0 ? (
+                        <div className="space-y-2 max-h-[125px] overflow-y-auto pr-1">
+                          {sentencesData[currentActiveWord.id].map((sent, index) => (
+                            <p key={index} className="text-sm text-slate-700 leading-relaxed font-sans pl-3 border-l-2 border-indigo-250">
+                              {renderSentence(sent)}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-400 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -630,10 +712,7 @@ export default function FlashcardViewer({
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   {/* Mark as Don't Know */}
                   <button
-                    onClick={() => {
-                      onRateWord(currentActiveWord.id, 'dont_know');
-                      handleNext();
-                    }}
+                    onClick={() => rateAndMaybeConfirm('dont_know', true)}
                     className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
                       activeStatus === 'dont_know'
                         ? 'bg-rose-500 border-rose-600 text-white shadow-md shadow-rose-500/10'
@@ -646,10 +725,7 @@ export default function FlashcardViewer({
 
                   {/* Mark as Confusion */}
                   <button
-                    onClick={() => {
-                      onRateWord(currentActiveWord.id, 'confusion');
-                      handleNext();
-                    }}
+                    onClick={() => rateAndMaybeConfirm('confusion', true)}
                     className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
                       activeStatus === 'confusion'
                         ? 'bg-amber-400 border-amber-500 text-amber-950 shadow-md shadow-amber-500/10'
@@ -662,10 +738,7 @@ export default function FlashcardViewer({
 
                   {/* Mark as Know */}
                   <button
-                    onClick={() => {
-                      onRateWord(currentActiveWord.id, 'know');
-                      handleNext();
-                    }}
+                    onClick={() => rateAndMaybeConfirm('know', true)}
                     className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
                       activeStatus === 'know'
                         ? 'bg-indigo-600 border-indigo-700 text-white shadow-md shadow-indigo-500/15'
@@ -780,6 +853,76 @@ export default function FlashcardViewer({
                     );
                   })
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Rating Confirmation Modal */}
+      {pendingRating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+            onClick={() => setPendingRating(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              {/* Warning Icon */}
+              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center border border-amber-100">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-slate-950 font-sans">ট্যাগ পরিবর্তন নিশ্চিতকরণ</h3>
+                <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                  আপনি ইতিমধ্যে <span className="font-extrabold text-slate-800">"{pendingRating.wordName}"</span> শব্দটিকে{' '}
+                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                    pendingRating.oldStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                    pendingRating.oldStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                    'bg-rose-50 text-rose-700 border border-rose-100'
+                  }`}>
+                    {getStatusLabel(pendingRating.oldStatus)}
+                  </span>{' '}
+                  হিসেবে চিহ্নিত করেছেন।
+                </p>
+                <p className="text-sm text-slate-600 font-sans leading-relaxed">
+                  আপনি কি নিশ্চিত যে এর ট্যাগ পরিবর্তন করে{' '}
+                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                    pendingRating.newStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                    pendingRating.newStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
+                    pendingRating.newStatus === 'dont_know' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
+                    'bg-slate-50 text-slate-700 border border-slate-100'
+                  }`}>
+                    {getStatusLabel(pendingRating.newStatus)}
+                  </span>{' '}
+                  করতে চান?
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 w-full pt-2">
+                <button
+                  onClick={() => {
+                    onRateWord(pendingRating.wordId, pendingRating.newStatus);
+                    if (pendingRating.autoAdvance) {
+                      handleNext();
+                    }
+                    setPendingRating(null);
+                  }}
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs"
+                >
+                  হ্যাঁ, পরিবর্তন করুন
+                </button>
+                <button
+                  onClick={() => setPendingRating(null)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
+                >
+                  বাতিল
+                </button>
               </div>
             </div>
           </div>
