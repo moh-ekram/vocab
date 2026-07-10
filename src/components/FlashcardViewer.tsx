@@ -574,10 +574,17 @@ export default function FlashcardViewer({
                   </div>
 
                   {/* Main display word */}
-                  <div className="text-center space-y-4">
-                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-indigo-950 tracking-tight select-none py-2">
+                  <div className="text-center space-y-3">
+                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-indigo-950 tracking-tight select-none py-1">
                       {currentActiveWord.word}
                     </h1>
+                    {currentActiveWord.extraWord && (
+                      <div className="text-xs font-bold text-amber-700 font-sans select-none tracking-wide flex items-center justify-center gap-1 pb-1">
+                        <span>{currentActiveWord.extraWord}</span>
+                        <span className="text-amber-500 font-extrabold">:</span>
+                        <span className="font-medium text-amber-600">{currentActiveWord.extraMeaning}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={(e) => {
@@ -621,8 +628,8 @@ export default function FlashcardViewer({
 
                 {/* BACK FACE (Meaning & Synonyms) */}
                 <div className="absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-slate-100">
                       <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl font-black text-slate-800">{currentActiveWord.word}</span>
@@ -645,40 +652,34 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Bengali Meaning */}
-                    <div className="text-center py-2">
+                    <div className="text-center py-0.5">
                       <p className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-emerald-600 leading-normal">{currentActiveWord.meaning}</p>
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-1 text-center py-3 border-t border-slate-100/60">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Synonyms</p>
+                    <div className="space-y-0 text-center py-1.5 border-t border-slate-100/30">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synonyms</p>
                       <p className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-indigo-950 tracking-tight leading-normal">{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>
 
-                    {/* Extra Word Reference */}
-                    {currentActiveWord.extraWord && (
-                      <div className="bg-amber-50 border border-amber-150 px-5 py-2.5 rounded-full text-center max-w-md mx-auto shadow-sm">
-                        <p className="text-base font-extrabold text-amber-900 font-sans">
-                          {currentActiveWord.extraWord} <span className="text-amber-500 mx-1.5">:</span> <span className="font-bold text-amber-850">{currentActiveWord.extraMeaning}</span>
-                        </p>
-                      </div>
-                    )}
-
                     {/* Example Sentences */}
-                    <div className="pt-3 border-t border-slate-100 mt-2 space-y-2 text-left max-w-xl mx-auto">
-                      <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 font-sans">
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
+                      <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 font-sans mb-1">
                         <Quote className="w-3.5 h-3.5 text-indigo-500" /> ব্যবহারের উদাহরণ (Examples)
                       </p>
                       {sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0 ? (
-                        <div className="space-y-2 max-h-[125px] overflow-y-auto pr-1">
-                          {sentencesData[currentActiveWord.id].map((sent, index) => (
-                            <p key={index} className="text-sm text-slate-700 leading-relaxed font-sans pl-3 border-l-2 border-indigo-250">
-                              {renderSentence(sent)}
-                            </p>
+                        <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
+                          {sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
+                            <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
+                              <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
+                              <p className="flex-1">
+                                {renderSentence(sent)}
+                              </p>
+                            </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-400 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
+                        <p className="text-xs text-slate-400 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
                       )}
                     </div>
                   </div>

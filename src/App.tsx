@@ -496,74 +496,69 @@ export default function App() {
               <CalendarCheck2 className="w-4 h-4" />
               <span>দৈনিক প্ল্যানার</span>
             </button>
+
+            {/* Aligned Cloud Sync / Login Button under Daily Planner */}
+            <div className="pt-3 border-t border-slate-100 mt-2 space-y-2.5">
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-100 flex-shrink-0">
+                        {user.email ? user.email[0].toUpperCase() : 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-extrabold text-slate-800 truncate" title={user.email || ''}>
+                          {user.displayName || user.email?.split('@')[0]}
+                        </p>
+                        <span className="text-[9px] text-slate-400 font-bold block truncate">
+                          {user.email}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleLogOut}
+                      className="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                      title="লগআউট করুন"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Sync Status Badge */}
+                  <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl text-[9px]">
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        syncStatus === 'synced' ? 'bg-emerald-500 animate-pulse' :
+                        syncStatus === 'syncing' ? 'bg-indigo-500 animate-spin' :
+                        syncStatus === 'error' ? 'bg-rose-500' : 'bg-slate-400'
+                      }`} />
+                      <span className="text-slate-500 font-semibold">
+                        {syncStatus === 'synced' && 'ব্যাকআপ সচল'}
+                        {syncStatus === 'syncing' && 'সিঙ্ক হচ্ছে...'}
+                        {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
+                        {syncStatus === 'idle' && 'অপেক্ষমাণ'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={forceSyncToCloud}
+                      className="text-indigo-600 hover:text-indigo-700 font-bold cursor-pointer hover:underline"
+                      disabled={syncStatus === 'syncing'}
+                    >
+                      {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer border border-dashed border-indigo-200"
+                >
+                  <Cloud className="w-4 h-4 text-indigo-500 animate-pulse" />
+                  <span>ক্লাউড ব্যাকআপ (লগইন)</span>
+                </button>
+              )}
+            </div>
           </nav>
-        </div>
-
-        {/* User Account / Cloud Sync panel */}
-        <div className="px-6 py-4 border-t border-slate-100 font-sans space-y-3">
-          {user ? (
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm border border-indigo-100 flex-shrink-0">
-                    {user.email ? user.email[0].toUpperCase() : 'U'}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-800 truncate" title={user.email || ''}>
-                      {user.displayName || user.email?.split('@')[0]}
-                    </p>
-                    <span className="text-[9px] text-slate-400 font-bold block truncate">
-                      {user.email}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogOut}
-                  className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                  title="লগআউট করুন"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Sync Status Badge */}
-              <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl text-[10px]">
-                <div className="flex items-center gap-1.5">
-                  <div className={`w-2 h-2 rounded-full ${
-                    syncStatus === 'synced' ? 'bg-emerald-500 animate-pulse' :
-                    syncStatus === 'syncing' ? 'bg-indigo-500 animate-spin' :
-                    syncStatus === 'error' ? 'bg-rose-500' : 'bg-slate-400'
-                  }`} />
-                  <span className="text-slate-500 font-semibold">
-                    {syncStatus === 'synced' && 'ক্লাউড ব্যাকআপ সচল'}
-                    {syncStatus === 'syncing' && 'সিঙ্ক করা হচ্ছে...'}
-                    {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
-                    {syncStatus === 'idle' && 'অপেক্ষমাণ...'}
-                  </span>
-                </div>
-                <button
-                  onClick={forceSyncToCloud}
-                  className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer"
-                  disabled={syncStatus === 'syncing'}
-                >
-                  {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                পড়ার অগ্রগতি এবং শব্দ তালিকা চিরতরে সুরক্ষিত রাখতে ক্লাউডে ব্যাকআপ নিন।
-              </p>
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition border border-indigo-100/30 cursor-pointer"
-              >
-                <Cloud className="w-3.5 h-3.5" />
-                <span>ক্লাউড ব্যাকআপ (লগইন)</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Clear/Reset progress panel footer */}
