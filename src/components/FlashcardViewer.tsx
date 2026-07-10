@@ -556,12 +556,12 @@ export default function FlashcardViewer({
                 </div>
 
                 {/* BACK FACE (Meaning & Synonyms) */}
-                <div className="absolute inset-0 bg-white p-8 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between overflow-y-auto">
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-                      <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
+                <div className="absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-2xl font-black text-slate-800">{currentActiveWord.word}</span>
+                        <span className="text-xl font-black text-slate-800">{currentActiveWord.word}</span>
                         <a
                           href={`https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}+meaning`}
                           target="_blank"
@@ -570,7 +570,7 @@ export default function FlashcardViewer({
                           className="p-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-lg transition"
                           title="গুগলে সার্চ করুন"
                         >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
@@ -581,28 +581,25 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Bengali Meaning */}
-                    <div className="text-center py-2">
-                      <p className="text-2xl md:text-3xl font-bold text-slate-800 leading-relaxed">{currentActiveWord.meaning}</p>
+                    <div className="text-center py-1">
+                      <p className="text-xl md:text-2xl font-extrabold text-emerald-600 leading-normal">{currentActiveWord.meaning}</p>
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-1 text-center py-2 border-t border-slate-100/60">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Synonyms</p>
-                      <p className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-relaxed">{currentActiveWord.synonyms || 'N/A'}</p>
+                    <div className="space-y-0.5 text-center py-2 border-t border-slate-100/60">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Synonyms</p>
+                      <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-normal">{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>
 
                     {/* Extra Word Reference */}
                     {currentActiveWord.extraWord && (
-                      <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-100/50">
-                        <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-1 font-sans">सहযোগী অতিরিক্ত শব্দ (Extra Column)</p>
-                        <p className="text-sm font-bold text-gray-700 font-sans">
-                          {currentActiveWord.extraWord} : <span className="font-normal text-gray-600">{currentActiveWord.extraMeaning}</span>
+                      <div className="bg-amber-50 border border-amber-100 px-4 py-2 rounded-full text-center max-w-sm mx-auto shadow-2xs">
+                        <p className="text-sm font-bold text-amber-900 font-sans">
+                          {currentActiveWord.extraWord} <span className="text-amber-500 mx-1">:</span> <span className="font-semibold text-amber-800">{currentActiveWord.extraMeaning}</span>
                         </p>
                       </div>
                     )}
                   </div>
-
-                  <p className="text-center text-xs text-gray-300 font-sans">ট্যাপ করুন পুনরায় উল্টাতে</p>
                 </div>
               </div>
             </div>
