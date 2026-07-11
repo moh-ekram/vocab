@@ -26,7 +26,7 @@ export interface CustomFolder {
   createdAt?: string;
 }
 
-export type ActiveTab = 'dashboard' | 'flashcard' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner';
+export type ActiveTab = 'dashboard' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner';
 
 export interface StudySession {
   date: string; // YYYY-MM-DD

@@ -3,6 +3,7 @@ import { vocabulary } from './data/vocabulary';
 import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
+import SynonymCheck from './components/SynonymCheck';
 import PracticeQuiz from './components/PracticeQuiz';
 import WordMatchGame from './components/WordMatchGame';
 import CustomLists from './components/CustomLists';
@@ -42,6 +43,7 @@ import AuthModal from './components/AuthModal';
 const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
 const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
 const LOCAL_STORAGE_GOALS_KEY = 'vocab_memorizer_goals_v2';
+const LOCAL_STORAGE_SYNONYM_PROGRESS_KEY = 'vocab_memorizer_synonym_progress_v2';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -71,6 +73,11 @@ export default function App() {
     };
   });
 
+  const [synonymProgress, setSynonymProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
+
   // --- FIREBASE SYNC & AUTH STATES ---
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -89,6 +96,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_GOALS_KEY, JSON.stringify(goal));
   }, [goal]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY, JSON.stringify(synonymProgress));
+  }, [synonymProgress]);
 
   // Auth State Listener
   useEffect(() => {
@@ -119,6 +130,9 @@ export default function App() {
                 streak: Math.max(prev.streak || 1, data.goal.streak || 1)
               }));
             }
+            if (data.synonymProgress) {
+              setSynonymProgress(prev => ({ ...prev, ...data.synonymProgress }));
+            }
             setSyncStatus('synced');
           } else {
             // New user signup: back up current local state to cloud immediately
@@ -126,6 +140,7 @@ export default function App() {
               progress,
               folders,
               goal,
+              synonymProgress,
               email: currentUser.email,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
@@ -167,6 +182,7 @@ export default function App() {
           progress,
           folders,
           goal,
+          synonymProgress,
           email: user.email,
           updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -182,7 +198,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, user]);
+  }, [progress, folders, goal, synonymProgress, user]);
 
   const forceSyncToCloud = async () => {
     if (!user) return;
@@ -192,6 +208,7 @@ export default function App() {
         progress,
         folders,
         goal,
+        synonymProgress,
         email: user.email,
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -224,6 +241,9 @@ export default function App() {
           lastStudyDate: new Date().toISOString().split('T')[0],
           history: {}
         });
+
+        const savedSynonymProgress = localStorage.getItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY);
+        setSynonymProgress(savedSynonymProgress ? JSON.parse(savedSynonymProgress) : {});
 
         setUser(null);
       } catch (err) {
@@ -378,6 +398,19 @@ export default function App() {
     setActiveTab('flashcard');
   };
 
+  // Update Synonym Checking progress
+  const handleUpdateSynonymProgress = (wordId: string, correct: boolean) => {
+    setSynonymProgress(prev => {
+      return {
+        ...prev,
+        [wordId]: {
+          correct,
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+  };
+
   // Clear data function for reset/refresh study
   const handleClearAllProgress = () => {
     if (confirm('আপনি কি নিশ্চিত যে আপনার পড়াশোনার সমস্ত প্রগ্রেস এবং স্ট্রিক মুছে ফেলতে চান? এটি পুনরায় ফিরিয়ে আনা সম্ভব নয়।')) {
@@ -388,6 +421,7 @@ export default function App() {
         lastStudyDate: new Date().toISOString().split('T')[0],
         history: {}
       });
+      setSynonymProgress({});
       alert('সফলভাবে সমস্ত প্রগ্রেস মুছে ফেলা হয়েছে।');
     }
   };
@@ -435,6 +469,18 @@ export default function App() {
             >
               <Layers className="w-4 h-4" />
               <span>ফ্ল্যাশ কার্ড রিভিউ</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('synonym')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'synonym'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }`}
+            >
+              <Sparkle className="w-4 h-4 text-amber-500" />
+              <span>সিনোনিম চেক</span>
             </button>
 
             <button
@@ -601,6 +647,15 @@ export default function App() {
               onUpdateNotes={handleUpdateNotes}
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
+            />
+          )}
+
+          {activeTab === 'synonym' && (
+            <SynonymCheck
+              words={vocabulary}
+              synonymProgress={synonymProgress}
+              onUpdateSynonymProgress={handleUpdateSynonymProgress}
+              activeGroup={selectedGroupFromDash}
             />
           )}
 

@@ -48,11 +48,12 @@ export default function FlashcardViewer({
     return Array.from({ length: 37 }, (_, i) => i + 1);
   });
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
-  const [selectedStatus, setSelectedGroupStatus] = useState<string>('all');
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['dont_know']);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   
   // Study Order Mode: 'serial' (সিরিয়াল), 'alphabetical' (A-Z), 'random' (র্যান্ডম)
-  const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>('serial');
+  const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>('random');
   const [shuffleKey, setShuffleKey] = useState(0);
 
   // Card orientation
@@ -123,11 +124,11 @@ export default function FlashcardViewer({
       result = result.filter(w => selectedGroups.includes(w.group));
     }
 
-    // Filter by tag/status
-    if (selectedStatus !== 'all') {
+    // Filter by tag/status (multi-select)
+    if (selectedStatuses.length < 4) {
       result = result.filter(w => {
         const status = progress[w.id]?.status || 'unrated';
-        return status === selectedStatus;
+        return selectedStatuses.includes(status);
       });
     }
 
@@ -140,7 +141,7 @@ export default function FlashcardViewer({
     }
 
     setBaseFilteredWords(result);
-  }, [selectedGroups, selectedStatus, selectedFolder, words, progress]);
+  }, [selectedGroups, selectedStatuses, selectedFolder, words, progress]);
 
   // Track the unique identity/IDs of filtered words to avoid reshuffling on rating updates
   const wordIdsString = baseFilteredWords.map(w => w.id).join(',');
@@ -386,20 +387,101 @@ export default function FlashcardViewer({
             )}
           </div>
 
-          {/* Select Status */}
-          <div className="space-y-1">
+          {/* Select Status (Multi-select) */}
+          <div className="space-y-1 relative" id="status-multi-selector">
             <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedGroupStatus(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
+            <button
+              type="button"
+              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
             >
-              <option value="all">সকল ট্যাগ</option>
-              <option value="know">পারি (সবুজ)</option>
-              <option value="confusion">কনফিউশন (হলুদ)</option>
-              <option value="dont_know">পারি না (লাল)</option>
-              <option value="unrated">পড়া হয়নি (ধূসর)</option>
-            </select>
+              <span className="truncate max-w-[160px]">
+                {selectedStatuses.length === 4 
+                  ? 'সকল ট্যাগ' 
+                  : selectedStatuses.length === 0 
+                  ? 'কোনো ট্যাগ নেই' 
+                  : selectedStatuses.map(s => {
+                      if (s === 'know') return 'পারি';
+                      if (s === 'dont_know') return 'পারি না';
+                      if (s === 'confusion') return 'কনফিউশন';
+                      return 'পড়া হয়নি';
+                    }).join(', ')}
+              </span>
+              <span className="text-[10px] text-slate-400">▼</span>
+            </button>
+
+            {isStatusDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-2.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                    <div className="flex gap-2 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated'])}
+                        className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
+                      >
+                        সব সিলেক্ট
+                      </button>
+                      <span className="text-slate-200">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatuses([])}
+                        className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
+                      >
+                        সব মুছুন
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {[
+                      { key: 'know', label: 'পারি (সবুজ)', color: 'bg-emerald-500' },
+                      { key: 'confusion', label: 'কনফিউশন (হলুদ)', color: 'bg-amber-500' },
+                      { key: 'dont_know', label: 'পারি না (লাল)', color: 'bg-rose-500' },
+                      { key: 'unrated', label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400' }
+                    ].map(st => {
+                      const isSelected = selectedStatuses.includes(st.key);
+                      return (
+                        <button
+                          key={st.key}
+                          type="button"
+                          onClick={() => {
+                            setSelectedStatuses(prev => 
+                              prev.includes(st.key)
+                                ? prev.filter(x => x !== st.key)
+                                : [...prev, st.key]
+                            );
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                            isSelected ? 'bg-indigo-50 text-indigo-900' : 'hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${st.color}`} />
+                            <span>{st.label}</span>
+                          </div>
+                          {isSelected && (
+                            <span className="text-[10px] text-indigo-600 font-sans">✓</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsStatusDropdownOpen(false)}
+                      className="px-3.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
+                    >
+                      ঠিক আছে
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Custom Bookmarks Select */}
@@ -518,7 +600,7 @@ export default function FlashcardViewer({
           <button
             onClick={() => {
               setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1));
-              setSelectedGroupStatus('all');
+              setSelectedStatuses(['dont_know']);
               setSelectedFolder('all');
             }}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans"
