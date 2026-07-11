@@ -83,11 +83,18 @@ export default function App() {
 
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
-    return saved ? JSON.parse(saved) : {
-      defaultFlashcardTags: ['dont_know'],
-      defaultFlashcardOrder: 'random',
-      autoPlayAudio: false,
-      quizLength: 10
+    const parsed = saved ? JSON.parse(saved) : {};
+    return {
+      defaultFlashcardTags: parsed.defaultFlashcardTags || ['dont_know'],
+      defaultFlashcardOrder: parsed.defaultFlashcardOrder || 'random',
+      autoPlayAudio: !!parsed.autoPlayAudio,
+      quizLength: parsed.quizLength || 10,
+      
+      // New custom default settings fields
+      defaultSynonymOrder: parsed.defaultSynonymOrder || 'random',
+      defaultSynonymTags: parsed.defaultSynonymTags || ['dont_know', 'unrated'],
+      defaultQuizType: parsed.defaultQuizType || 'mcq_en_bn',
+      defaultMatchSize: parsed.defaultMatchSize || 8
     };
   });
 
@@ -723,6 +730,7 @@ export default function App() {
             <WordMatchGame
               words={vocabulary}
               activeGroup={selectedGroupFromDash}
+              settings={settings}
             />
           )}
 

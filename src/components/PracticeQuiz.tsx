@@ -20,7 +20,9 @@ interface Question {
 
 export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings }: PracticeQuizProps) {
   // Quiz states
-  const [quizType, setQuizType] = useState<QuizType>('mcq_en_bn');
+  const [quizType, setQuizType] = useState<QuizType>(() => {
+    return settings?.defaultQuizType || 'mcq_en_bn';
+  });
   const [quizLength, setQuizLength] = useState<number>(() => {
     return settings?.quizLength || 10;
   });

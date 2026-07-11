@@ -68,13 +68,53 @@ export default function AppSettingsView({
     });
   };
 
+  const handleToggleSynonymTag = (tag: 'know' | 'dont_know' | 'unrated') => {
+    let newTags = [...(settings.defaultSynonymTags || ['dont_know', 'unrated'])];
+    if (newTags.includes(tag)) {
+      newTags = newTags.filter(t => t !== tag);
+    } else {
+      newTags.push(tag);
+    }
+    if (newTags.length === 0) return;
+
+    onUpdateSettings({
+      ...settings,
+      defaultSynonymTags: newTags
+    });
+  };
+
+  const handleSynonymOrderChange = (order: 'serial' | 'alphabetical' | 'random') => {
+    onUpdateSettings({
+      ...settings,
+      defaultSynonymOrder: order
+    });
+  };
+
+  const handleQuizTypeChange = (type: 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling') => {
+    onUpdateSettings({
+      ...settings,
+      defaultQuizType: type
+    });
+  };
+
+  const handleMatchSizeChange = (size: number) => {
+    onUpdateSettings({
+      ...settings,
+      defaultMatchSize: size
+    });
+  };
+
   const triggerResetSettings = () => {
     if (confirm('আপনি কি সেটিংস ডিফল্ট মানে ফিরিয়ে নিতে চান?')) {
       onUpdateSettings({
         defaultFlashcardTags: ['dont_know'],
         defaultFlashcardOrder: 'random',
         autoPlayAudio: false,
-        quizLength: 10
+        quizLength: 10,
+        defaultSynonymOrder: 'random',
+        defaultSynonymTags: ['dont_know', 'unrated'],
+        defaultQuizType: 'mcq_en_bn',
+        defaultMatchSize: 8
       });
     }
   };
@@ -226,6 +266,69 @@ export default function AppSettingsView({
               </div>
             </div>
 
+            {/* Default Quiz Type */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-50">
+              <label className="block text-xs font-bold text-slate-700 font-sans">ডিফল্ট কুইজ টাইপ (Default Quiz Type)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                অনুশীলন কুইজে কোন ধরণের প্রশ্ন ডিফল্ট হিসেবে দেখতে চান।
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: 'mcq_en_bn' as const, label: 'En ➔ Bn MCQ', desc: 'ইংরেজি দেখে বাংলা অর্থ' },
+                  { key: 'mcq_bn_en' as const, label: 'Bn ➔ En MCQ', desc: 'বাংলা দেখে ইংরেজি শব্দ' },
+                  { key: 'typing_spelling' as const, label: 'লিখিত টাইপিং', desc: 'লিখিত ও স্পেলিং টেস্ট' }
+                ].map(item => {
+                  const currentQuizType = settings.defaultQuizType || 'mcq_en_bn';
+                  const isSelected = currentQuizType === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleQuizTypeChange(item.key)}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <span className="text-xs font-black font-sans">{item.label}</span>
+                      <span className="text-[10px] text-slate-400 font-sans">{item.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Default Match Size */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-50">
+              <label className="block text-xs font-bold text-slate-700 font-sans">শব্দমিল খেলার জোড়া সংখ্যা (Default Match Size)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                ম্যাচ গেমে কতটি শব্দের জোড়া একসঙ্গে মিলিয়ে খেলার চ্যালেঞ্জ নিতে চান।
+              </p>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[4, 6, 8, 10, 12].map(val => {
+                  const currentMatchSize = settings.defaultMatchSize || 8;
+                  const isSelected = currentMatchSize === val;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => handleMatchSizeChange(val)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      {val} জোড়া
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Auto Play Speech Pronunciation */}
             <div className="space-y-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-4">
               <div className="space-y-1">
@@ -248,6 +351,90 @@ export default function AppSettingsView({
                   }`}
                 />
               </button>
+            </div>
+          </div>
+
+          {/* Section 3: Synonym check settings */}
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Sparkles className="w-4.5 h-4.5 text-indigo-500" />
+              <h2 className="text-sm font-extrabold text-slate-800 font-sans">সিনোনিম চেক ডিফল্ট অপশনসমূহ</h2>
+            </div>
+
+            {/* Default Synonym Statuses Filter */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 font-sans">ডিফল্ট ট্যাগ ফিল্টার (Default Synonym Tags)</label>
+                <span className="text-[10px] text-slate-400 font-sans">কমপক্ষে ১টি সিলেক্ট করুন</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                সিনোনিম স্ক্রিন প্রথম লোড হলে কোন ট্যাগ বিশিষ্ট শব্দগুলো স্বয়ংক্রিয়ভাবে ফিল্টার হয়ে থাকবে তা নির্বাচন করুন।
+              </p>
+              
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: 'know' as const, label: 'পারি', color: 'bg-emerald-500' },
+                  { key: 'dont_know' as const, label: 'পারি না', color: 'bg-rose-500' },
+                  { key: 'unrated' as const, label: 'পড়া হয়নি', color: 'bg-slate-400' }
+                ].map(st => {
+                  const defaultTags = settings.defaultSynonymTags || ['dont_know', 'unrated'];
+                  const isSelected = defaultTags.includes(st.key);
+                  return (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => handleToggleSynonymTag(st.key)}
+                      className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                        isSelected 
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm' 
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${st.color}`} />
+                        <span>{st.label}</span>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Default Synonym Study Order */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-50">
+              <label className="block text-xs font-bold text-slate-700 font-sans">ডিফল্ট পড়ার ক্রম (Default Synonym Order)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                সিনোনিম চেক করার সময় শব্দগুলোর ডিফল্ট সাজানোর ধরন কেমন হবে।
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: 'serial' as const, label: 'সিরিয়াল', desc: '১ থেকে ৩৭ গ্রুপ অনু্যায়ী' },
+                  { key: 'alphabetical' as const, label: 'A-Z', desc: 'ইংরেজি বর্ণানুক্রমিক' },
+                  { key: 'random' as const, label: 'র্যান্ডম', desc: 'এলোমেলো বা শাফেল' }
+                ].map(item => {
+                  const defaultOrder = settings.defaultSynonymOrder || 'random';
+                  const isSelected = defaultOrder === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleSynonymOrderChange(item.key)}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <span className="text-xs font-black font-sans">{item.label}</span>
+                      <span className="text-[10px] text-slate-400 font-sans">{item.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

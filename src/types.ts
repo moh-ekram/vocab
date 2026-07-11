@@ -33,6 +33,12 @@ export interface AppSettings {
   defaultFlashcardOrder: 'serial' | 'alphabetical' | 'random';
   autoPlayAudio: boolean;
   quizLength: number;
+  
+  // New default settings fields for custom user defaults everywhere
+  defaultSynonymOrder?: 'serial' | 'alphabetical' | 'random';
+  defaultSynonymTags?: ('know' | 'dont_know' | 'unrated')[];
+  defaultQuizType?: 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
+  defaultMatchSize?: number;
 }
 
 export interface StudySession {

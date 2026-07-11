@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { VocabularyWord } from '../types';
+import { VocabularyWord, AppSettings } from '../types';
 import { Sparkles, Trophy, RotateCw, Play, Timer, Flame, Check } from 'lucide-react';
 
 interface WordMatchGameProps {
   words: VocabularyWord[];
   activeGroup: number | null;
+  settings?: AppSettings;
 }
 
 interface MatchCard {
@@ -15,7 +16,7 @@ interface MatchCard {
   isMatched: boolean;
 }
 
-export default function WordMatchGame({ words, activeGroup }: WordMatchGameProps) {
+export default function WordMatchGame({ words, activeGroup, settings }: WordMatchGameProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [cards, setCards] = useState<MatchCard[]>([]);
   const [selectedLeft, setSelectedLeft] = useState<MatchCard | null>(null);
@@ -39,14 +40,16 @@ export default function WordMatchGame({ words, activeGroup }: WordMatchGameProps
       sourcePool = sourcePool.filter(w => w.group === activeGroup);
     }
 
-    if (sourcePool.length < 5) {
+    const matchSize = settings?.defaultMatchSize || 6;
+
+    if (sourcePool.length < matchSize) {
       // Fallback to general pool if the group is too small
       sourcePool = [...words];
     }
 
-    // Pick 6 random words
+    // Pick random words
     sourcePool.sort(() => Math.random() - 0.5);
-    const selectedWords = sourcePool.slice(0, 6);
+    const selectedWords = sourcePool.slice(0, matchSize);
 
     // Create cards
     const leftCards: MatchCard[] = selectedWords.map(w => ({
