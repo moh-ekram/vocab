@@ -314,12 +314,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                 : questions[currentQuestionIndex].word.word}
             </h1>
 
-            {/* Display synonyms context */}
-            {questions[currentQuestionIndex].word.synonyms && (
-              <p className="text-sm font-semibold text-indigo-700 font-sans">
-                Synonyms: {questions[currentQuestionIndex].word.synonyms}
-              </p>
-            )}
+            {/* Display synonyms context removed as requested */}
           </div>
 
           {/* MCQ Options representation */}
