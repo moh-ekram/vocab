@@ -26,7 +26,14 @@ export interface CustomFolder {
   createdAt?: string;
 }
 
-export type ActiveTab = 'dashboard' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner';
+export type ActiveTab = 'dashboard' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner' | 'settings';
+
+export interface AppSettings {
+  defaultFlashcardTags: WordStatus[];
+  defaultFlashcardOrder: 'serial' | 'alphabetical' | 'random';
+  autoPlayAudio: boolean;
+  quizLength: number;
+}
 
 export interface StudySession {
   date: string; // YYYY-MM-DD

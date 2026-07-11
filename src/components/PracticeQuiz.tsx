@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VocabularyWord, WordStatus, UserProgress } from '../types';
+import { VocabularyWord, WordStatus, UserProgress, AppSettings } from '../types';
 import { CheckCircle2, XCircle, RefreshCw, HelpCircle, AlertCircle, Award, Sparkles, ChevronRight, HelpCircle as HelpIcon, ArrowRight } from 'lucide-react';
 
 interface PracticeQuizProps {
@@ -7,6 +7,7 @@ interface PracticeQuizProps {
   progress: Record<string, UserProgress>;
   onRateWord: (wordId: string, status: WordStatus) => void;
   activeGroup: number | null;
+  settings?: AppSettings;
 }
 
 type QuizType = 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
@@ -17,10 +18,12 @@ interface Question {
   correctAnswer: string;
 }
 
-export default function PracticeQuiz({ words, progress, onRateWord, activeGroup }: PracticeQuizProps) {
+export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings }: PracticeQuizProps) {
   // Quiz states
   const [quizType, setQuizType] = useState<QuizType>('mcq_en_bn');
-  const [quizLength, setQuizLength] = useState<number>(10);
+  const [quizLength, setQuizLength] = useState<number>(() => {
+    return settings?.quizLength || 10;
+  });
   const [filterMode, setFilterMode] = useState<'group' | 'weak' | 'all'>(activeGroup ? 'group' : 'all');
 
   const [gameState, setGameState] = useState<'setup' | 'playing' | 'summary'>('setup');

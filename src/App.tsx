@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
-import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab } from './types';
+import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
 import SynonymCheck from './components/SynonymCheck';
@@ -9,6 +9,7 @@ import WordMatchGame from './components/WordMatchGame';
 import CustomLists from './components/CustomLists';
 import SearchDictionary from './components/SearchDictionary';
 import DailyPlanner from './components/DailyPlanner';
+import AppSettingsView from './components/AppSettingsView';
 
 import {
   LayoutDashboard,
@@ -25,7 +26,8 @@ import {
   Cloud,
   LogOut,
   User,
-  AlertCircle
+  AlertCircle,
+  Settings
 } from 'lucide-react';
 
 import {
@@ -44,6 +46,7 @@ const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
 const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
 const LOCAL_STORAGE_GOALS_KEY = 'vocab_memorizer_goals_v2';
 const LOCAL_STORAGE_SYNONYM_PROGRESS_KEY = 'vocab_memorizer_synonym_progress_v2';
+const LOCAL_STORAGE_SETTINGS_KEY = 'vocab_memorizer_settings_v3';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -78,6 +81,16 @@ export default function App() {
     return saved ? JSON.parse(saved) : {};
   });
 
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
+    return saved ? JSON.parse(saved) : {
+      defaultFlashcardTags: ['dont_know'],
+      defaultFlashcardOrder: 'random',
+      autoPlayAudio: false,
+      quizLength: 10
+    };
+  });
+
   // --- FIREBASE SYNC & AUTH STATES ---
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -100,6 +113,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY, JSON.stringify(synonymProgress));
   }, [synonymProgress]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
+  }, [settings]);
 
   // Auth State Listener
   useEffect(() => {
@@ -133,6 +150,9 @@ export default function App() {
             if (data.synonymProgress) {
               setSynonymProgress(prev => ({ ...prev, ...data.synonymProgress }));
             }
+            if (data.settings) {
+              setSettings(prev => ({ ...prev, ...data.settings }));
+            }
             setSyncStatus('synced');
           } else {
             // New user signup: back up current local state to cloud immediately
@@ -141,6 +161,7 @@ export default function App() {
               folders,
               goal,
               synonymProgress,
+              settings,
               email: currentUser.email,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
@@ -183,6 +204,7 @@ export default function App() {
           folders,
           goal,
           synonymProgress,
+          settings,
           email: user.email,
           updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -198,7 +220,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, user]);
+  }, [progress, folders, goal, synonymProgress, settings, user]);
 
   const forceSyncToCloud = async () => {
     if (!user) return;
@@ -209,6 +231,7 @@ export default function App() {
         folders,
         goal,
         synonymProgress,
+        settings,
         email: user.email,
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -244,6 +267,14 @@ export default function App() {
 
         const savedSynonymProgress = localStorage.getItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY);
         setSynonymProgress(savedSynonymProgress ? JSON.parse(savedSynonymProgress) : {});
+
+        const savedSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
+        setSettings(savedSettings ? JSON.parse(savedSettings) : {
+          defaultFlashcardTags: ['dont_know'],
+          defaultFlashcardOrder: 'random',
+          autoPlayAudio: false,
+          quizLength: 10
+        });
 
         setUser(null);
       } catch (err) {
@@ -543,6 +574,18 @@ export default function App() {
               <span>দৈনিক প্ল্যানার</span>
             </button>
 
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'settings'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>সেটিংস ও ডিফল্ট</span>
+            </button>
+
             {/* Aligned Cloud Sync / Login Button under Daily Planner */}
             <div className="pt-3 border-t border-slate-100 mt-2 space-y-2.5">
               {user ? (
@@ -647,6 +690,7 @@ export default function App() {
               onUpdateNotes={handleUpdateNotes}
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
+              settings={settings}
             />
           )}
 
@@ -656,6 +700,12 @@ export default function App() {
               synonymProgress={synonymProgress}
               onUpdateSynonymProgress={handleUpdateSynonymProgress}
               activeGroup={selectedGroupFromDash}
+              progress={progress}
+              folders={folders}
+              onRateWord={handleRateWord}
+              onUpdateNotes={handleUpdateNotes}
+              onToggleBookmark={handleToggleBookmark}
+              settings={settings}
             />
           )}
 
@@ -665,6 +715,7 @@ export default function App() {
               progress={progress}
               onRateWord={handleRateWord}
               activeGroup={selectedGroupFromDash}
+              settings={settings}
             />
           )}
 
@@ -708,6 +759,17 @@ export default function App() {
                 setSelectedGroupFromDash(null);
                 setActiveTab('flashcard');
               }}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <AppSettingsView
+              settings={settings}
+              onUpdateSettings={setSettings}
+              onClearAllProgress={handleClearAllProgress}
+              userEmail={user?.email}
+              syncStatus={syncStatus}
+              onForceSync={forceSyncToCloud}
             />
           )}
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VocabularyWord, WordStatus, UserProgress, CustomFolder } from '../types';
+import { VocabularyWord, WordStatus, UserProgress, CustomFolder, AppSettings } from '../types';
 import sentencesDataRaw from '../data/sentences.json';
 const sentencesData = sentencesDataRaw as Record<string, string[]>;
 
@@ -29,6 +29,7 @@ interface FlashcardViewerProps {
   onUpdateNotes: (wordId: string, notes: string) => void;
   onToggleBookmark: (wordId: string, folderId: string) => void;
   initialGroup?: number | null;
+  settings?: AppSettings;
 }
 
 export default function FlashcardViewer({
@@ -38,7 +39,8 @@ export default function FlashcardViewer({
   onRateWord,
   onUpdateNotes,
   onToggleBookmark,
-  initialGroup = null
+  initialGroup = null,
+  settings
 }: FlashcardViewerProps) {
   // Filter States
   const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
@@ -48,12 +50,16 @@ export default function FlashcardViewer({
     return Array.from({ length: 37 }, (_, i) => i + 1);
   });
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['dont_know']);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
+    return settings?.defaultFlashcardTags || ['dont_know'];
+  });
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   
   // Study Order Mode: 'serial' (সিরিয়াল), 'alphabetical' (A-Z), 'random' (র্যান্ডম)
-  const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>('random');
+  const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>(() => {
+    return settings?.defaultFlashcardOrder || 'random';
+  });
   const [shuffleKey, setShuffleKey] = useState(0);
 
   // Card orientation
@@ -290,6 +296,16 @@ export default function FlashcardViewer({
     window.speechSynthesis.cancel(); // Clear queued speech
     window.speechSynthesis.speak(utterance);
   };
+
+  // Autoplay voice pronunciation if enabled
+  useEffect(() => {
+    if (settings?.autoPlayAudio && currentActiveWord.word) {
+      const timer = setTimeout(() => {
+        speakWord();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [currentActiveWord.id, settings?.autoPlayAudio]);
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
 

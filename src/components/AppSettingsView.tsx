@@ -1,0 +1,327 @@
+import React from 'react';
+import { AppSettings, WordStatus } from '../types';
+import { 
+  Settings, 
+  Layers, 
+  Sliders, 
+  RotateCcw, 
+  Volume2, 
+  HelpCircle, 
+  Trash2, 
+  CheckCircle2, 
+  Sparkles,
+  Info
+} from 'lucide-react';
+
+interface AppSettingsViewProps {
+  settings: AppSettings;
+  onUpdateSettings: (settings: AppSettings) => void;
+  onClearAllProgress: () => void;
+  userEmail?: string | null;
+  syncStatus: string;
+  onForceSync?: () => void;
+}
+
+export default function AppSettingsView({
+  settings,
+  onUpdateSettings,
+  onClearAllProgress,
+  userEmail,
+  syncStatus,
+  onForceSync
+}: AppSettingsViewProps) {
+
+  const handleToggleTag = (tag: WordStatus) => {
+    let newTags = [...settings.defaultFlashcardTags];
+    if (newTags.includes(tag)) {
+      newTags = newTags.filter(t => t !== tag);
+    } else {
+      newTags.push(tag);
+    }
+    // Don't allow empty defaults, keep at least one
+    if (newTags.length === 0) return;
+    
+    onUpdateSettings({
+      ...settings,
+      defaultFlashcardTags: newTags
+    });
+  };
+
+  const handleOrderChange = (order: 'serial' | 'alphabetical' | 'random') => {
+    onUpdateSettings({
+      ...settings,
+      defaultFlashcardOrder: order
+    });
+  };
+
+  const handleQuizLengthChange = (length: number) => {
+    onUpdateSettings({
+      ...settings,
+      quizLength: length
+    });
+  };
+
+  const handleToggleAudio = () => {
+    onUpdateSettings({
+      ...settings,
+      autoPlayAudio: !settings.autoPlayAudio
+    });
+  };
+
+  const triggerResetSettings = () => {
+    if (confirm('আপনি কি সেটিংস ডিফল্ট মানে ফিরিয়ে নিতে চান?')) {
+      onUpdateSettings({
+        defaultFlashcardTags: ['dont_know'],
+        defaultFlashcardOrder: 'random',
+        autoPlayAudio: false,
+        quizLength: 10
+      });
+    }
+  };
+
+  return (
+    <div className="flex-1 p-6 md:p-8 space-y-8 max-w-4xl mx-auto" id="app-settings-page">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+              <Settings className="w-6 h-6" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight font-sans">অ্যাপ সেটিংস ও কনফিগারেশন</h1>
+          </div>
+          <p className="text-xs text-slate-400 font-bold mt-1 font-sans">
+            আপনার ফ্ল্যাশ কার্ড, কুইজ এবং স্পিচ প্লেব্যাকের ডিফল্ট অপশন সেট করুন
+          </p>
+        </div>
+
+        <button
+          onClick={triggerResetSettings}
+          className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-indigo-600 hover:bg-slate-50 border border-slate-200 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 font-sans self-start md:self-auto"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>সেটিংস ডিফল্ট করুন</span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left 2 columns: Config Cards */}
+        <div className="md:col-span-2 space-y-6">
+          
+          {/* Section 1: Flashcard settings */}
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Layers className="w-4.5 h-4.5 text-indigo-500" />
+              <h2 className="text-sm font-extrabold text-slate-800 font-sans">ফ্ল্যাশ কার্ড ডিফল্ট অপশনসমূহ</h2>
+            </div>
+
+            {/* Default Tag Filter */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 font-sans">ডিফল্ট ট্যাগ ফিল্টার (Default Tags)</label>
+                <span className="text-[10px] text-slate-400 font-sans">কমপক্ষে ১টি সিলেক্ট করুন</span>
+              </div>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                ফ্ল্যাশ কার্ড স্ক্রিনটি প্রথম লোড হলে কোন ট্যাগ বিশিষ্ট শব্দগুলো স্বয়ংক্রিয়ভাবে ফিল্টার হয়ে থাকবে তা নির্বাচন করুন।
+              </p>
+              
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                {[
+                  { key: 'know' as WordStatus, label: 'পারি (সবুজ)', color: 'bg-emerald-500', border: 'border-emerald-100' },
+                  { key: 'confusion' as WordStatus, label: 'কনফিউশন (হলুদ)', color: 'bg-amber-500', border: 'border-amber-100' },
+                  { key: 'dont_know' as WordStatus, label: 'পারি না (লাল)', color: 'bg-rose-500', border: 'border-rose-100' },
+                  { key: 'unrated' as WordStatus, label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400', border: 'border-slate-200' }
+                ].map(st => {
+                  const isSelected = settings.defaultFlashcardTags.includes(st.key);
+                  return (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => handleToggleTag(st.key)}
+                      className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                        isSelected 
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm' 
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${st.color}`} />
+                        <span>{st.label}</span>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Default Study Order */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-50">
+              <label className="block text-xs font-bold text-slate-700 font-sans">ডিফল্ট স্টাডি অর্ডার (Default Order)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                ফ্ল্যাশ কার্ড রিভিউ করার সময় শব্দগুলোর ডিফল্ট সাজানোর ধরন কেমন হবে।
+              </p>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {[
+                  { key: 'serial' as const, label: 'সিরিয়াল', desc: '১ থেকে ৩৭ গ্রুপ অনু্যায়ী' },
+                  { key: 'alphabetical' as const, label: 'A-Z', desc: 'ইংরেজি বর্ণানুক্রমিক' },
+                  { key: 'random' as const, label: 'র্যান্ডম', desc: 'এলোমেলো বা শাফেল' }
+                ].map(item => {
+                  const isSelected = settings.defaultFlashcardOrder === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleOrderChange(item.key)}
+                      className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col gap-1 ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <span className="text-xs font-black font-sans">{item.label}</span>
+                      <span className="text-[10px] text-slate-400 font-sans">{item.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Quiz & Pronunciation */}
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Sliders className="w-4.5 h-4.5 text-amber-500" />
+              <h2 className="text-sm font-extrabold text-slate-800 font-sans">কুইজ ও এক্সট্রা অপশনসমূহ</h2>
+            </div>
+
+            {/* Default Quiz Questions Limit */}
+            <div className="space-y-2.5">
+              <label className="block text-xs font-bold text-slate-700 font-sans">ডিফল্ট কুইজ প্রশ্ন সংখ্যা (Default Quiz Length)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                অনুশীলন কুইজ শুরু করার সময় ডিফল্ট প্রশ্ন সংখ্যা কত থাকবে।
+              </p>
+
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[5, 10, 15, 20, 25, 30].map(val => {
+                  const isSelected = settings.quizLength === val;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => handleQuizLengthChange(val)}
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      {val}টি
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Auto Play Speech Pronunciation */}
+            <div className="space-y-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 font-sans">অটো স্পিচ উচ্চারণ (Auto Play Pronunciation)</label>
+                <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                  ফ্ল্যাশ কার্ড উল্টিয়ে দেখলে বা লোড হলে স্বয়ংক্রিয় ইংরেজি উচ্চারণ প্লে করুন।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleAudio}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  settings.autoPlayAudio ? 'bg-indigo-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    settings.autoPlayAudio ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Right 1 column: Account Info & Clear Storage */}
+        <div className="space-y-6">
+          {/* Cloud Sync Status info */}
+          <div className="bg-indigo-950/95 text-white rounded-2xl p-5 space-y-4 shadow-md relative overflow-hidden">
+            <div className="absolute top-0 right-0 transform translate-x-3 -translate-y-3 opacity-10">
+              <Settings className="w-32 h-32" />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-200 font-sans">ক্লাউড সিঙ্ক স্ট্যাটাস</span>
+            </div>
+
+            <div className="space-y-1.5 z-10 relative">
+              <p className="text-xs text-indigo-200 font-sans font-medium">লগইন অ্যাকাউন্ট:</p>
+              <p className="text-xs font-black tracking-tight truncate font-sans">
+                {userEmail ? userEmail : 'লগইন করা নেই (শুধুমাত্র লোকাল)'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-indigo-800 pt-3 text-[10px]">
+              <span className="text-indigo-200 font-sans">সিঙ্ক অবস্থা:</span>
+              <span className="font-extrabold bg-indigo-900 px-2 py-0.5 rounded text-indigo-300 font-sans">
+                {syncStatus === 'synced' ? 'সিঙ্কড (Synced)' : 
+                 syncStatus === 'syncing' ? 'সিঙ্ক হচ্ছে...' : 'লোকাল মেমোরি'}
+              </span>
+            </div>
+
+            {userEmail && onForceSync && (
+              <button
+                onClick={onForceSync}
+                className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-[10px] rounded-xl transition cursor-pointer font-sans"
+              >
+                ম্যানুয়ালি ব্যাকআপ করুন
+              </button>
+            )}
+          </div>
+
+          {/* Dangerous Zone */}
+          <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center gap-2 text-rose-800">
+              <Trash2 className="w-4.5 h-4.5 text-rose-500" />
+              <h2 className="text-xs font-black font-sans uppercase tracking-wider">ডেঞ্জার জোন (Danger Zone)</h2>
+            </div>
+            
+            <p className="text-[11px] text-rose-600 font-sans leading-relaxed">
+              আপনার সমস্ত পড়াশোনার অগ্রগতি, ট্যাগ করা প্রগ্রেস, গোল, দৈনিক হিস্ট্রি এবং কাস্টম ফোল্ডার চিরতরে মুছে ফেলতে চাইলে নিচের বোতামটি চাপুন।
+            </p>
+
+            <button
+              onClick={onClearAllProgress}
+              className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-2 font-sans"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>সমস্ত প্রগ্রেস রিসেট করুন</span>
+            </button>
+          </div>
+
+          {/* Help box */}
+          <div className="bg-slate-100/60 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-2 text-slate-700">
+              <Info className="w-4 h-4 text-indigo-600" />
+              <h3 className="text-xs font-black font-sans">জানুন কীভাবে কাজ করে</h3>
+            </div>
+            <p className="text-[11px] text-slate-500 font-sans leading-relaxed">
+              এখানে সেট করা সেটিংসসমূহ লোকাল স্টোরেজে স্বয়ংক্রিয়ভাবে সংরক্ষিত থাকে। ক্লাউড অ্যাকাউন্ট লগইন থাকলে এগুলো ক্লাউডেও সিঙ্কড থাকে, যাতে অন্য ডিভাইস থেকে একই অভিজ্ঞতা পান।
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
