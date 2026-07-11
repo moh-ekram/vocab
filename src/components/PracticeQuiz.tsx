@@ -26,7 +26,20 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
   const [quizLength, setQuizLength] = useState<number>(() => {
     return settings?.quizLength || 10;
   });
-  const [filterMode, setFilterMode] = useState<'group' | 'weak' | 'all'>(activeGroup ? 'group' : 'all');
+
+  // Filter States (matching FlashcardViewer exactly)
+  const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
+    if (activeGroup) {
+      return [activeGroup];
+    }
+    return Array.from({ length: 37 }, (_, i) => i + 1);
+  });
+  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
+    return ['know', 'dont_know', 'confusion', 'unrated'];
+  });
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
   const [gameState, setGameState] = useState<'setup' | 'playing' | 'summary'>('setup');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -48,12 +61,16 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
   const startQuiz = () => {
     let sourcePool = [...words];
 
-    if (filterMode === 'group' && activeGroup) {
-      sourcePool = sourcePool.filter(w => w.group === activeGroup);
-    } else if (filterMode === 'weak') {
+    // Filter by multiple selected groups (same logic as FlashcardViewer)
+    if (selectedGroups.length < 37) {
+      sourcePool = sourcePool.filter(w => selectedGroups.includes(w.group));
+    }
+
+    // Filter by tag/status (same logic as FlashcardViewer)
+    if (selectedStatuses.length < 4) {
       sourcePool = sourcePool.filter(w => {
-        const s = progress[w.id]?.status;
-        return s === 'dont_know' || s === 'confusion';
+        const status = progress[w.id]?.status || 'unrated';
+        return selectedStatuses.includes(status);
       });
     }
 
@@ -115,6 +132,19 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
   const handleMCQOptionClick = (option: string) => {
     if (answerSubmitted) return;
     setSelectedAnswer(option);
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const isCorrect = option === currentQuestion.correctAnswer;
+
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+      onRateWord(currentQuestion.word.id, 'know');
+    } else {
+      setIncorrectWords(prev => [...prev, currentQuestion.word]);
+      onRateWord(currentQuestion.word.id, 'dont_know');
+    }
+
+    setAnswerSubmitted(true);
   };
 
   const submitAnswer = () => {
@@ -222,55 +252,214 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Question Pool Filters */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-slate-450 uppercase tracking-wider font-sans">প্রশ্নের সোর্স</span>
-                <div className="grid grid-cols-3 gap-2 font-sans text-xs font-bold">
-                  {activeGroup && (
-                    <button
-                      onClick={() => setFilterMode('group')}
-                      className={`py-3 rounded-xl border transition ${
-                        filterMode === 'group' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200/60 hover:bg-slate-100'
-                      }`}
-                    >
-                      গ্রুপ {activeGroup}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setFilterMode('weak')}
-                    className={`py-3 rounded-xl border transition ${
-                      filterMode === 'weak' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200/60 hover:bg-slate-100'
-                    }`}
-                  >
-                    দুর্বল শব্দসমূহ
-                  </button>
-                  <button
-                    onClick={() => setFilterMode('all')}
-                    className={`py-3 rounded-xl border transition ${
-                      filterMode === 'all' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200/60 hover:bg-slate-100'
-                    }`}
-                  >
-                    সকল শব্দ
-                  </button>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              {/* Select Group (Multi-select) */}
+              <div className="space-y-1.5 relative" id="group-multi-selector">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsGroupDropdownOpen(!isGroupDropdownOpen);
+                    setIsStatusDropdownOpen(false);
+                  }}
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 w-full cursor-pointer text-left h-[46px]"
+                >
+                  <span className="truncate">
+                    {selectedGroups.length === 37 
+                      ? 'সকল গ্রুপ (১-৩৭)' 
+                      : selectedGroups.length === 0 
+                      ? 'কোনো গ্রুপ নেই' 
+                      : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
+                  </span>
+                  <span className="text-[10px] text-slate-400">▼</span>
+                </button>
+
+                {isGroupDropdownOpen && (
+                  <>
+                    {/* Click outside overlay */}
+                    <div className="fixed inset-0 z-10" onClick={() => setIsGroupDropdownOpen(false)} />
+                    
+                    {/* Dropdown panel */}
+                    <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-3 font-sans">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                        <div className="flex gap-2 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
+                            className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
+                          >
+                            সব সিলেক্ট
+                          </button>
+                          <span className="text-slate-300">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedGroups([])}
+                            className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
+                          >
+                            সব মুছুন
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Grid of 37 Groups */}
+                      <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                        {Array.from({ length: 37 }, (_, i) => {
+                          const gNum = i + 1;
+                          const isSelected = selectedGroups.includes(gNum);
+                          return (
+                            <button
+                              key={gNum}
+                              type="button"
+                              onClick={() => {
+                                setSelectedGroups(prev => 
+                                  prev.includes(gNum)
+                                    ? prev.filter(x => x !== gNum)
+                                    : [...prev, gNum]
+                                );
+                              }}
+                              className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
+                              }`}
+                            >
+                              {gNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsGroupDropdownOpen(false)}
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                        >
+                          ঠিক আছে
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Select Status (Multi-select) */}
+              <div className="space-y-1.5 relative" id="status-multi-selector">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                    setIsGroupDropdownOpen(false);
+                  }}
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 w-full cursor-pointer text-left h-[46px]"
+                >
+                  <span className="truncate">
+                    {selectedStatuses.length === 4 
+                      ? 'সকল ট্যাগ' 
+                      : selectedStatuses.length === 0 
+                      ? 'কোনো ট্যাগ নেই' 
+                      : selectedStatuses.map(s => {
+                          if (s === 'know') return 'পারি';
+                          if (s === 'dont_know') return 'পারি না';
+                          if (s === 'confusion') return 'কনফিউশন';
+                          return 'পড়া হয়নি';
+                        }).join(', ')}
+                  </span>
+                  <span className="text-[10px] text-slate-400">▼</span>
+                </button>
+
+                {isStatusDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                    <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-2.5 font-sans">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                        <div className="flex gap-2 text-[10px]">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated'])}
+                            className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
+                          >
+                            সব সিলেক্ট
+                          </button>
+                          <span className="text-slate-200">|</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedStatuses([])}
+                            className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
+                          >
+                            সব মুছুন
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {[
+                          { key: 'know', label: 'পারি (সবুজ)', color: 'bg-emerald-500' },
+                          { key: 'confusion', label: 'কনফিউশন (হলুদ)', color: 'bg-amber-500' },
+                          { key: 'dont_know', label: 'পারি না (লাল)', color: 'bg-rose-500' },
+                          { key: 'unrated', label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400' }
+                        ].map(st => {
+                          const isSelected = selectedStatuses.includes(st.key);
+                          return (
+                            <button
+                              key={st.key}
+                              type="button"
+                              onClick={() => {
+                                setSelectedStatuses(prev => 
+                                  prev.includes(st.key)
+                                    ? prev.filter(x => x !== st.key)
+                                    : [...prev, st.key]
+                                );
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                                isSelected ? 'bg-indigo-50 text-indigo-900' : 'hover:bg-slate-50 text-slate-600'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2.5 h-2.5 rounded-full ${st.color}`} />
+                                <span>{st.label}</span>
+                              </div>
+                              {isSelected && (
+                                <span className="text-[10px] text-indigo-600 font-sans">✓</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsStatusDropdownOpen(false)}
+                          className="px-3.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
+                        >
+                          ঠিক আছে
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Quiz Length */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-slate-450 uppercase tracking-wider font-sans">প্রশ্নের সংখ্যা</span>
-                <div className="flex gap-2">
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">প্রশ্নের সংখ্যা</span>
+                <div className="flex gap-1.5 h-[46px]">
                   {[5, 10, 15, 20].map(count => (
                     <button
                       key={count}
+                      type="button"
                       onClick={() => setQuizLength(count)}
-                      className={`flex-1 py-3 text-xs font-bold rounded-xl border transition font-sans ${
+                      className={`flex-1 text-xs font-bold rounded-xl border transition font-sans ${
                         quizLength === count
                           ? 'bg-indigo-600 text-white border-indigo-600'
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60'
                       }`}
                     >
-                      {count} টি
+                      {count}টি
                     </button>
                   ))}
                 </div>
@@ -397,22 +586,34 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
 
           {/* Action Controllers */}
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3 font-sans">
-            {!answerSubmitted ? (
-              <button
-                onClick={submitAnswer}
-                disabled={quizType === 'typing_spelling' ? !typedAnswer.trim() : !selectedAnswer}
-                className="px-6 py-3 bg-indigo-600 disabled:opacity-50 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm"
-              >
-                উত্তর যাচাই করুন
-              </button>
+            {quizType === 'typing_spelling' ? (
+              !answerSubmitted ? (
+                <button
+                  onClick={submitAnswer}
+                  disabled={!typedAnswer.trim()}
+                  className="px-6 py-3 bg-indigo-600 disabled:opacity-50 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm"
+                >
+                  উত্তর যাচাই করুন
+                </button>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm flex items-center gap-1.5"
+                >
+                  <span>{currentQuestionIndex === questions.length - 1 ? 'ফলাফল দেখুন' : 'পরবর্তী প্রশ্ন'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )
             ) : (
-              <button
-                onClick={handleNext}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm flex items-center gap-1.5"
-              >
-                <span>{currentQuestionIndex === questions.length - 1 ? 'ফলাফল দেখুন' : 'পরবর্তী প্রশ্ন'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              answerSubmitted && (
+                <button
+                  onClick={handleNext}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm flex items-center gap-1.5"
+                >
+                  <span>{currentQuestionIndex === questions.length - 1 ? 'ফলাফল দেখুন' : 'পরবর্তী প্রশ্ন'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              )
             )}
           </div>
         </div>
