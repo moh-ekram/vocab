@@ -273,6 +273,52 @@ export default function SynonymCheck({
         return;
       }
 
+      const userShortcuts = settings?.shortcuts || {
+        'Space': 'flip',
+        'ArrowRight': 'know',
+        'ArrowLeft': 'dont_know',
+        'ArrowUp': 'confusion',
+        'ArrowDown': 'skip',
+        'Enter': 'audio'
+      };
+
+      const keyIdentifier = e.code === 'Space' ? 'Space' : e.code;
+      const action = userShortcuts[keyIdentifier];
+
+      if (action && action !== 'none') {
+        switch (action) {
+          case 'dont_know':
+            e.preventDefault();
+            onRateWord(currentActiveWord.id, 'dont_know');
+            break;
+          case 'know':
+            e.preventDefault();
+            onRateWord(currentActiveWord.id, 'know');
+            break;
+          case 'confusion':
+            e.preventDefault();
+            onRateWord(currentActiveWord.id, 'confusion');
+            break;
+          case 'skip':
+            e.preventDefault();
+            handleNext();
+            break;
+          case 'audio':
+            e.preventDefault();
+            speakWord(currentActiveWord.word);
+            break;
+          case 'google':
+            e.preventDefault();
+            const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}+meaning`;
+            window.open(googleUrl, '_blank');
+            break;
+          default:
+            break;
+        }
+        return;
+      }
+
+      // Contextual fallbacks/choices if not mapped to a custom action
       if (e.key === 'ArrowLeft') {
         handlePrev();
       } else if (e.key === 'ArrowRight') {
@@ -302,7 +348,7 @@ export default function SynonymCheck({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, filteredWords.length, selectedAnswers, isSubmitted, currentOptions]);
+  }, [currentIndex, filteredWords.length, selectedAnswers, isSubmitted, currentOptions, currentActiveWord.id, currentActiveWord.word, settings?.shortcuts, handleNext, handlePrev, onRateWord]);
 
   // Submit and verify option answers
   const submitAnswerWithSelections = (selections: string[]) => {

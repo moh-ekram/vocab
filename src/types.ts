@@ -39,6 +39,9 @@ export interface AppSettings {
   defaultSynonymTags?: ('know' | 'dont_know' | 'unrated')[];
   defaultQuizType?: 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
   defaultMatchSize?: number;
+
+  // Keyboard Shortcuts Mapping: e.g. { "Space": "flip", "ArrowRight": "know" }
+  shortcuts?: Record<string, string>;
 }
 
 export interface StudySession {

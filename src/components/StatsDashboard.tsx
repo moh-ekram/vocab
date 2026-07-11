@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal } from '../types';
 import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface StatsDashboardProps {
   words: VocabularyWord[];
@@ -77,10 +78,36 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
   const wordsStudiedToday = goal.history[todayStr] || 0;
   const progressPercent = Math.min(100, Math.round((wordsStudiedToday / (goal.dailyTarget || 1)) * 100));
 
+  // Motion variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } }
+  };
+
   return (
-    <div className="space-y-8" id="stats-dashboard-container">
+    <motion.div 
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="space-y-8" 
+      id="stats-dashboard-container"
+    >
       {/* Top Banner with Streak & Daily Target */}
-      <div className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-indigo-950/15 relative overflow-hidden" id="dashboard-welcome-banner">
+      <motion.div 
+        variants={itemVariants}
+        className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-indigo-950/15 relative overflow-hidden" 
+        id="dashboard-welcome-banner"
+      >
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
@@ -92,7 +119,10 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
 
           <div className="flex flex-wrap items-center gap-4">
             {/* Streak card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs"
+            >
               <div className="p-2 bg-amber-400 rounded-xl text-amber-950 animate-pulse">
                 <Flame className="w-6 h-6 fill-current" />
               </div>
@@ -100,10 +130,13 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                 <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans">অ্যাক্টিভ স্ট্রিক</p>
                 <p className="text-xl font-black font-sans">{goal.streak} দিন</p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Daily Goal card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs">
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs"
+            >
               <div className="p-2 bg-indigo-500 rounded-xl text-white">
                 <Trophy className="w-6 h-6" />
               </div>
@@ -112,41 +145,62 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-black font-sans">{progressPercent}%</p>
                   <div className="w-20 bg-indigo-950/60 h-2 rounded-full overflow-hidden">
-                    <div className="bg-indigo-400 h-full transition-all duration-350" style={{ width: `${progressPercent}%` }}></div>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progressPercent}%` }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                      className="bg-indigo-400 h-full"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Statistics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4" id="stats-grid-cards">
+      <motion.div 
+        variants={containerVariants}
+        className="grid grid-cols-2 lg:grid-cols-5 gap-4" 
+        id="stats-grid-cards"
+      >
         {/* Total words */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
+        >
           <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
             <BookOpen className="w-6 h-6" />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">মোট শব্দ</p>
-            <p className="text-2xl font-black font-sans text-slate-850">{totalWords}</p>
+            <p className="text-2xl font-black font-sans text-slate-800">{totalWords}</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Know */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition">
-          <div className="p-3 bg-indigo-50 text-indigo-700 rounded-xl">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
+        >
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle className="w-6 h-6" />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পারি</p>
-            <p className="text-2xl font-black font-sans text-indigo-600">{knowCount}</p>
+            <p className="text-2xl font-black font-sans text-emerald-600">{knowCount}</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Confusion */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
+        >
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <AlertTriangle className="w-6 h-6" />
           </div>
@@ -154,10 +208,14 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">কনফিউশন</p>
             <p className="text-2xl font-black font-sans text-amber-600">{confusionCount}</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Don't Know */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
+        >
           <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
             <XCircle className="w-6 h-6" />
           </div>
@@ -165,10 +223,14 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পারি না</p>
             <p className="text-2xl font-black font-sans text-rose-600">{dontKnowCount}</p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Unrated */}
-        <div className="bg-white col-span-2 lg:col-span-1 p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition">
+        <motion.div 
+          variants={itemVariants}
+          whileHover={{ scale: 1.03, y: -4 }}
+          className="bg-white col-span-2 lg:col-span-1 p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
+        >
           <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
             <HelpCircle className="w-6 h-6" />
           </div>
@@ -176,22 +238,39 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পড়া হয়নি</p>
             <p className="text-2xl font-black font-sans text-slate-500">{unratedCount}</p>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Visual Progress Chart & Goal Editing */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="charts-and-goals">
+      <motion.div 
+        variants={itemVariants}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6" 
+        id="charts-and-goals"
+      >
         {/* Progress Representation */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs lg:col-span-2 flex flex-col md:flex-row items-center gap-8">
           <div className="relative flex-shrink-0 w-40 h-40">
             {/* SVG Progress Circle */}
             <svg viewBox="0 0 160 160" className="w-40 h-40 transform -rotate-90">
               <circle cx="80" cy="80" r="70" className="text-slate-100" strokeWidth="12" stroke="currentColor" fill="transparent" />
-              <circle cx="80" cy="80" r="70" className="text-indigo-600 transition-all duration-500" strokeWidth="12" strokeDasharray="439.8" strokeDashoffset={439.8 - (439.8 * overallCompleteness) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+              <motion.circle 
+                cx="80" 
+                cy="80" 
+                r="70" 
+                className="text-indigo-600" 
+                strokeWidth="12" 
+                strokeDasharray="439.8" 
+                initial={{ strokeDashoffset: 439.8 }}
+                animate={{ strokeDashoffset: 439.8 - (439.8 * overallCompleteness) / 100 }}
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                strokeLinecap="round" 
+                stroke="currentColor" 
+                fill="transparent" 
+              />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-3xl font-black text-slate-800 font-sans">{overallCompleteness}%</p>
-              <p className="text-xs text-slate-450 font-bold font-sans">সম্পন্ন</p>
+              <p className="text-xs text-slate-400 font-bold font-sans">সম্পন্ন</p>
             </div>
           </div>
 
@@ -208,7 +287,20 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                 <div className="relative w-24 h-24 mb-2">
                   <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
                     <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <circle cx="48" cy="48" r="38" className="text-indigo-600 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                    <motion.circle 
+                      cx="48" 
+                      cy="48" 
+                      r="38" 
+                      className="text-indigo-600" 
+                      strokeWidth="8" 
+                      strokeDasharray="238.8" 
+                      initial={{ strokeDashoffset: 238.8 }}
+                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ duration: 1, delay: 0.1, ease: "easeOut" }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
@@ -223,7 +315,20 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                 <div className="relative w-24 h-24 mb-2">
                   <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
                     <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <circle cx="48" cy="48" r="38" className="text-amber-500 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                    <motion.circle 
+                      cx="48" 
+                      cy="48" 
+                      r="38" 
+                      className="text-amber-500" 
+                      strokeWidth="8" 
+                      strokeDasharray="238.8" 
+                      initial={{ strokeDashoffset: 238.8 }}
+                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
@@ -238,7 +343,20 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                 <div className="relative w-24 h-24 mb-2">
                   <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
                     <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <circle cx="48" cy="48" r="38" className="text-rose-500 transition-all duration-500" strokeWidth="8" strokeDasharray="238.8" strokeDashoffset={238.8 - (238.8 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100} strokeLinecap="round" stroke="currentColor" fill="transparent" />
+                    <motion.circle 
+                      cx="48" 
+                      cy="48" 
+                      r="38" 
+                      className="text-rose-500" 
+                      strokeWidth="8" 
+                      strokeDasharray="238.8" 
+                      initial={{ strokeDashoffset: 238.8 }}
+                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
@@ -273,7 +391,7 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                   <button
                     key={t}
                     onClick={() => setGoal(prev => ({ ...prev, dailyTarget: t }))}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition font-sans ${
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer font-sans ${
                       goal.dailyTarget === t
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
@@ -292,10 +410,14 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* 37 Groups Navigation Section */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-6" id="groups-directory-section">
+      <motion.div 
+        variants={itemVariants}
+        className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-6" 
+        id="groups-directory-section"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -321,10 +443,17 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
         </div>
 
         {/* Group Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2" id="group-grid">
+        <motion.div 
+          variants={containerVariants}
+          className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2" 
+          id="group-grid"
+        >
           {filteredGroups.map((g) => (
-            <button
+            <motion.button
                key={g.group}
+               variants={itemVariants}
+               whileHover={{ scale: 1.05 }}
+               whileTap={{ scale: 0.95 }}
                onClick={() => onSelectGroup(g.group)}
                className="group relative overflow-hidden rounded-full border border-slate-200 hover:border-emerald-300 hover:shadow-xs bg-slate-50/50 transition flex items-center justify-between px-3 py-2 h-9 cursor-pointer"
             >
@@ -345,7 +474,7 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
                   <span className="text-[11px] font-black text-emerald-800">{g.percent}%</span>
                 </div>
               </div>
-            </button>
+            </motion.button>
           ))}
 
           {filteredGroups.length === 0 && (
@@ -353,15 +482,8 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
               কোনো গ্রুপ পাওয়া যায়নি।
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
-}
-
-function dateString(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }

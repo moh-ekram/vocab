@@ -250,31 +250,50 @@ export default function FlashcardViewer({
 
       if (filteredWords.length === 0) return;
 
-      switch (e.code) {
-        case 'Space':
+      const userShortcuts = settings?.shortcuts || {
+        'Space': 'flip',
+        'ArrowRight': 'know',
+        'ArrowLeft': 'dont_know',
+        'ArrowUp': 'confusion',
+        'ArrowDown': 'skip',
+        'Enter': 'audio'
+      };
+
+      // Handle standard space code normalization
+      const keyIdentifier = e.code === 'Space' ? 'Space' : e.code;
+      const action = userShortcuts[keyIdentifier];
+
+      if (!action || action === 'none') return;
+
+      switch (action) {
+        case 'flip':
           e.preventDefault();
           setIsFlipped(prev => !prev);
           break;
-        case 'ArrowLeft':
+        case 'dont_know':
           e.preventDefault();
           rateAndMaybeConfirm('dont_know', true);
           break;
-        case 'ArrowRight':
+        case 'know':
           e.preventDefault();
           rateAndMaybeConfirm('know', true);
           break;
-        case 'ArrowUp':
+        case 'confusion':
           e.preventDefault();
           rateAndMaybeConfirm('confusion', true);
           break;
-        case 'ArrowDown':
+        case 'skip':
           e.preventDefault();
-          rateAndMaybeConfirm('unrated', false);
+          handleNext();
           break;
-        case 'KeyP':
-        case 'Enter':
+        case 'audio':
           e.preventDefault();
           speakWord();
+          break;
+        case 'google':
+          e.preventDefault();
+          const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}+meaning`;
+          window.open(googleUrl, '_blank');
           break;
         default:
           break;
@@ -285,7 +304,7 @@ export default function FlashcardViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm]);
+  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm, settings?.shortcuts, handleNext]);
 
   // Text to Speech
   const speakWord = () => {

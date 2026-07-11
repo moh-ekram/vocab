@@ -10,7 +10,8 @@ import {
   Trash2, 
   CheckCircle2, 
   Sparkles,
-  Info
+  Info,
+  Keyboard
 } from 'lucide-react';
 
 interface AppSettingsViewProps {
@@ -114,7 +115,15 @@ export default function AppSettingsView({
         defaultSynonymOrder: 'random',
         defaultSynonymTags: ['dont_know', 'unrated'],
         defaultQuizType: 'mcq_en_bn',
-        defaultMatchSize: 8
+        defaultMatchSize: 8,
+        shortcuts: {
+          'Space': 'flip',
+          'ArrowRight': 'know',
+          'ArrowLeft': 'dont_know',
+          'ArrowUp': 'confusion',
+          'ArrowDown': 'skip',
+          'Enter': 'audio'
+        }
       });
     }
   };
@@ -435,6 +444,103 @@ export default function AppSettingsView({
                   );
                 })}
               </div>
+            </div>
+          </div>
+
+          {/* Section 4: Keyboard Shortcuts Configuration */}
+          <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+              <div className="flex items-center gap-2">
+                <Keyboard className="w-4.5 h-4.5 text-violet-500" />
+                <h2 className="text-sm font-extrabold text-slate-800 font-sans">কীবোর্ড শর্টকাট কাস্টমাইজেশন</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateSettings({
+                    ...settings,
+                    shortcuts: {
+                      'Space': 'flip',
+                      'ArrowRight': 'know',
+                      'ArrowLeft': 'dont_know',
+                      'ArrowUp': 'confusion',
+                      'ArrowDown': 'skip',
+                      'Enter': 'audio'
+                    }
+                  });
+                }}
+                className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer"
+              >
+                শর্টকাট রিসেট করুন
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+              বিভিন্ন কীবোর্ড বাটন/কি-এর বিপরীতে আপনার পছন্দের অ্যাকশন নির্বাচন করুন। টাইপিং ইনপুট ফিল্ড ছাড়া অন্য যেকোনো অবস্থায় এই শর্টকাটগুলো কাজ করবে।
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {[
+                { id: 'Space', name: 'Space Key', bn: 'স্পেসবার (Space)' },
+                { id: 'Enter', name: 'Enter Key', bn: 'এন্টার (Enter)' },
+                { id: 'ArrowRight', name: 'Arrow Right', bn: 'ডানমুখী তীর (→)' },
+                { id: 'ArrowLeft', name: 'Arrow Left', bn: 'বামমুখী তীর (←)' },
+                { id: 'ArrowUp', name: 'Arrow Up', bn: 'উপরমুখী তীর (↑)' },
+                { id: 'ArrowDown', name: 'Arrow Down', bn: 'নিচমুখী তীর (↓)' },
+                { id: 'Digit1', name: 'Key 1', bn: 'কীবোর্ড সংখ্যা ১' },
+                { id: 'Digit2', name: 'Key 2', bn: 'কীবোর্ড সংখ্যা ২' },
+                { id: 'Digit3', name: 'Key 3', bn: 'কীবোর্ড সংখ্যা ৩' },
+                { id: 'Digit4', name: 'Key 4', bn: 'কীবোর্ড সংখ্যা ৪' },
+                { id: 'Digit5', name: 'Key 5', bn: 'কীবোর্ড সংখ্যা ৫' },
+                { id: 'Digit6', name: 'Key 6', bn: 'কীবোর্ড সংখ্যা ৬' },
+                { id: 'KeyA', name: 'Key A', bn: 'কীবোর্ড বর্ণ A' },
+                { id: 'KeyS', name: 'Key S', bn: 'কীবোর্ড বর্ণ S' },
+                { id: 'KeyD', name: 'Key D', bn: 'কীবোর্ড বর্ণ D' },
+                { id: 'KeyF', name: 'Key F', bn: 'কীবোর্ড বর্ণ F' },
+                { id: 'KeyG', name: 'Key G', bn: 'কীবোর্ড বর্ণ G' },
+              ].map(keyObj => {
+                const currentShortcuts = settings.shortcuts || {
+                  'Space': 'flip',
+                  'ArrowRight': 'know',
+                  'ArrowLeft': 'dont_know',
+                  'ArrowUp': 'confusion',
+                  'ArrowDown': 'skip',
+                  'Enter': 'audio'
+                };
+                const assignedAction = currentShortcuts[keyObj.id] || 'none';
+
+                return (
+                  <div key={keyObj.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-slate-50/60 rounded-xl border border-slate-100">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-700 font-sans">{keyObj.bn}</span>
+                      <span className="text-[9px] text-slate-400 font-sans tracking-wider uppercase">{keyObj.name}</span>
+                    </div>
+
+                    <select
+                      value={assignedAction}
+                      onChange={(e) => {
+                        onUpdateSettings({
+                          ...settings,
+                          shortcuts: {
+                            ...currentShortcuts,
+                            [keyObj.id]: e.target.value
+                          }
+                        });
+                      }}
+                      className="bg-white border border-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
+                    >
+                      <option value="none">নিষ্ক্রিয় (None)</option>
+                      <option value="know">পারি (Mark as Learned)</option>
+                      <option value="dont_know">পারি না (Mark as Not Learned)</option>
+                      <option value="confusion">কনফিউশন (Mark as Confused)</option>
+                      <option value="skip">স্কিপ / পরবর্তী শব্দ (Skip / Next)</option>
+                      <option value="flip">ফ্ল্যাশকার্ড উলটানো (Flip Flashcard)</option>
+                      <option value="google">গুগল সার্চ বাটন (Google Search)</option>
+                      <option value="audio">অডিও উচ্চারণ (Speak Audio)</option>
+                    </select>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

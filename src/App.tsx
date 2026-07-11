@@ -94,7 +94,17 @@ export default function App() {
       defaultSynonymOrder: parsed.defaultSynonymOrder || 'random',
       defaultSynonymTags: parsed.defaultSynonymTags || ['dont_know', 'unrated'],
       defaultQuizType: parsed.defaultQuizType || 'mcq_en_bn',
-      defaultMatchSize: parsed.defaultMatchSize || 8
+      defaultMatchSize: parsed.defaultMatchSize || 8,
+
+      // Default keyboard shortcuts mapping
+      shortcuts: parsed.shortcuts || {
+        'Space': 'flip',
+        'ArrowRight': 'know',
+        'ArrowLeft': 'dont_know',
+        'ArrowUp': 'confusion',
+        'ArrowDown': 'skip',
+        'Enter': 'audio'
+      }
     };
   });
 
