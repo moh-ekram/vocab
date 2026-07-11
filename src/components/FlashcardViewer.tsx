@@ -733,10 +733,10 @@ export default function FlashcardViewer({
                       </a>
                     </div>
                     {currentActiveWord.extraWord && (
-                      <div className="text-sm sm:text-base font-extrabold text-amber-800 font-sans select-none tracking-wide flex items-center justify-center gap-1.5 pt-1">
+                      <div className="text-sm sm:text-base font-extrabold text-[#009966] font-[Verdana] select-none tracking-wide flex items-center justify-center gap-1.5 pt-1">
                         <span>{currentActiveWord.extraWord}</span>
-                        <span className="text-amber-500 font-black">:</span>
-                        <span className="font-bold text-amber-700">{currentActiveWord.extraMeaning}</span>
+                        <span className="text-[#009966] font-black">:</span>
+                        <span className="font-bold text-[#009966]">{currentActiveWord.extraMeaning}</span>
                       </div>
                     )}
                   </div>
