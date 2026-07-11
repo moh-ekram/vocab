@@ -44,7 +44,7 @@ export interface AppSettings {
   shortcuts?: Record<string, string>;
 
   // Flashcard rotation animation
-  flashcardAnimation?: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom';
+  flashcardAnimation?: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom' | 'shuffle';
 }
 
 export interface StudySession {

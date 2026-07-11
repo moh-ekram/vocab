@@ -105,7 +105,7 @@ export default function AppSettingsView({
     });
   };
 
-  const handleAnimationChange = (anim: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom') => {
+  const handleAnimationChange = (anim: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom' | 'shuffle') => {
     onUpdateSettings({
       ...settings,
       flashcardAnimation: anim
@@ -254,13 +254,14 @@ export default function AppSettingsView({
                 ফ্ল্যাশকার্ডের পিঠ পরিবর্তন বা ঘোরার জন্য আপনার পছন্দের ট্রানজিশন অ্যানিমেশন সিলেক্ট করুন।
               </p>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 font-sans">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-1 font-sans">
                 {[
                   { key: 'flip-h' as const, label: '3D ফ্লিপ (H)', desc: 'ডান-বাম ঘূর্ণন' },
                   { key: 'flip-v' as const, label: '3D ফ্লিপ (V)', desc: 'উপর-নিচ ঘূর্ণন' },
                   { key: 'slide' as const, label: 'স্লাইড (Slide)', desc: 'মসৃণ স্লাইড' },
                   { key: 'fade' as const, label: 'ফেড (Fade)', desc: 'ধীরে প্রকাশ' },
-                  { key: 'zoom' as const, label: 'জুম (Zoom)', desc: 'ছোট-বড় হওয়া' }
+                  { key: 'zoom' as const, label: 'জুম (Zoom)', desc: 'ছোট-বড় হওয়া' },
+                  { key: 'shuffle' as const, label: 'এলোমেলো (Shuffle)', desc: 'র্যান্ডম অ্যানিমেশন' }
                 ].map(item => {
                   const currentAnim = settings.flashcardAnimation || 'flip-h';
                   const isSelected = currentAnim === item.key;

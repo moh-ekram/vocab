@@ -65,6 +65,9 @@ export default function FlashcardViewer({
   // Card orientation
   const [isFlipped, setIsFlipped] = useState(false);
 
+  // Random animation state for shuffle option
+  const [currentRandomAnim, setCurrentRandomAnim] = useState<'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom'>('flip-h');
+
   // Vocabulary Index State
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -326,9 +329,18 @@ export default function FlashcardViewer({
     }
   }, [currentActiveWord.id, settings?.autoPlayAudio]);
 
+  // Select a random animation if "shuffle" is configured
+  useEffect(() => {
+    if (settings?.flashcardAnimation === 'shuffle') {
+      const animations = ['flip-h', 'flip-v', 'slide', 'fade', 'zoom'] as const;
+      const randomIdx = Math.floor(Math.random() * animations.length);
+      setCurrentRandomAnim(animations[randomIdx]);
+    }
+  }, [currentActiveWord.id, settings?.flashcardAnimation]);
+
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
 
-  const animationType = settings?.flashcardAnimation || 'flip-h';
+  const animationType = settings?.flashcardAnimation === 'shuffle' ? currentRandomAnim : (settings?.flashcardAnimation || 'flip-h');
 
   // Determine stage & face class names based on animation type
   let outerWrapperClass = '';
