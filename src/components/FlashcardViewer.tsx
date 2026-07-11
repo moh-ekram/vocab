@@ -328,6 +328,47 @@ export default function FlashcardViewer({
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
 
+  const animationType = settings?.flashcardAnimation || 'flip-h';
+
+  // Determine stage & face class names based on animation type
+  let outerWrapperClass = '';
+  let frontFaceClass = '';
+  let backFaceClass = '';
+
+  if (animationType === 'flip-h') {
+    outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`;
+    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
+    backFaceClass = 'absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between';
+  } else if (animationType === 'flip-v') {
+    outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-x-180' : ''}`;
+    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
+    backFaceClass = 'absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-x-180 backface-hidden flex flex-col justify-between';
+  } else if (animationType === 'slide') {
+    outerWrapperClass = 'w-full h-full relative';
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-500 ease-in-out ${
+      isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+    }`;
+    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-500 ease-in-out ${
+      isFlipped ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
+    }`;
+  } else if (animationType === 'fade') {
+    outerWrapperClass = 'w-full h-full relative';
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-opacity duration-300 ease-in-out ${
+      isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'
+    }`;
+    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-opacity duration-300 ease-in-out ${
+      isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'
+    }`;
+  } else if (animationType === 'zoom') {
+    outerWrapperClass = 'w-full h-full relative';
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
+      isFlipped ? 'scale-75 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
+    }`;
+    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-300 ease-in-out ${
+      isFlipped ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'
+    }`;
+  }
+
   return (
     <div className="space-y-6" id="flashcard-viewer-container">
       {/* Top Filter and Customization Bar */}
@@ -653,42 +694,11 @@ export default function FlashcardViewer({
               className="group cursor-pointer perspective h-[28rem] relative w-full"
               id="vocabulary-card-stage"
             >
-              <div
-                className={`w-full h-full relative transition-transform duration-500 transform-style-3d ${
-                  isFlipped ? 'rotate-y-180' : ''
-                }`}
-              >
+              <div className={outerWrapperClass}>
                 {/* FRONT FACE (Word) */}
-                <div className="absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-extrabold text-xs rounded-lg font-sans">
-                      গ্রুপ {currentActiveWord.group} • শব্দ {currentIndex + 1} / {filteredWords.length}
-                    </span>
-
-                    {/* Active Tag indicator */}
-                    <div className="flex items-center gap-2">
-                      {activeStatus === 'know' && (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full font-sans">
-                          <CheckCircle className="w-3.5 h-3.5" /> পারি
-                        </span>
-                      )}
-                      {activeStatus === 'confusion' && (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full font-sans">
-                          <AlertTriangle className="w-3.5 h-3.5" /> কনফিউশন
-                        </span>
-                      )}
-                      {activeStatus === 'dont_know' && (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full font-sans">
-                          <XCircle className="w-3.5 h-3.5" /> পারি না
-                        </span>
-                      )}
-                      {activeStatus === 'unrated' && (
-                        <span className="text-xs text-slate-400 bg-slate-50 px-2.5 py-1 rounded-full font-sans">
-                          পড়া হয়নি
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                <div className={frontFaceClass}>
+                  {/* Spacer to keep layout centered */}
+                  <div className="h-8"></div>
 
                   {/* Main display word */}
                   <div className="text-center space-y-3">
@@ -732,11 +742,7 @@ export default function FlashcardViewer({
                   </div>
 
                   {/* Hints at footer */}
-                  <div className="flex justify-between items-center text-xs text-slate-400 font-sans border-t border-slate-100 pt-4">
-                    <span className="flex items-center gap-1 text-indigo-600 font-medium">
-                      <Sparkles className="w-4 h-4 text-indigo-500" />
-                      ক্লিক করুন উল্টানোর জন্য
-                    </span>
+                  <div className="flex justify-end items-center text-xs text-slate-400 font-sans border-t border-slate-100 pt-4">
                     <span className="flex items-center gap-1 font-mono text-[11px] text-slate-300">
                       ID: {currentActiveWord.id}
                     </span>
@@ -744,7 +750,7 @@ export default function FlashcardViewer({
                 </div>
 
                 {/* BACK FACE (Meaning & Synonyms) */}
-                <div className="absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between">
+                <div className={backFaceClass}>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center pb-1.5 border-b border-slate-100">
                       <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
@@ -828,10 +834,10 @@ export default function FlashcardViewer({
                   {/* Mark as Don't Know */}
                   <button
                     onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
                       activeStatus === 'dont_know'
-                        ? 'bg-rose-500 border-rose-600 text-white shadow-md shadow-rose-500/10'
-                        : 'bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-700'
+                        ? 'bg-red-500 border-red-600 text-white shadow-md shadow-red-500/10'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                     }`}
                   >
                     <XCircle className="w-4 h-4" />
@@ -841,10 +847,10 @@ export default function FlashcardViewer({
                   {/* Mark as Confusion */}
                   <button
                     onClick={() => rateAndMaybeConfirm('confusion', true)}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
                       activeStatus === 'confusion'
-                        ? 'bg-amber-400 border-amber-500 text-amber-950 shadow-md shadow-amber-500/10'
-                        : 'bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800'
+                        ? 'bg-amber-500 border-amber-600 text-white shadow-md shadow-amber-500/10'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                     }`}
                   >
                     <AlertTriangle className="w-4 h-4" />
@@ -854,10 +860,10 @@ export default function FlashcardViewer({
                   {/* Mark as Know */}
                   <button
                     onClick={() => rateAndMaybeConfirm('know', true)}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border ${
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
                       activeStatus === 'know'
-                        ? 'bg-indigo-600 border-indigo-700 text-white shadow-md shadow-indigo-500/15'
-                        : 'bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-800'
+                        ? 'bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/15'
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
                     }`}
                   >
                     <CheckCircle className="w-4 h-4" />
@@ -934,40 +940,48 @@ export default function FlashcardViewer({
               </div>
             </div>
 
-            {/* Folder / Bookmark Lists integration */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
+            {/* Status & Position tags replacing the old folder bookmark lists widget */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs space-y-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-3">
                 <Bookmark className="w-5 h-5 text-indigo-600" />
-                ফোল্ডার লিস্টে সেভ করুন
+                শব্দের অগ্রগতি ও স্থিতি
               </h3>
 
-              <div className="space-y-2.5 font-sans">
-                {folders.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-slate-400">
-                    কোনো কাস্টম ফোল্ডার নেই। বাম পাশের মেনু থেকে ফোল্ডার তৈরি করুন।
+              <div className="flex flex-col gap-3 font-sans pt-1">
+                {/* Tag 1: Group and Index position */}
+                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">শব্দের অবস্থান:</span>
+                  <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-extrabold text-xs rounded-lg border border-indigo-100 shadow-3xs">
+                    গ্রুপ {currentActiveWord.group} • শব্দ {currentIndex + 1} / {filteredWords.length}
+                  </span>
+                </div>
+
+                {/* Tag 2: Active Tag/Status */}
+                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ট্যাগ স্থিতি:</span>
+                  <div className="flex items-center">
+                    {activeStatus === 'know' && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-3xs">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> পারি
+                      </span>
+                    )}
+                    {activeStatus === 'confusion' && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-3xs">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> কনফিউশন
+                      </span>
+                    )}
+                    {activeStatus === 'dont_know' && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg shadow-3xs">
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" /> পারি না
+                      </span>
+                    )}
+                    {activeStatus === 'unrated' && (
+                      <span className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg shadow-3xs">
+                        পড়া হয়নি
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  folders.map(f => {
-                    const isBookmarked = (progress[currentActiveWord.id]?.bookmarks || []).includes(f.id);
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => onToggleBookmark(currentActiveWord.id, f.id)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-semibold border transition ${
-                          isBookmarked
-                            ? 'bg-indigo-50 border-indigo-300 text-indigo-800'
-                            : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: f.color }}></div>
-                          <span>{f.name}</span>
-                        </div>
-                        <Tag className={`w-4 h-4 ${isBookmarked ? 'fill-current text-indigo-600' : 'text-slate-300'}`} />
-                      </button>
-                    );
-                  })
-                )}
+                </div>
               </div>
             </div>
           </div>

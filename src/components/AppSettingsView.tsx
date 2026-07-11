@@ -105,6 +105,13 @@ export default function AppSettingsView({
     });
   };
 
+  const handleAnimationChange = (anim: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom') => {
+    onUpdateSettings({
+      ...settings,
+      flashcardAnimation: anim
+    });
+  };
+
   const triggerResetSettings = () => {
     if (confirm('আপনি কি সেটিংস ডিফল্ট মানে ফিরিয়ে নিতে চান?')) {
       onUpdateSettings({
@@ -123,7 +130,8 @@ export default function AppSettingsView({
           'ArrowUp': 'confusion',
           'ArrowDown': 'skip',
           'Enter': 'audio'
-        }
+        },
+        flashcardAnimation: 'flip-h'
       });
     }
   };
@@ -233,6 +241,42 @@ export default function AppSettingsView({
                     >
                       <span className="text-xs font-black font-sans">{item.label}</span>
                       <span className="text-[10px] text-slate-400 font-sans">{item.desc}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Default Flashcard Rotation Animation */}
+            <div className="space-y-2.5 pt-3 border-t border-slate-50">
+              <label className="block text-xs font-bold text-slate-700 font-sans">ফ্ল্যাশকার্ড রোটেশন অ্যানিমেশন (Card Flip Animation)</label>
+              <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                ফ্ল্যাশকার্ডের পিঠ পরিবর্তন বা ঘোরার জন্য আপনার পছন্দের ট্রানজিশন অ্যানিমেশন সিলেক্ট করুন।
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 font-sans">
+                {[
+                  { key: 'flip-h' as const, label: '3D ফ্লিপ (H)', desc: 'ডান-বাম ঘূর্ণন' },
+                  { key: 'flip-v' as const, label: '3D ফ্লিপ (V)', desc: 'উপর-নিচ ঘূর্ণন' },
+                  { key: 'slide' as const, label: 'স্লাইড (Slide)', desc: 'মসৃণ স্লাইড' },
+                  { key: 'fade' as const, label: 'ফেড (Fade)', desc: 'ধীরে প্রকাশ' },
+                  { key: 'zoom' as const, label: 'জুম (Zoom)', desc: 'ছোট-বড় হওয়া' }
+                ].map(item => {
+                  const currentAnim = settings.flashcardAnimation || 'flip-h';
+                  const isSelected = currentAnim === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleAnimationChange(item.key)}
+                      className={`p-2 rounded-xl border text-center transition cursor-pointer flex flex-col items-center justify-center gap-1 w-full ${
+                        isSelected
+                          ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 border-slate-200/80 text-slate-600'
+                      }`}
+                    >
+                      <span className="text-[11px] font-black font-sans">{item.label}</span>
+                      <span className="text-[9px] text-slate-400 font-sans">{item.desc}</span>
                     </button>
                   );
                 })}

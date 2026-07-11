@@ -104,7 +104,10 @@ export default function App() {
         'ArrowUp': 'confusion',
         'ArrowDown': 'skip',
         'Enter': 'audio'
-      }
+      },
+
+      // Default flashcard rotation animation
+      flashcardAnimation: parsed.flashcardAnimation || 'flip-h'
     };
   });
 

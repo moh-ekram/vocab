@@ -42,6 +42,9 @@ export interface AppSettings {
 
   // Keyboard Shortcuts Mapping: e.g. { "Space": "flip", "ArrowRight": "know" }
   shortcuts?: Record<string, string>;
+
+  // Flashcard rotation animation
+  flashcardAnimation?: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom';
 }
 
 export interface StudySession {
