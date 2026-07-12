@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Represents the user's study status, vocabulary learning progress, streak, goal settings, and custom bookmark folders.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "User's registered email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of user sign up."
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last study synchronization."
+        },
+        "progress": {
+          "type": "object",
+          "description": "Map of vocabulary word IDs to user's knowledge status, custom study notes, and bookmarks."
+        },
+        "goal": {
+          "type": "object",
+          "description": "User's study goals, target words count per day, current learning streak, and history logs."
+        },
+        "synonymProgress": {
+          "type": "object",
+          "description": "Progress of user's synonym check tests."
+        },
+        "folders": {
+          "type": "array",
+          "description": "List of user's custom folders/bookmarks for word categorization."
+        },
+        "settings": {
+          "type": "object",
+          "description": "User preferences for default flashcard orders, audio pronunciations, quiz length, etc."
+        }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Primary storage of individual user profiles containing all synchronized study data."
+    }
+  }
+}

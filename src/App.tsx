@@ -10,6 +10,7 @@ import CustomLists from './components/CustomLists';
 import SearchDictionary from './components/SearchDictionary';
 import DailyPlanner from './components/DailyPlanner';
 import AppSettingsView from './components/AppSettingsView';
+import AdminPanel from './components/AdminPanel';
 
 import {
   LayoutDashboard,
@@ -606,6 +607,20 @@ export default function App() {
               <span>সেটিংস ও ডিফল্ট</span>
             </button>
 
+            {user && user.email === 'mohammad.001ekram@gmail.com' && (
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition border border-dashed border-rose-200 ${
+                  activeTab === 'admin'
+                    ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500 animate-pulse'
+                    : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
+                }`}
+              >
+                <FolderLock className="w-4 h-4" />
+                <span>সিস্টেম এডমিন প্যানেল</span>
+              </button>
+            )}
+
             {/* Aligned Cloud Sync / Login Button under Daily Planner */}
             <div className="pt-3 border-t border-slate-100 mt-2 space-y-2.5">
               {user ? (
@@ -792,6 +807,10 @@ export default function App() {
               syncStatus={syncStatus}
               onForceSync={forceSyncToCloud}
             />
+          )}
+
+          {activeTab === 'admin' && user && user.email === 'mohammad.001ekram@gmail.com' && (
+            <AdminPanel words={vocabulary} />
           )}
         </div>
       </main>
