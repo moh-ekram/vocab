@@ -199,6 +199,10 @@ export default function StatsDashboard({
             const isActive = activeCourseId === c.id;
             const courseWords = c.words || [];
             const courseKnowCount = courseWords.filter(w => progress[w.id]?.status === 'know').length;
+            const courseDontKnowCount = courseWords.filter(w => progress[w.id]?.status === 'dont_know').length;
+            const courseConfusionCount = courseWords.filter(w => progress[w.id]?.status === 'confusion').length;
+            const courseUnratedCount = courseWords.length - courseKnowCount - courseDontKnowCount - courseConfusionCount;
+
             const coursePercent = courseWords.length > 0 ? Math.round((courseKnowCount / courseWords.length) * 100) : 0;
 
             return (
@@ -206,36 +210,69 @@ export default function StatsDashboard({
                 key={c.id}
                 whileHover={{ scale: 1.02, y: -2 }}
                 onClick={() => setActiveCourseId(c.id)}
-                className={`p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between h-36 ${
+                className={`p-4 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-4 min-h-[112px] h-auto py-4 ${
                   isActive
-                    ? 'bg-gradient-to-br from-indigo-50/50 to-indigo-100/20 border-indigo-200/80 shadow-md shadow-indigo-100/5 ring-1 ring-indigo-500/10'
-                    : 'bg-white border-slate-200 hover:border-slate-300'
+                    ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-1 ring-emerald-400/25'
+                    : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
                 }`}
               >
-                <div className="space-y-1.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-extrabold text-slate-800 text-sm leading-snug line-clamp-1">{c.title}</h4>
+                {/* Left Side: Title and Green/Indigo Status Tag */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
+                  <h4 className={`font-black tracking-tight leading-snug line-clamp-2 text-base md:text-lg lg:text-xl ${isActive ? 'text-white' : 'text-slate-850'}`} title={c.title}>
+                    {c.title}
+                  </h4>
+                  <div className="mt-2 flex items-center gap-2">
                     {isActive ? (
-                      <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-indigo-600 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs shadow-indigo-600/15">
+                      <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-white text-emerald-600 font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs">
                         <Check className="w-2.5 h-2.5" /> সক্রিয়
                       </span>
                     ) : (
-                      <span className="flex-shrink-0 text-[9px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded uppercase">ইনরোলড</span>
+                      <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs shadow-emerald-500/15">
+                        <Check className="w-2.5 h-2.5" /> ইনরোলড
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{c.description}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold font-mono">
-                    <span>শব্দসমূহ: {courseKnowCount} / {courseWords.length} টি</span>
-                    <span>{coursePercent}% সম্পন্ন</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${isActive ? 'bg-indigo-600' : 'bg-slate-400'}`}
-                      style={{ width: `${coursePercent}%` }}
-                    ></div>
+                {/* Right Side: Circular Border Progress matching overall learning distribution */}
+                <div className={`relative w-16 h-16 flex items-center justify-center flex-shrink-0 rounded-full p-1 border shadow-inner ${isActive ? 'bg-emerald-600/30 border-white/10' : 'bg-slate-50/50 border-slate-150/30'}`}>
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 50 50">
+                    {/* Base Background Circle */}
+                    <circle
+                      cx="25"
+                      cy="25"
+                      r="20"
+                      className={isActive ? 'stroke-white/20' : 'stroke-slate-100'}
+                      strokeWidth="4.5"
+                      fill="transparent"
+                    />
+                    
+                    {/* Progress Circle (Single completed arc matching overall distribution look) */}
+                    <motion.circle
+                      cx="25"
+                      cy="25"
+                      r="20"
+                      className={isActive ? 'text-white' : 'text-emerald-500'}
+                      strokeWidth="4.5"
+                      fill="transparent"
+                      pathLength="100"
+                      strokeDasharray="100"
+                      initial={{ strokeDashoffset: 100 }}
+                      animate={{ strokeDashoffset: 100 - coursePercent }}
+                      transition={{ duration: 1.2, ease: "easeOut" }}
+                      strokeLinecap="round"
+                      stroke="currentColor"
+                    />
+                  </svg>
+                  
+                  {/* Centered progress percentage text and count */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className={`text-xs font-black font-mono leading-none ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                      {coursePercent}%
+                    </span>
+                    <span className={`block text-[7px] font-extrabold uppercase leading-none mt-0.5 font-mono ${isActive ? 'text-emerald-100/90' : 'text-slate-400'}`}>
+                      {courseKnowCount}/{courseWords.length}
+                    </span>
                   </div>
                 </div>
               </motion.div>
@@ -618,19 +655,19 @@ export default function StatsDashboard({
             >
               {/* Progress background fill (two-color indicator) */}
               <div 
-                className="absolute top-0 left-0 bottom-0 bg-emerald-600/20 group-hover:bg-emerald-600/30 transition-all duration-300" 
+                className="absolute top-0 left-0 bottom-0 bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-all duration-300" 
                 style={{ width: `${g.percent}%` }} 
               />
               
               {/* Content */}
               <div className="relative z-10 flex items-center justify-between w-full font-sans">
                 <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                   গ্রুপ {g.group}
                 </span>
                 <div className="flex items-center gap-1 font-sans">
                   <span className="text-[9px] text-slate-400 font-medium">({g.total})</span>
-                  <span className="text-[11px] font-black text-emerald-800">{g.percent}%</span>
+                  <span className="text-[11px] font-black text-emerald-600">{g.percent}%</span>
                 </div>
               </div>
             </motion.button>
