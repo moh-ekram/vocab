@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   db, 
-  auth 
+  auth,
+  doc,
+  setDoc
 } from '../lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
-import { VocabularyWord, UserProgress } from '../types';
+import { collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { VocabularyWord, UserProgress, Course } from '../types';
+import { read, utils } from 'xlsx';
 import { 
   Users, 
   ShieldCheck, 
@@ -26,7 +29,12 @@ import {
   Copy, 
   Clock, 
   Sliders,
-  ChevronDown
+  ChevronDown,
+  UploadCloud,
+  FileSpreadsheet,
+  Trash2,
+  PlusCircle,
+  BookOpen
 } from 'lucide-react';
 
 interface FirestoreUserDoc {
@@ -101,6 +109,57 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   // Hardest words statistics across all users
   const [hardestWords, setHardestWords] = useState<{ word: VocabularyWord; count: number; type: 'confusion' | 'dont_know' }[]>([]);
 
+  // Course management and upload states
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses'>('users');
+  const [customCourses, setCustomCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
+
+  // New course form states
+  const [newCourseTitle, setNewCourseTitle] = useState('');
+  const [newCourseId, setNewCourseId] = useState('');
+  const [newCourseDesc, setNewCourseDesc] = useState('');
+  const [uploadedWords, setUploadedWords] = useState<VocabularyWord[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  // Fetch custom courses
+  const fetchCustomCourses = async () => {
+    setCoursesLoading(true);
+    setCoursesError(null);
+    try {
+      const qSnap = await getDocs(collection(db, 'courses'));
+      const list: Course[] = [];
+      qSnap.forEach(docSnap => {
+        list.push(docSnap.data() as Course);
+      });
+      setCustomCourses(list);
+    } catch (err) {
+      console.error('Error fetching custom courses:', err);
+      setCoursesError('ক্লাউড থেকে কোর্স তালিকা লোড করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomCourses();
+  }, []);
+
+  // Sync slug from title
+  useEffect(() => {
+    const slug = newCourseTitle
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '') // remove special chars
+      .replace(/[\s_]+/g, '-')  // replace spaces with hyphen
+      .replace(/^-+|-+$/g, ''); // trim outer hyphens
+    setNewCourseId(slug);
+  }, [newCourseTitle]);
+
+
   const fetchUsersData = async () => {
     setLoading(true);
     setError(null);
@@ -174,6 +233,183 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       .slice(0, 10);
 
     setHardestWords(sorted);
+  };
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const processFile = (file: File) => {
+    setUploadError(null);
+    setUploadedWords([]);
+    
+    if (!newCourseId) {
+      setUploadError('ফাইল আপলোড করার আগে কোর্সের নাম দিন।');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = utils.sheet_to_json(sheet) as any[];
+
+        if (rawRows.length === 0) {
+          setUploadError('এক্সেল শীটটিতে কোনো ডাটা পাওয়া যায়নি।');
+          return;
+        }
+
+        const wordsList: VocabularyWord[] = [];
+        let index = 1;
+
+        for (const row of rawRows) {
+          // Normalise keys to lowercase, trimming whitespaces
+          const rowKeys = Object.keys(row);
+          
+          const findKey = (candidates: string[]) => {
+            return rowKeys.find(k => {
+              const cleanK = k.toLowerCase().replace(/[\s_-]/g, '');
+              return candidates.some(c => cleanK === c || cleanK.includes(c));
+            });
+          };
+
+          const wordKey = findKey(['mainword', 'englishword', 'word', 'english']);
+          const meaningKey = findKey(['banglameaning', 'meaning', 'bangla', 'bengali']);
+          const groupKey = findKey(['groupnumber', 'group', 'groupno', 'groupid']);
+          const synonym1Key = findKey(['synonym1', 'syn1']);
+          const synonym2Key = findKey(['synonym2', 'syn2']);
+          const synonymsKey = findKey(['synonyms', 'synonym']);
+          const exampleKey = findKey(['example', 'sentence', 'examplesentence']);
+          const extraWordKey = findKey(['extraword']);
+          const extraMeaningKey = findKey(['extrameaning']);
+
+          const baseWord = wordKey ? String(row[wordKey]).trim() : '';
+          const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
+
+          if (!baseWord || !banglaMeaning) {
+            continue; // Skip invalid rows
+          }
+
+          const groupVal = groupKey ? parseInt(String(row[groupKey]).trim(), 10) : 1;
+          const group = isNaN(groupVal) ? 1 : groupVal;
+
+          let synonyms = '';
+          if (synonymsKey && row[synonymsKey]) {
+            synonyms = String(row[synonymsKey]).trim();
+          } else {
+            const synParts = [];
+            if (synonym1Key && row[synonym1Key]) synParts.push(String(row[synonym1Key]).trim());
+            if (synonym2Key && row[synonym2Key]) synParts.push(String(row[synonym2Key]).trim());
+            synonyms = synParts.join(', ');
+          }
+
+          const example = exampleKey ? String(row[exampleKey]).trim() : '';
+          const extraWord = extraWordKey ? String(row[extraWordKey]).trim() : '';
+          const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
+
+          wordsList.push({
+            id: `${newCourseId}_g${group}_w${index}`,
+            group,
+            word: baseWord,
+            meaning: banglaMeaning,
+            synonyms,
+            extraWord,
+            extraMeaning,
+            example
+          });
+
+          index++;
+        }
+
+        if (wordsList.length === 0) {
+          setUploadError('কলামগুলোর হেডার মিলছে না। অনুগ্রহ করে হেডার ‘main word’ এবং ‘bangla meaning’ কলাম দুটি রাখুন।');
+          return;
+        }
+
+        setUploadedWords(wordsList);
+      } catch (err) {
+        console.error(err);
+        setUploadError('ফাইল প্রসেস করতে ব্যর্থ হয়েছে। সঠিক এক্সেল (.xlsx / .xls) ফাইল দিন।');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleSaveCourse = async () => {
+    if (!newCourseTitle.trim() || !newCourseId.trim() || uploadedWords.length === 0) {
+      setSaveError('সবগুলো ফিল্ড পূরণ করুন এবং একটি ভ্যালিড এক্সেল ফাইল দিন।');
+      return;
+    }
+
+    setSaveStatus('saving');
+    setSaveError(null);
+
+    try {
+      // Find total number of unique groups in uploaded word list
+      const groups = new Set(uploadedWords.map(w => w.group));
+      const totalGroups = groups.size;
+
+      const courseData: Course = {
+        id: newCourseId,
+        title: newCourseTitle.trim(),
+        description: newCourseDesc.trim() || `${uploadedWords.length}টি শব্দের ভোকাবুলারি কোর্স।`,
+        totalGroups,
+        words: uploadedWords,
+        createdAt: new Date().toISOString(),
+        createdBy: auth.currentUser?.email || 'admin@gmail.com'
+      };
+
+      await setDoc(doc(db, 'courses', newCourseId), courseData);
+      
+      setSaveStatus('saved');
+      setNewCourseTitle('');
+      setNewCourseDesc('');
+      setUploadedWords([]);
+      fetchCustomCourses();
+    } catch (err) {
+      console.error('Error saving course to Firestore:', err);
+      setSaveStatus('error');
+      setSaveError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!window.confirm('আপনি কি নিশ্চিতভাবেই এই কোর্সটি ডিলিট করতে চান? সব ডাটা মুছে যাবে!')) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'courses', courseId));
+      fetchCustomCourses();
+      alert('কোর্সটি সফলভাবে ডিলিট করা হয়েছে!');
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      alert('কোর্সটি ডিলিট করতে ব্যর্থ হয়েছে।');
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -294,15 +530,43 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         </div>
       </div>
 
+      {/* Admin Tab Navigation */}
+      <div className="flex border-b border-slate-200">
+        <button
+          onClick={() => setActiveAdminTab('users')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'users'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>ব্যবহারকারী ও পরিসংখ্যান</span>
+        </button>
+        <button
+          onClick={() => setActiveAdminTab('courses')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'courses'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>কোর্স তৈরি ও আপলোড</span>
+        </button>
+      </div>
+
       {/* Main Grid: Directory & Hardest Words */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* User Directory Table Container */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden lg:col-span-2 flex flex-col">
-          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-base">ব্যবহারকারী ডিরেক্টরি</h3>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">সকল নিবন্ধিত শিক্ষার্থীদের তালিকা এবং পড়ার সংক্ষিপ্ত বিবরণী</p>
-            </div>
+      {activeAdminTab === 'users' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* User Directory Table Container */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden lg:col-span-2 flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-base">ব্যবহারকারী ডিরেক্টরি</h3>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">সকল নিবন্ধিত শিক্ষার্থীদের তালিকা এবং পড়ার সংক্ষিপ্ত বিবরণী</p>
+              </div>
+
 
             {/* Filter Sliders */}
             <div className="flex items-center gap-2">
@@ -532,6 +796,259 @@ export default function AdminPanel({ words }: AdminPanelProps) {
           </div>
         </div>
       </div>
+    ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn" id="course-admin-grid">
+        {/* Left Column: Enrolled and Created Courses */}
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden lg:col-span-2 flex flex-col p-6 space-y-6">
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-base">বিদ্যমান কোর্সসমূহ</h3>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">সিস্টেমের ডিফল্ট এবং আপনার আপলোড করা সকল ভোকাবুলারি কোর্সের তালিকা</p>
+          </div>
+
+          {coursesLoading ? (
+            <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
+              <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
+              <p className="text-xs font-bold">সার্ভার থেকে কোর্স ডাটাবেজ চেক করা হচ্ছে...</p>
+            </div>
+          ) : coursesError ? (
+            <div className="p-6 text-rose-500 border border-dashed border-rose-150 rounded-2xl text-xs font-bold text-center">
+              {coursesError}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Default course card */}
+              <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:bg-slate-50">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-slate-800 text-sm">GRE Vocabulary (Default)</h4>
+                    <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-black uppercase">সিস্টেম ডিফল্ট</span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">৩৮ গ্রুপের ১১১০টি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স।</p>
+                  <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
+                    <span>শব্দসংখ্যা: ১১১০ টি</span>
+                    <span>গ্রুপ: ৩৭ টি</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 font-extrabold font-mono uppercase bg-slate-100 px-2.5 py-1 rounded-lg">লকড (মুছা যাবে না)</span>
+                </div>
+              </div>
+
+              {/* Custom uploaded courses card list */}
+              {customCourses.length === 0 ? (
+                <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn">
+                  <BookOpen className="w-8 h-8 text-slate-300" />
+                  <div>
+                    <p className="font-bold text-slate-600">কোনো নতুন কোর্স এখনও তৈরি করা হয়নি।</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">ডানদিকের প্যানেল ব্যবহার করে একটি এক্সেল শীট আপলোড করে এখনই প্রথম কোর্স তৈরি করুন!</p>
+                  </div>
+                </div>
+              ) : (
+                customCourses.map(c => (
+                  <div key={c.id} className="p-5 border border-slate-150 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-extrabold text-slate-800 text-sm">{c.title}</h4>
+                        <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium">{c.description}</p>
+                      <div className="text-[10px] text-slate-400 font-bold flex gap-4 font-mono">
+                        <span>শব্দসংখ্যা: {c.words?.length || 0} টি</span>
+                        <span>গ্রুপ: {c.totalGroups} টি</span>
+                        <span>تৈরি করেছেন: {c.createdBy || 'Unknown'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => handleDeleteCourse(c.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>মুছে ফেলুন</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Upload Form */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-5">
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-indigo-600" />
+                <span>নতুন কোর্স আপলোড ও তৈরি</span>
+              </h3>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">এক্সেল শীট আপলোড দিয়ে কোর্স ও কন্টেন্ট অটো-জেনারেট করুন</p>
+            </div>
+
+            {/* Course Info Form Inputs */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 block">কোর্সের নাম (Course Title) <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={newCourseTitle}
+                  onChange={(e) => setNewCourseTitle(e.target.value)}
+                  placeholder="যেমন: IELTS 500 High-Frequency Words"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 block">কোর্স আইডি (ID / URL Slug)</label>
+                <input
+                  type="text"
+                  disabled
+                  value={newCourseId}
+                  placeholder="কোর্সের নামের উপর ভিত্তি করে অটো-জেনারেট হবে"
+                  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none text-xs font-mono font-bold text-slate-500 cursor-not-allowed"
+                />
+                <span className="text-[9px] text-slate-400 block font-semibold leading-relaxed">আইডিটি ক্লাউড এবং ডাটাবেজ আইডেন্টিফায়ার হিসেবে ব্যবহৃত হবে।</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 block">কোর্সের বর্ণনা (Description)</label>
+                <textarea
+                  rows={2}
+                  value={newCourseDesc}
+                  onChange={(e) => setNewCourseDesc(e.target.value)}
+                  placeholder="কোর্সটির ব্যাপারে সংক্ষিপ্ত তথ্য দিন যা শিক্ষার্থীরা দেখতে পাবে।"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Excel Drag and Drop / Select Zone */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-600 block">এক্সেল শীট আপলোড (.xlsx / .xls) <span className="text-rose-500">*</span></label>
+              
+              <div
+                onDragEnter={handleDrag}
+                onDragOver={handleDrag}
+                onDragLeave={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                  dragActive 
+                    ? "border-indigo-500 bg-indigo-50/50" 
+                    : "border-slate-200 hover:border-slate-300 bg-slate-50/40 hover:bg-slate-50/75"
+                }`}
+                onClick={() => document.getElementById('excel-file-picker')?.click()}
+              >
+                <UploadCloud className="w-8 h-8 text-slate-400 animate-pulse" />
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-slate-700">ক্লিক করে অথবা ড্র্যাগ করে ফাইল নির্বাচন করুন</p>
+                  <p className="text-[10px] text-slate-400 font-semibold">সমর্থিত ফরম্যাট: .xlsx, .xls</p>
+                </div>
+                <input
+                  id="excel-file-picker"
+                  type="file"
+                  accept=".xlsx, .xls"
+                  className="hidden"
+                  onChange={handleFileInputChange}
+                />
+              </div>
+            </div>
+
+            {/* Requirement guidelines column checker */}
+            <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl space-y-2 text-[10px] text-slate-500">
+              <span className="font-extrabold text-slate-700 block text-xs">প্রয়োজনীয় কলাম হেডারসমূহ (Case-Insensitive):</span>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-bold">
+                <span className="text-emerald-600 flex items-center gap-1">• main word</span>
+                <span className="text-emerald-600 flex items-center gap-1">• bangla meaning</span>
+                <span className="text-slate-600 flex items-center gap-1">• group number</span>
+                <span className="text-slate-450 flex items-center gap-1">• synonym1 (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• synonym2 (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• example (ঐচ্ছিক)</span>
+              </div>
+            </div>
+
+            {/* Parse/Upload Error */}
+            {uploadError && (
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-[11px] text-rose-600 font-bold leading-relaxed flex gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+
+            {/* Save Status / Errors */}
+            {saveStatus === 'saved' && (
+              <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-[11px] text-emerald-700 font-bold flex gap-2">
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                <span>কোর্সটি সফলভাবে তৈরি ও ক্লাউড ডাটাবেজে সংরক্ষণ করা হয়েছে!</span>
+              </div>
+            )}
+
+            {saveStatus === 'error' && (
+              <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-[11px] text-rose-600 font-bold flex gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>কোর্স সেভ করতে ভুল হয়েছে: {saveError}</span>
+              </div>
+            )}
+
+            {/* Uploaded Words Preview Table */}
+            {uploadedWords.length > 0 && (
+              <div className="space-y-3.5 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center text-xs font-extrabold text-slate-700">
+                  <span>শব্দ তালিকা প্রিভিউ ({uploadedWords.length} টি শব্দ)</span>
+                  <span className="text-emerald-600 font-bold">সব কলাম ভ্যালিড</span>
+                </div>
+
+                {/* Micro table of first 4 items */}
+                <div className="border border-slate-150 rounded-xl overflow-hidden text-[10px] font-sans">
+                  <table className="w-full text-left">
+                    <thead className="bg-slate-50 border-b border-slate-150 text-slate-500 font-bold uppercase tracking-wider">
+                      <tr>
+                        <th className="p-2">শব্দ (Word)</th>
+                        <th className="p-2">অর্থ (Meaning)</th>
+                        <th className="p-2 text-center">গ্রুপ (Group)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {uploadedWords.slice(0, 4).map((w, index) => (
+                        <tr key={index} className="hover:bg-slate-50/50 transition font-medium">
+                          <td className="p-2 font-black text-slate-800">{w.word}</td>
+                          <td className="p-2 text-slate-600 truncate max-w-[120px]">{w.meaning}</td>
+                          <td className="p-2 text-center font-mono font-bold text-slate-500">{w.group}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {uploadedWords.length > 4 && (
+                    <div className="p-2 bg-slate-50 text-center text-[10px] font-bold text-slate-400 border-t border-slate-100">
+                      আরও {uploadedWords.length - 4}টি শব্দ আপলোড তালিকায় রয়েছে...
+                    </div>
+                  )}
+                </div>
+
+                {/* Submission triggers */}
+                <button
+                  disabled={saveStatus === 'saving' || !newCourseTitle.trim()}
+                  onClick={handleSaveCourse}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-98 disabled:bg-slate-200 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/10 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {saveStatus === 'saving' ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>আপলোড করা হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="w-4 h-4" />
+                      <span>আপলোড ও কোর্স তৈরি করুন</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
 
       {/* User Details Slideover / Modal */}
       {selectedUser && (

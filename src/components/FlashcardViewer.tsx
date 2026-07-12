@@ -43,12 +43,23 @@ export default function FlashcardViewer({
   settings
 }: FlashcardViewerProps) {
   // Filter States
+  const maxGroupNum = words.length > 0 ? Math.max(...words.map(w => w.group)) : 37;
+
   const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
     if (initialGroup) {
       return [initialGroup];
     }
-    return Array.from({ length: 37 }, (_, i) => i + 1);
+    return Array.from({ length: maxGroupNum }, (_, i) => i + 1);
   });
+
+  useEffect(() => {
+    if (initialGroup) {
+      setSelectedGroups([initialGroup]);
+    } else {
+      setSelectedGroups(Array.from({ length: maxGroupNum }, (_, i) => i + 1));
+    }
+  }, [words, initialGroup, maxGroupNum]);
+
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
     return settings?.defaultFlashcardTags || ['dont_know'];
@@ -129,7 +140,7 @@ export default function FlashcardViewer({
     let result = [...words];
 
     // Filter by multiple selected groups
-    if (selectedGroups.length < 37) {
+    if (selectedGroups.length < maxGroupNum) {
       result = result.filter(w => selectedGroups.includes(w.group));
     }
 
@@ -396,8 +407,8 @@ export default function FlashcardViewer({
               className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
             >
               <span className="truncate max-w-[160px]">
-                {selectedGroups.length === 37 
-                  ? 'সকল গ্রুপ (১-৩৭)' 
+                {selectedGroups.length === maxGroupNum 
+                  ? `সকল গ্রুপ (১-${maxGroupNum})` 
                   : selectedGroups.length === 0 
                   ? 'কোনো গ্রুপ নেই' 
                   : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
@@ -417,7 +428,7 @@ export default function FlashcardViewer({
                     <div className="flex gap-2 text-[10px]">
                       <button
                         type="button"
-                        onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
+                        onClick={() => setSelectedGroups(Array.from({ length: maxGroupNum }, (_, i) => i + 1))}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
                         সব সিলেক্ট
@@ -433,9 +444,9 @@ export default function FlashcardViewer({
                     </div>
                   </div>
 
-                  {/* Grid of 37 Groups */}
+                  {/* Grid of Groups */}
                   <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {Array.from({ length: 37 }, (_, i) => {
+                    {Array.from({ length: maxGroupNum }, (_, i) => {
                       const gNum = i + 1;
                       const isSelected = selectedGroups.includes(gNum);
                       return (

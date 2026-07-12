@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { VocabularyWord, WordStatus, UserProgress, StudyGoal } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search } from 'lucide-react';
+import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface StatsDashboardProps {
@@ -9,10 +9,28 @@ interface StatsDashboardProps {
   goal: StudyGoal;
   setGoal: React.Dispatch<React.SetStateAction<StudyGoal>>;
   onSelectGroup: (group: number) => void;
+  allCourses: Course[];
+  enrolledCourseIds: string[];
+  activeCourseId: string;
+  setActiveCourseId: (id: string) => void;
+  setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-export default function StatsDashboard({ words, progress, goal, setGoal, onSelectGroup }: StatsDashboardProps) {
+export default function StatsDashboard({ 
+  words, 
+  progress, 
+  goal, 
+  setGoal, 
+  onSelectGroup,
+  allCourses,
+  enrolledCourseIds,
+  activeCourseId,
+  setActiveCourseId,
+  setEnrolledCourseIds
+}: StatsDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+
 
   // 1. Calculate overall counts
   const totalWords = words.length;
@@ -31,8 +49,9 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
 
   const overallCompleteness = totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0;
 
-  // 2. Group wise statistics
-  const groupStats = Array.from({ length: 37 }, (_, i) => {
+  // 2. Group wise statistics (dynamic number of groups based on current words list)
+  const maxGroupNum = words.length > 0 ? Math.max(...words.map(w => w.group)) : 0;
+  const groupStats = Array.from({ length: maxGroupNum }, (_, i) => {
     const groupNum = i + 1;
     const groupWords = words.filter(w => w.group === groupNum);
     const total = groupWords.length;
@@ -57,7 +76,7 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
       confusion: groupConfusion,
       percent: completionPercent
     };
-  });
+  }).filter(g => g.total > 0);
 
   // Filter groups
   const filteredGroups = groupStats.filter(g => {
@@ -158,6 +177,146 @@ export default function StatsDashboard({ words, progress, goal, setGoal, onSelec
           </div>
         </div>
       </motion.div>
+
+      {/* Course Enrollment & Active Course Selection */}
+      <motion.div variants={itemVariants} className="space-y-4" id="dashboard-courses-section">
+        <div className="flex justify-between items-center">
+          <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-indigo-600" />
+            <span>আমার এনরোলড কোর্সসমূহ (My Courses)</span>
+          </h3>
+          <button
+            onClick={() => setShowEnrollModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100/85 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>নতুন কোর্স যোগ করুন</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {allCourses.filter(c => enrolledCourseIds.includes(c.id)).map(c => {
+            const isActive = activeCourseId === c.id;
+            const courseWords = c.words || [];
+            const courseKnowCount = courseWords.filter(w => progress[w.id]?.status === 'know').length;
+            const coursePercent = courseWords.length > 0 ? Math.round((courseKnowCount / courseWords.length) * 100) : 0;
+
+            return (
+              <motion.div
+                key={c.id}
+                whileHover={{ scale: 1.02, y: -2 }}
+                onClick={() => setActiveCourseId(c.id)}
+                className={`p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between h-36 ${
+                  isActive
+                    ? 'bg-gradient-to-br from-indigo-50/50 to-indigo-100/20 border-indigo-200/80 shadow-md shadow-indigo-100/5 ring-1 ring-indigo-500/10'
+                    : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-extrabold text-slate-800 text-sm leading-snug line-clamp-1">{c.title}</h4>
+                    {isActive ? (
+                      <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-indigo-600 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs shadow-indigo-600/15">
+                        <Check className="w-2.5 h-2.5" /> সক্রিয়
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 text-[9px] text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded uppercase">ইনরোলড</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{c.description}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold font-mono">
+                    <span>শব্দসমূহ: {courseKnowCount} / {courseWords.length} টি</span>
+                    <span>{coursePercent}% সম্পন্ন</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-500 ${isActive ? 'bg-indigo-600' : 'bg-slate-400'}`}
+                      style={{ width: `${coursePercent}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Enroll New Course Dialog/Modal */}
+      {showEnrollModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in animate-duration-200" id="course-enroll-modal">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[85vh] flex flex-col font-sans">
+            <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-1.5">
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
+                  নতুন কোর্সে এনরোল করুন
+                </h3>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">আপনার শব্দভাণ্ডার বৃদ্ধি করতে আরও কোর্স শুরু করুন</p>
+              </div>
+              <button 
+                onClick={() => setShowEnrollModal(false)}
+                className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {allCourses.filter(c => !enrolledCourseIds.includes(c.id)).length === 0 ? (
+                <div className="p-8 text-center text-slate-400 font-bold border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2">
+                  <Check className="w-8 h-8 text-emerald-500 bg-emerald-50 p-1.5 rounded-full" />
+                  <div>
+                    <p className="text-slate-700">আপনি ইতিমধ্যেই সব কোর্সে যুক্ত আছেন!</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">নতুন নতুন কোর্স অ্যাডমিন প্যানেল থেকে আপলোড করার সাথে সাথেই এখানে তালিকাভুক্ত হয়ে যাবে।</p>
+                  </div>
+                </div>
+              ) : (
+                allCourses.filter(c => !enrolledCourseIds.includes(c.id)).map(c => {
+                  const courseWords = c.words || [];
+                  return (
+                    <div key={c.id} className="p-4 border border-slate-150 hover:border-slate-200 rounded-2xl bg-white flex flex-col justify-between gap-4 transition hover:shadow-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="font-extrabold text-slate-800 text-sm leading-snug">{c.title}</h4>
+                          <span className="text-[9px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-black font-mono uppercase">{c.id}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">{c.description}</p>
+                        <div className="text-[10px] text-slate-400 font-extrabold font-mono pt-1">
+                          শব্দসংখ্যা: {courseWords.length} টি • গ্রুপসমূহ: {c.totalGroups} টি
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEnrolledCourseIds(prev => [...prev, c.id]);
+                          // Automatically set the newly enrolled course as active
+                          setActiveCourseId(c.id);
+                          setShowEnrollModal(false);
+                        }}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>এনরোল করুন ও পড়া শুরু করুন</span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <button
+                onClick={() => setShowEnrollModal(false)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                বন্ধ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Statistics Cards */}
       <motion.div 

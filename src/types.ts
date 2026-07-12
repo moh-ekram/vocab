@@ -6,6 +6,7 @@ export interface VocabularyWord {
   synonyms: string; // Synonyms
   extraWord: string; // Word from extra column
   extraMeaning: string; // Meaning from extra column
+  example?: string; // Optional usage sentence/example
 }
 
 export type WordStatus = 'know' | 'dont_know' | 'confusion' | 'unrated'; // 'পারি', 'পারি না', 'কনফিউশন', 'Unrated'
@@ -60,3 +61,15 @@ export interface StudyGoal {
   lastActiveDate?: string;
   history: Record<string, number>; // date YYYY-MM-DD -> words studied count
 }
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  totalGroups: number;
+  words: VocabularyWord[];
+  isDefault?: boolean;
+  createdAt: string;
+  createdBy: string;
+}
+

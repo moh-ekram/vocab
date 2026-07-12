@@ -41,6 +41,8 @@ import {
   signOut,
   User as FirebaseUser
 } from './lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { Course } from './types';
 import AuthModal from './components/AuthModal';
 
 const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
@@ -48,12 +50,26 @@ const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
 const LOCAL_STORAGE_GOALS_KEY = 'vocab_memorizer_goals_v2';
 const LOCAL_STORAGE_SYNONYM_PROGRESS_KEY = 'vocab_memorizer_synonym_progress_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'vocab_memorizer_settings_v3';
+const LOCAL_STORAGE_ENROLLED_COURSES_KEY = 'vocab_memorizer_enrolled_courses_v2';
+const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | null>(null);
 
   // --- PERSISTED STATES ---
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY);
+    return saved ? JSON.parse(saved) : ['gre'];
+  });
+
+  const [activeCourseId, setActiveCourseId] = useState<string>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY);
+    return saved ? saved : 'gre';
+  });
+
+  const [customCourses, setCustomCourses] = useState<Course[]>([]);
+
   const [progress, setProgress] = useState<Record<string, UserProgress>>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_PROGRESS_KEY);
     return saved ? JSON.parse(saved) : {};
@@ -139,6 +155,29 @@ export default function App() {
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
 
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY, JSON.stringify(enrolledCourseIds));
+  }, [enrolledCourseIds]);
+
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY, activeCourseId);
+  }, [activeCourseId]);
+
+  // Live listener for Custom Courses
+  useEffect(() => {
+    const coursesRef = collection(db, 'courses');
+    const unsubscribe = onSnapshot(coursesRef, (snapshot) => {
+      const loaded: Course[] = [];
+      snapshot.forEach(doc => {
+        loaded.push({ id: doc.id, ...doc.data() } as Course);
+      });
+      setCustomCourses(loaded);
+    }, (error) => {
+      console.error("Error reading courses collection inside App:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Auth State Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -174,6 +213,12 @@ export default function App() {
             if (data.settings) {
               setSettings(prev => ({ ...prev, ...data.settings }));
             }
+            if (data.enrolledCourseIds && Array.isArray(data.enrolledCourseIds)) {
+              setEnrolledCourseIds(data.enrolledCourseIds);
+            }
+            if (data.activeCourseId) {
+              setActiveCourseId(data.activeCourseId);
+            }
             setSyncStatus('synced');
           } else {
             // New user signup: back up current local state to cloud immediately
@@ -183,6 +228,8 @@ export default function App() {
               goal,
               synonymProgress,
               settings,
+              enrolledCourseIds,
+              activeCourseId,
               email: currentUser.email,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
@@ -226,6 +273,8 @@ export default function App() {
           goal,
           synonymProgress,
           settings,
+          enrolledCourseIds,
+          activeCourseId,
           email: user.email,
           updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -241,7 +290,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, settings, user]);
+  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, user]);
 
   const forceSyncToCloud = async () => {
     if (!user) return;
@@ -253,6 +302,8 @@ export default function App() {
         goal,
         synonymProgress,
         settings,
+        enrolledCourseIds,
+        activeCourseId,
         email: user.email,
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -297,6 +348,12 @@ export default function App() {
           quizLength: 10
         });
 
+        const savedEnrolled = localStorage.getItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY);
+        setEnrolledCourseIds(savedEnrolled ? JSON.parse(savedEnrolled) : ['gre']);
+
+        const savedActive = localStorage.getItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY);
+        setActiveCourseId(savedActive ? savedActive : 'gre');
+
         setUser(null);
       } catch (err) {
         console.error('Log out failed:', err);
@@ -338,6 +395,23 @@ export default function App() {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
+
+  // --- COURSE RESOLVERS ---
+  const defaultGreCourse: Course = {
+    id: 'gre',
+    title: 'GRE Vocabulary',
+    description: '৩৮ গ্রুপের ১১লোটি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স (Default)',
+    totalGroups: 37,
+    words: vocabulary,
+    isDefault: true,
+    createdAt: new Date('2026-01-01').toISOString(),
+    createdBy: 'system'
+  };
+
+  const allCourses: Course[] = [defaultGreCourse, ...customCourses];
+
+  const activeCourse = allCourses.find(c => c.id === activeCourseId) || defaultGreCourse;
+  const activeWords = activeCourse.words || [];
 
   // --- DATABASE STATE HANDLERS ---
 
@@ -695,7 +769,7 @@ export default function App() {
             <span>প্রগ্রেস রিসেট করুন</span>
           </button>
           <div className="text-center text-[10px] text-slate-400 font-mono">
-            v2.4.0 • 1110 Vocab Words
+            v2.5.0 • {activeWords.length} Vocab Words ({activeCourseId.toUpperCase()})
           </div>
         </div>
       </aside>
@@ -705,10 +779,15 @@ export default function App() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <StatsDashboard
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               goal={goal}
               setGoal={setGoal}
+              allCourses={allCourses}
+              enrolledCourseIds={enrolledCourseIds}
+              activeCourseId={activeCourseId}
+              setActiveCourseId={setActiveCourseId}
+              setEnrolledCourseIds={setEnrolledCourseIds}
               onSelectGroup={(gNum) => {
                 setSelectedGroupFromDash(gNum);
                 setActiveTab('flashcard');
@@ -718,7 +797,7 @@ export default function App() {
 
           {activeTab === 'flashcard' && (
             <FlashcardViewer
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               folders={folders}
               onRateWord={handleRateWord}
@@ -731,7 +810,7 @@ export default function App() {
 
           {activeTab === 'synonym' && (
             <SynonymCheck
-              words={vocabulary}
+              words={activeWords}
               synonymProgress={synonymProgress}
               onUpdateSynonymProgress={handleUpdateSynonymProgress}
               activeGroup={selectedGroupFromDash}
@@ -746,7 +825,7 @@ export default function App() {
 
           {activeTab === 'quiz' && (
             <PracticeQuiz
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               onRateWord={handleRateWord}
               activeGroup={selectedGroupFromDash}
@@ -756,7 +835,7 @@ export default function App() {
 
           {activeTab === 'match' && (
             <WordMatchGame
-              words={vocabulary}
+              words={activeWords}
               activeGroup={selectedGroupFromDash}
               settings={settings}
             />
@@ -764,7 +843,7 @@ export default function App() {
 
           {activeTab === 'dictionary' && (
             <SearchDictionary
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               folders={folders}
               onRateWord={handleRateWord}
@@ -776,7 +855,7 @@ export default function App() {
           {activeTab === 'lists' && (
             <CustomLists
               folders={folders}
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               onCreateFolder={handleCreateFolder}
               onDeleteFolder={handleDeleteFolder}
@@ -787,7 +866,7 @@ export default function App() {
 
           {activeTab === 'planner' && (
             <DailyPlanner
-              words={vocabulary}
+              words={activeWords}
               progress={progress}
               goal={goal}
               setGoal={setGoal}
@@ -810,7 +889,7 @@ export default function App() {
           )}
 
           {activeTab === 'admin' && user && user.email === 'mohammad.001ekram@gmail.com' && (
-            <AdminPanel words={vocabulary} />
+            <AdminPanel words={activeWords} />
           )}
         </div>
       </main>
