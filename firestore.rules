@@ -14,11 +14,11 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write: if isAdmin();
       
       match /{allSubcollections=**} {
-        allow read: if request.auth != null;
+        allow read: if true;
         allow write: if isAdmin();
       }
     }
