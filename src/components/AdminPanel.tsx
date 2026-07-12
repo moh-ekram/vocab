@@ -998,31 +998,68 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                   <span className="text-emerald-600 font-bold">সব কলাম ভ্যালিড</span>
                 </div>
 
-                {/* Micro table of first 4 items */}
-                <div className="border border-slate-150 rounded-xl overflow-hidden text-[10px] font-sans">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-150 text-slate-500 font-bold uppercase tracking-wider">
-                      <tr>
-                        <th className="p-2">শব্দ (Word)</th>
-                        <th className="p-2">অর্থ (Meaning)</th>
-                        <th className="p-2 text-center">গ্রুপ (Group)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {uploadedWords.slice(0, 4).map((w, index) => (
-                        <tr key={index} className="hover:bg-slate-50/50 transition font-medium">
-                          <td className="p-2 font-black text-slate-800">{w.word}</td>
-                          <td className="p-2 text-slate-600 truncate max-w-[120px]">{w.meaning}</td>
-                          <td className="p-2 text-center font-mono font-bold text-slate-500">{w.group}</td>
+                {/* Excel Spreadsheet Style Large Overview Grid */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden text-[11px] font-sans shadow-xs bg-white">
+                  {/* Grid Header Info */}
+                  <div className="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-[10px] font-bold text-slate-500 font-mono">
+                    <span className="flex items-center gap-1.5 text-indigo-600">
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      SPREADSHEET VIEWER (GRID)
+                    </span>
+                    <span className="bg-slate-200/80 px-2 py-0.5 rounded text-slate-600">
+                      COLS: A - G • ROWS: 1 - {uploadedWords.length}
+                    </span>
+                  </div>
+
+                  {/* Horizontally and Vertically scrollable table viewport */}
+                  <div className="overflow-auto max-h-[350px] w-full" id="excel-spreadsheet-grid-viewport">
+                    <table className="w-full border-collapse text-left min-w-[900px]">
+                      <thead>
+                        {/* Excel Letter Row */}
+                        <tr className="bg-slate-50 border-b border-slate-200 divide-x divide-slate-200 text-center font-mono text-[9px] text-slate-400 font-bold h-6">
+                          <th className="w-10 bg-slate-100 sticky left-0 z-10 border-r border-slate-200">#</th>
+                          <th className="px-2 w-1/8">A (Word)</th>
+                          <th className="px-2 w-1/6">B (Meaning)</th>
+                          <th className="px-2 w-12 text-center">C (Group)</th>
+                          <th className="px-2 w-1/5">D (Synonyms)</th>
+                          <th className="px-2 w-1/8">E (Extra Word)</th>
+                          <th className="px-2 w-1/8">F (Extra Meaning)</th>
+                          <th className="px-2">G (Example Sentence)</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {uploadedWords.length > 4 && (
-                    <div className="p-2 bg-slate-50 text-center text-[10px] font-bold text-slate-400 border-t border-slate-100">
-                      আরও {uploadedWords.length - 4}টি শব্দ আপলোড তালিকায় রয়েছে...
-                    </div>
-                  )}
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 font-sans">
+                        {uploadedWords.slice(0, 50).map((w, index) => (
+                          <tr key={index} className="hover:bg-indigo-50/20 divide-x divide-slate-150 transition h-8 text-[11px]">
+                            {/* Row counter (Excel style sticky left column) */}
+                            <td className="bg-slate-100 border-r border-slate-200 text-slate-400 text-center font-mono font-bold sticky left-0 z-10 w-10 select-none">
+                              {index + 1}
+                            </td>
+                            {/* Columns A to G */}
+                            <td className="p-1.5 font-bold text-slate-800 truncate max-w-[120px]" title={w.word}>{w.word}</td>
+                            <td className="p-1.5 font-medium text-slate-700 truncate max-w-[180px]" title={w.meaning}>{w.meaning}</td>
+                            <td className="p-1.5 text-center font-mono font-black text-indigo-600">{w.group}</td>
+                            <td className="p-1.5 text-slate-500 truncate max-w-[180px]" title={w.synonyms}>{w.synonyms || <span className="text-slate-300 italic">none</span>}</td>
+                            <td className="p-1.5 text-emerald-700 font-semibold truncate max-w-[100px]" title={w.extraWord}>{w.extraWord || <span className="text-slate-300">--</span>}</td>
+                            <td className="p-1.5 text-emerald-600 truncate max-w-[120px]" title={w.extraMeaning}>{w.extraMeaning || <span className="text-slate-300">--</span>}</td>
+                            <td className="p-1.5 text-slate-550 font-sans italic truncate max-w-[280px]" title={w.example}>{w.example || <span className="text-slate-300">--</span>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Showing summary of rows */}
+                  <div className="p-2 bg-slate-50 text-center text-[10px] font-bold text-slate-400 border-t border-slate-200 font-mono">
+                    {uploadedWords.length > 50 ? (
+                      <span>
+                        PREVIEWING FIRST 50 ROWS • TOTAL ROWS IN SHEET: {uploadedWords.length}
+                      </span>
+                    ) : (
+                      <span>
+                        PREVIEWING ALL {uploadedWords.length} ROWS OF THE SPREADSHEET
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Submission triggers */}

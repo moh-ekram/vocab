@@ -810,16 +810,25 @@ export default function FlashcardViewer({
 
                     {/* Example Sentences */}
                     <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
-                      {sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0 ? (
+                      {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
                         <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
-                          {sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
-                            <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
+                          {currentActiveWord.example ? (
+                            <div className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
                               <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
                               <p className="flex-1">
-                                {renderSentence(sent)}
+                                {renderSentence(currentActiveWord.example)}
                               </p>
                             </div>
-                          ))}
+                          ) : (
+                            sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
+                              <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
+                                <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
+                                <p className="flex-1">
+                                  {renderSentence(sent)}
+                                </p>
+                              </div>
+                            ))
+                          )}
                         </div>
                       ) : (
                         <p className="text-xs text-slate-450 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
