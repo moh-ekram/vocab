@@ -102,14 +102,14 @@ export default function App() {
     const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
     const parsed = saved ? JSON.parse(saved) : {};
     return {
-      defaultFlashcardTags: parsed.defaultFlashcardTags || ['dont_know'],
+      defaultFlashcardTags: parsed.defaultFlashcardTags || ['know', 'confusion', 'dont_know', 'unrated'],
       defaultFlashcardOrder: parsed.defaultFlashcardOrder || 'random',
       autoPlayAudio: !!parsed.autoPlayAudio,
       quizLength: parsed.quizLength || 10,
       
       // New custom default settings fields
       defaultSynonymOrder: parsed.defaultSynonymOrder || 'random',
-      defaultSynonymTags: parsed.defaultSynonymTags || ['dont_know', 'unrated'],
+      defaultSynonymTags: parsed.defaultSynonymTags || ['know', 'dont_know', 'unrated'],
       defaultQuizType: parsed.defaultQuizType || 'mcq_en_bn',
       defaultMatchSize: parsed.defaultMatchSize || 8,
 
@@ -124,7 +124,10 @@ export default function App() {
       },
 
       // Default flashcard rotation animation
-      flashcardAnimation: parsed.flashcardAnimation || 'flip-h'
+      flashcardAnimation: parsed.flashcardAnimation || 'flip-h',
+
+      // Default colorize main word setting
+      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true
     };
   });
 

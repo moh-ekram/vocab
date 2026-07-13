@@ -62,7 +62,7 @@ export default function FlashcardViewer({
 
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
-    return settings?.defaultFlashcardTags || ['dont_know'];
+    return settings?.defaultFlashcardTags || ['know', 'confusion', 'dont_know', 'unrated'];
   });
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
@@ -354,6 +354,27 @@ export default function FlashcardViewer({
   }, [currentActiveWord.id, settings?.flashcardAnimation]);
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
+  const shouldColorize = settings?.colorizeMainWord !== false;
+
+  const frontWordColorClass = shouldColorize 
+    ? (activeStatus === 'know' 
+        ? 'text-emerald-600' 
+        : activeStatus === 'dont_know' 
+          ? 'text-rose-600' 
+          : activeStatus === 'confusion' 
+            ? 'text-amber-500' 
+            : 'text-indigo-950')
+    : 'text-indigo-950';
+
+  const backWordColorClass = shouldColorize
+    ? (activeStatus === 'know' 
+        ? 'text-emerald-600' 
+        : activeStatus === 'dont_know' 
+          ? 'text-rose-600' 
+          : activeStatus === 'confusion' 
+            ? 'text-amber-500' 
+            : 'text-slate-800')
+    : 'text-slate-800';
 
   const animationType = settings?.flashcardAnimation === 'shuffle' ? currentRandomAnim : (settings?.flashcardAnimation || 'flip-h');
 
@@ -729,7 +750,7 @@ export default function FlashcardViewer({
 
                   {/* Main display word */}
                   <div className="text-center space-y-3">
-                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-indigo-950 tracking-tight select-none py-1">
+                    <h1 className={`text-6xl md:text-7xl lg:text-8xl font-black tracking-tight select-none py-1 ${frontWordColorClass}`}>
                       {currentActiveWord.word}
                     </h1>
                     <div className="flex items-center justify-center gap-2">
@@ -782,7 +803,7 @@ export default function FlashcardViewer({
                     <div className="flex justify-between items-center pb-1.5 border-b border-slate-100">
                       <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xl font-black text-slate-800">{currentActiveWord.word}</span>
+                        <span className={`text-xl font-black ${backWordColorClass}`}>{currentActiveWord.word}</span>
                         <a
                           href={`https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}+meaning`}
                           target="_blank"

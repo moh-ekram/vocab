@@ -92,6 +92,13 @@ export default function AppSettingsView({
     });
   };
 
+  const handleToggleColorizeMainWord = () => {
+    onUpdateSettings({
+      ...settings,
+      colorizeMainWord: settings.colorizeMainWord !== false ? false : true
+    });
+  };
+
   const handleToggleSynonymTag = (tag: 'know' | 'dont_know' | 'unrated') => {
     let newTags = [...(settings.defaultSynonymTags || ['dont_know', 'unrated'])];
     if (newTags.includes(tag)) {
@@ -138,12 +145,12 @@ export default function AppSettingsView({
   const triggerResetSettings = () => {
     if (confirm('আপনি কি সেটিংস ডিফল্ট মানে ফিরিয়ে নিতে চান?')) {
       onUpdateSettings({
-        defaultFlashcardTags: ['dont_know'],
+        defaultFlashcardTags: ['know', 'confusion', 'dont_know', 'unrated'],
         defaultFlashcardOrder: 'random',
         autoPlayAudio: false,
         quizLength: 10,
         defaultSynonymOrder: 'random',
-        defaultSynonymTags: ['dont_know', 'unrated'],
+        defaultSynonymTags: ['know', 'dont_know', 'unrated'],
         defaultQuizType: 'mcq_en_bn',
         defaultMatchSize: 8,
         shortcuts: {
@@ -154,7 +161,8 @@ export default function AppSettingsView({
           'ArrowDown': 'skip',
           'Enter': 'audio'
         },
-        flashcardAnimation: 'flip-h'
+        flashcardAnimation: 'flip-h',
+        colorizeMainWord: true
       });
     }
   };
@@ -439,6 +447,30 @@ export default function AppSettingsView({
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                     settings.autoPlayAudio ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Colorize Main Words Option */}
+            <div className="space-y-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 font-sans">ফ্ল্যাশকার্ডে মেইন শব্দের কালারাইজেশন (Colorize Main Words)</label>
+                <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+                  শেখা বা মনে রাখার অবস্থা অনুযায়ী ফ্ল্যাশকার্ডের মূল শব্দ রঙিন করা হবে (পারি = সবুজ, পারি না = লাল, কনফিউশন = হলুদ)।
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleToggleColorizeMainWord}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  settings.colorizeMainWord !== false ? 'bg-emerald-500' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    settings.colorizeMainWord !== false ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>

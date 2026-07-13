@@ -57,8 +57,7 @@ export default function SynonymCheck({
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
-    // Default to show incorrect and unrated synonyms to help users practice
-    return settings?.defaultSynonymTags || ['dont_know', 'unrated'];
+    return settings?.defaultSynonymTags || ['know', 'dont_know', 'unrated'];
   });
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
