@@ -300,6 +300,10 @@ export default function FlashcardViewer({
           e.preventDefault();
           handleNext();
           break;
+        case 'prev':
+          e.preventDefault();
+          handlePrev();
+          break;
         case 'audio':
           e.preventDefault();
           speakWord();
@@ -318,7 +322,7 @@ export default function FlashcardViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm, settings?.shortcuts, handleNext]);
+  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm, settings?.shortcuts, handleNext, handlePrev]);
 
   // Text to Speech
   const speakWord = () => {

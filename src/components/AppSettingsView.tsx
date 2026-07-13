@@ -26,6 +26,7 @@ import {
   Languages,
   Search,
   ChevronRight,
+  ChevronLeft,
   ArrowRight,
   ArrowLeft,
   ArrowUp,
@@ -566,25 +567,25 @@ export default function AppSettingsView({
               বিভিন্ন কীবোর্ড বাটন/কি-এর বিপরীতে আপনার পছন্দের অ্যাকশন নির্বাচন করুন। টাইপিং ইনপুট ফিল্ড ছাড়া অন্য যেকোনো অবস্থায় এই শর্টকাটগুলো কাজ করবে।
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               {[
-                { id: 'Space', name: 'Space Key', bn: 'স্পেসবার (Space)', icon: RectangleHorizontal },
-                { id: 'Enter', name: 'Enter Key', bn: 'এন্টার (Enter)', icon: CornerDownLeft },
-                { id: 'ArrowRight', name: 'Arrow Right', bn: 'ডানমুখী তীর (→)', icon: ArrowRight },
-                { id: 'ArrowLeft', name: 'Arrow Left', bn: 'বামমুখী তীর (←)', icon: ArrowLeft },
-                { id: 'ArrowUp', name: 'Arrow Up', bn: 'উপরমুখী তীর (↑)', icon: ArrowUp },
-                { id: 'ArrowDown', name: 'Arrow Down', bn: 'নিচমুখী তীর (↓)', icon: ArrowDown },
-                { id: 'Digit1', name: 'Key 1', bn: 'কীবোর্ড সংখ্যা ১', icon: Hash },
-                { id: 'Digit2', name: 'Key 2', bn: 'কীবোর্ড সংখ্যা ২', icon: Hash },
-                { id: 'Digit3', name: 'Key 3', bn: 'কীবোর্ড সংখ্যা ৩', icon: Hash },
-                { id: 'Digit4', name: 'Key 4', bn: 'কীবোর্ড সংখ্যা ৪', icon: Hash },
-                { id: 'Digit5', name: 'Key 5', bn: 'কীবোর্ড সংখ্যা ৫', icon: Hash },
-                { id: 'Digit6', name: 'Key 6', bn: 'কীবোর্ড সংখ্যা ৬', icon: Hash },
-                { id: 'KeyA', name: 'Key A', bn: 'কীবোর্ড বর্ণ A', icon: Type },
-                { id: 'KeyS', name: 'Key S', bn: 'কীবোর্ড বর্ণ S', icon: Type },
-                { id: 'KeyD', name: 'Key D', bn: 'কীবোর্ড বর্ণ D', icon: Type },
-                { id: 'KeyF', name: 'Key F', bn: 'কীবোর্ড বর্ণ F', icon: Type },
-                { id: 'KeyG', name: 'Key G', bn: 'কীবোর্ড বর্ণ G', icon: Type },
+                { id: 'Space', bn: 'স্পেসবার (Space)', icon: RectangleHorizontal },
+                { id: 'Enter', bn: 'এন্টার (Enter)', icon: CornerDownLeft },
+                { id: 'ArrowRight', bn: 'ডানমুখী তীর (→)', icon: ArrowRight },
+                { id: 'ArrowLeft', bn: 'বামমুখী তীর (←)', icon: ArrowLeft },
+                { id: 'ArrowUp', bn: 'উপরমুখী তীর (↑)', icon: ArrowUp },
+                { id: 'ArrowDown', bn: 'নিচমুখী তীর (↓)', icon: ArrowDown },
+                { id: 'Digit1', bn: 'সংখ্যা ১', icon: Hash },
+                { id: 'Digit2', bn: 'সংখ্যা ২', icon: Hash },
+                { id: 'Digit3', bn: 'সংখ্যা ৩', icon: Hash },
+                { id: 'Digit4', bn: 'সংখ্যা ৪', icon: Hash },
+                { id: 'Digit5', bn: 'সংখ্যা ৫', icon: Hash },
+                { id: 'Digit6', bn: 'সংখ্যা ৬', icon: Hash },
+                { id: 'KeyA', bn: 'বর্ণ A', icon: Type },
+                { id: 'KeyS', bn: 'বর্ণ S', icon: Type },
+                { id: 'KeyD', bn: 'বর্ণ D', icon: Type },
+                { id: 'KeyF', bn: 'বর্ণ F', icon: Type },
+                { id: 'KeyG', bn: 'বর্ণ G', icon: Type },
               ].map(keyObj => {
                 const currentShortcuts = settings.shortcuts || {
                   'Space': 'flip',
@@ -595,7 +596,7 @@ export default function AppSettingsView({
                   'Enter': 'audio'
                 };
                 const assignedAction = currentShortcuts[keyObj.id] || 'none';
-
+ 
                 // Helper mapping of action to matching icon and visual details
                 const actionIconsMap: Record<string, { icon: any; color: string; bg: string; label: string }> = {
                   none: { icon: Circle, color: 'text-slate-400', bg: 'bg-slate-50 border-slate-150', label: 'নিষ্ক্রিয়' },
@@ -603,34 +604,31 @@ export default function AppSettingsView({
                   dont_know: { icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-50 border-rose-100', label: 'পারি না' },
                   confusion: { icon: HelpCircle, color: 'text-amber-500', bg: 'bg-amber-50 border-amber-100', label: 'কনফিউশন' },
                   skip: { icon: ChevronRight, color: 'text-sky-500', bg: 'bg-sky-50 border-sky-100', label: 'পরবর্তী' },
+                  prev: { icon: ChevronLeft, color: 'text-sky-500', bg: 'bg-sky-50 border-sky-100', label: 'পূর্ববর্তী' },
                   flip: { icon: RotateCcw, color: 'text-indigo-500', bg: 'bg-indigo-50 border-indigo-100', label: 'উল্টানো' },
                   google: { icon: Search, color: 'text-blue-500', bg: 'bg-blue-50 border-blue-100', label: 'গুগল' },
                   audio: { icon: Volume2, color: 'text-teal-500', bg: 'bg-teal-50 border-teal-100', label: 'উচ্চারণ' },
                 };
-
+ 
                 const actionDetail = actionIconsMap[assignedAction] || actionIconsMap.none;
                 const ActionIcon = actionDetail.icon;
                 const KeyIcon = keyObj.icon;
-
+ 
                 return (
-                  <div key={keyObj.id} className="flex items-center justify-between gap-3 p-3 bg-white hover:bg-slate-50/50 rounded-2xl border border-slate-100 transition-all duration-300">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {/* Left: Keyboard Key styled icon representing the actual button */}
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center border border-slate-150 bg-slate-50 text-slate-500 shadow-xs flex-shrink-0 transition-transform duration-300 hover:scale-105">
-                        <KeyIcon className="w-4 h-4 text-slate-500" />
+                  <div key={keyObj.id} className="flex items-center justify-between gap-2 p-2.5 bg-slate-50/50 hover:bg-slate-50 rounded-xl border border-slate-100 transition-all duration-300">
+                    {/* Left: Key Icon and Key Label */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-500 shadow-2xs flex-shrink-0">
+                        <KeyIcon className="w-3.5 h-3.5" />
                       </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-black text-slate-800 font-sans truncate">{keyObj.bn}</span>
-                        <span className="text-[9px] text-slate-400 font-sans tracking-wider uppercase font-mono">{keyObj.name}</span>
-                      </div>
+                      <span className="text-[11px] font-bold text-slate-700 truncate font-sans">{keyObj.bn}</span>
                     </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* Active action icon next to select */}
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-all duration-300 ${actionDetail.bg}`} title={actionDetail.label}>
-                        <ActionIcon className={`w-3.5 h-3.5 ${actionDetail.color}`} />
+ 
+                    {/* Right: Select Dropdown and small action icon */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className={`w-6 h-6 rounded-md flex items-center justify-center border ${actionDetail.bg}`} title={actionDetail.label}>
+                        <ActionIcon className={`w-3 h-3 ${actionDetail.color}`} />
                       </div>
-
                       <div className="relative">
                         <select
                           value={assignedAction}
@@ -643,19 +641,20 @@ export default function AppSettingsView({
                               }
                             });
                           }}
-                          className="w-32 sm:w-40 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 hover:border-slate-350 text-[10px] sm:text-[11px] font-black rounded-xl pl-2 pr-6 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans text-slate-700 cursor-pointer transition-all duration-200 appearance-none text-ellipsis overflow-hidden"
+                          className="w-28 sm:w-32 bg-white hover:bg-slate-50 border border-slate-200 text-[10px] font-medium rounded-lg pl-2 pr-5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-700 cursor-pointer appearance-none transition-all duration-150 font-sans"
                         >
-                          <option value="none">নিষ্ক্রিয় (None)</option>
+                          <option value="none">নিষ্ক্রিয়</option>
                           <option value="know">পারি (Learned)</option>
                           <option value="dont_know">পারি না (Unlearned)</option>
                           <option value="confusion">কনফিউশন (Confused)</option>
-                          <option value="skip">পরবর্তী শব্দ (Next Word)</option>
-                          <option value="flip">কার্ড উলটানো (Flip Card)</option>
-                          <option value="google">গুগল সার্চ (Google Search)</option>
-                          <option value="audio">উচ্চারণ প্লে (Speak Audio)</option>
+                          <option value="skip">পরবর্তী শব্দ (Next)</option>
+                          <option value="prev">পূর্ববর্তী শব্দ (Prev)</option>
+                          <option value="flip">কার্ড উলটানো (Flip)</option>
+                          <option value="google">গুগল সার্চ (Google)</option>
+                          <option value="audio">উচ্চারণ প্লে (Speak)</option>
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-400">
-                          <ChevronRight className="w-3 h-3 rotate-90" />
+                        <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center text-slate-400">
+                          <ChevronRight className="w-2.5 h-2.5 rotate-90" />
                         </div>
                       </div>
                     </div>

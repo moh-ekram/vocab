@@ -303,6 +303,10 @@ export default function SynonymCheck({
             e.preventDefault();
             handleNext();
             break;
+          case 'prev':
+            e.preventDefault();
+            handlePrev();
+            break;
           case 'audio':
             e.preventDefault();
             speakWord(currentActiveWord.word);

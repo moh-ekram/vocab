@@ -172,6 +172,21 @@ export default function App() {
         loaded.push({ id: doc.id, ...doc.data() } as Course);
       });
       setCustomCourses(loaded);
+      
+      // Auto-enroll all custom courses so they are immediately visible to all users (new or old)
+      if (loaded.length > 0) {
+        setEnrolledCourseIds(prev => {
+          const newIds = [...prev];
+          let updated = false;
+          loaded.forEach(c => {
+            if (!newIds.includes(c.id)) {
+              newIds.push(c.id);
+              updated = true;
+            }
+          });
+          return updated ? newIds : prev;
+        });
+      }
     }, (error) => {
       console.error("Error reading courses collection inside App:", error);
     });
