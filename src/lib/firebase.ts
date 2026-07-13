@@ -16,6 +16,7 @@ import {
   setDoc,
   enableIndexedDbPersistence
 } from 'firebase/firestore';
+import firebaseConfigJson from '../../firebase-applet-config.json';
 
 // Fallback configs from firebase-applet-config.json for easy deployment
 const env = (import.meta as any).env || {};
@@ -32,7 +33,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getFirestore(app, firebaseConfigJson.firestoreDatabaseId || "ai-studio-vocabularymemori-82d2e4c7-2d1e-4297-8ae1-0701377b48e6");
 
 // Enable offline persistence for firestore
 try {
