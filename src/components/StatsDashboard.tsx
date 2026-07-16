@@ -72,16 +72,6 @@ export default function StatsDashboard({
     fetchLeaderboard();
   }, []);
 
-  // --- LEADERBOARD ENTRIES CALCULATION ---
-  const mockCompetitors = [
-    { id: 'mock-1', displayName: 'সাদিয়া রহমান', email: 'sadia.gre@gmail.com', streak: 18, knowCount: 840, isMock: true, isCurrentUser: false },
-    { id: 'mock-2', displayName: 'তানভীর আহমেদ', email: 'tanvir88@outlook.com', streak: 12, knowCount: 650, isMock: true, isCurrentUser: false },
-    { id: 'mock-3', displayName: 'তাসনিম সুলতানা', email: 'tasnim_s@gmail.com', streak: 15, knowCount: 520, isMock: true, isCurrentUser: false },
-    { id: 'mock-4', displayName: 'আরিফ চৌধুরী', email: 'arif_du@gmail.com', streak: 6, knowCount: 380, isMock: true, isCurrentUser: false },
-    { id: 'mock-5', displayName: 'ফারহানা ইয়াসমিন', email: 'farhana.y@yahoo.com', streak: 9, knowCount: 290, isMock: true, isCurrentUser: false },
-    { id: 'mock-6', displayName: 'মেহেদী হাসান', email: 'mehedi_m@gmail.com', streak: 5, knowCount: 180, isMock: true, isCurrentUser: false },
-  ];
-
   // 1. Calculate overall counts
   const totalWords = words.length;
   let knowCount = 0;
@@ -99,7 +89,7 @@ export default function StatsDashboard({
 
   const overallCompleteness = totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0;
 
-  // Compute final merged leaderboard
+  // Compute final merged leaderboard using ONLY real users
   const currentUserId = auth.currentUser?.uid || 'current-local';
   const currentUserStats = {
     id: currentUserId,
@@ -114,7 +104,6 @@ export default function StatsDashboard({
   const otherDbUsers = dbLeaderboard.filter(user => user.id !== currentUserId);
   const combinedLeaderboard = [
     ...otherDbUsers,
-    ...mockCompetitors.filter(mock => !otherDbUsers.some(dbUser => dbUser.knowCount === mock.knowCount)),
     currentUserStats
   ];
 
@@ -552,90 +541,60 @@ export default function StatsDashboard({
               শেখার সামগ্রিক বন্টন
             </h3>
 
-            {/* Custom Circular Breakdown for the 3 stats */}
-            <div className="grid grid-cols-3 gap-4 font-sans text-center pt-2">
-              {/* Pari */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-2">
-                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
-                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <motion.circle 
-                      cx="48" 
-                      cy="48" 
-                      r="38" 
-                      className="text-indigo-600" 
-                      strokeWidth="8" 
-                      strokeDasharray="238.8" 
-                      initial={{ strokeDashoffset: 238.8 }}
-                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100 }}
-                      transition={{ duration: 1, delay: 0.1, ease: "easeOut" }}
-                      strokeLinecap="round" 
-                      stroke="currentColor" 
-                      fill="transparent" 
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
-                    <span className="text-[9px] text-slate-400 font-bold">{knowCount} শব্দ</span>
-                  </div>
+            {/* Simple elegant progress bars instead of bulky duplicate circles */}
+            <div className="space-y-4 pt-2">
+              <div>
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5 font-sans">
+                    <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                    পারি (সম্পন্ন)
+                  </span>
+                  <span className="font-mono text-indigo-600 font-black">{knowCount} শব্দ ({totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%)</span>
                 </div>
-                <span className="text-xs font-semibold text-slate-600">পারি (সম্পন্ন)</span>
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-indigo-600 rounded-full" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${totalWords > 0 ? (knowCount / totalWords) * 100 : 0}%` }}
+                    transition={{ duration: 1 }}
+                  />
+                </div>
               </div>
 
-              {/* Confusion */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-2">
-                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
-                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <motion.circle 
-                      cx="48" 
-                      cy="48" 
-                      r="38" 
-                      className="text-amber-500" 
-                      strokeWidth="8" 
-                      strokeDasharray="238.8" 
-                      initial={{ strokeDashoffset: 238.8 }}
-                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100 }}
-                      transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                      strokeLinecap="round" 
-                      stroke="currentColor" 
-                      fill="transparent" 
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
-                    <span className="text-[9px] text-slate-400 font-bold">{confusionCount} শব্দ</span>
-                  </div>
+              <div>
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5 font-sans">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    কনফিউশন আছে
+                  </span>
+                  <span className="font-mono text-amber-600 font-black">{confusionCount} শব্দ ({totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%)</span>
                 </div>
-                <span className="text-xs font-semibold text-slate-600">কনফিউশন আছে</span>
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-amber-500 rounded-full" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${totalWords > 0 ? (confusionCount / totalWords) * 100 : 0}%` }}
+                    transition={{ duration: 1 }}
+                  />
+                </div>
               </div>
 
-              {/* Dont Know */}
-              <div className="flex flex-col items-center">
-                <div className="relative w-24 h-24 mb-2">
-                  <svg viewBox="0 0 96 96" className="w-24 h-24 transform -rotate-90">
-                    <circle cx="48" cy="48" r="38" className="text-slate-100" strokeWidth="8" stroke="currentColor" fill="transparent" />
-                    <motion.circle 
-                      cx="48" 
-                      cy="48" 
-                      r="38" 
-                      className="text-rose-500" 
-                      strokeWidth="8" 
-                      strokeDasharray="238.8" 
-                      initial={{ strokeDashoffset: 238.8 }}
-                      animate={{ strokeDashoffset: 238.8 - (238.8 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100 }}
-                      transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                      strokeLinecap="round" 
-                      stroke="currentColor" 
-                      fill="transparent" 
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-black text-slate-800">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
-                    <span className="text-[9px] text-slate-400 font-bold">{dontKnowCount} শব্দ</span>
-                  </div>
+              <div>
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
+                  <span className="flex items-center gap-1.5 font-sans">
+                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                    পারি না
+                  </span>
+                  <span className="font-mono text-rose-600 font-black">{dontKnowCount} শব্দ ({totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%)</span>
                 </div>
-                <span className="text-xs font-semibold text-slate-600">পারি না</span>
+                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-rose-500 rounded-full" 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0}%` }}
+                    transition={{ duration: 1 }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -662,7 +621,7 @@ export default function StatsDashboard({
 
             {/* Subtitle / Context */}
             <p className="text-[11px] text-slate-400 leading-normal font-sans font-semibold">
-              অন্যান্য ক্লাউড শিক্ষার্থী এবং আপনার ভার্চুয়াল প্রতিযোগীদের সাথে রিয়েল-টাইমে এগিয়ে যান।
+              অন্যান্য ক্লাউড শিক্ষার্থীদের সাথে রিয়েল-টাইমে এগিয়ে যান।
             </p>
 
             {/* Rankings Scrollable List */}
@@ -712,7 +671,7 @@ export default function StatsDashboard({
                           )}
                         </p>
                         <p className="text-[9px] text-slate-400 font-semibold truncate">
-                          {player.isMock ? 'ভার্চুয়াল প্রতিযোগী' : 'ক্লাউড শিক্ষার্থী'}
+                          {player.id === 'current-local' ? 'অফলাইন শিক্ষার্থী' : 'ক্লাউড শিক্ষার্থী'}
                         </p>
                       </div>
                     </div>
