@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X } from 'lucide-react';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
+import { auth, db } from '../lib/firebase';
+import { collection, getDocs, limit, query } from 'firebase/firestore';
 
 interface StatsDashboardProps {
   words: VocabularyWord[];
@@ -31,6 +33,54 @@ export default function StatsDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
 
+  // --- LEADERBOARD LOGIC & STATES ---
+  const [dbLeaderboard, setDbLeaderboard] = useState<any[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+  const fetchLeaderboard = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, limit(30));
+      const snapshot = await getDocs(q);
+      const fetchedList: any[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const progressObj = data.progress || {};
+        let knowWordCount = 0;
+        Object.values(progressObj).forEach((p: any) => {
+          if (p?.status === 'know') knowWordCount++;
+        });
+        fetchedList.push({
+          id: doc.id,
+          email: data.email || 'Anonymous',
+          displayName: data.displayName || data.email?.split('@')[0] || 'শিক্ষার্থী',
+          streak: data.goal?.streak || 0,
+          knowCount: knowWordCount,
+          isCurrentUser: auth.currentUser?.uid === doc.id
+        });
+      });
+      setDbLeaderboard(fetchedList);
+    } catch (err) {
+      console.error("Error fetching leaderboard from Firestore:", err);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
+
+  // --- LEADERBOARD ENTRIES CALCULATION ---
+  const mockCompetitors = [
+    { id: 'mock-1', displayName: 'সাদিয়া রহমান', email: 'sadia.gre@gmail.com', streak: 18, knowCount: 840, isMock: true, isCurrentUser: false },
+    { id: 'mock-2', displayName: 'তানভীর আহমেদ', email: 'tanvir88@outlook.com', streak: 12, knowCount: 650, isMock: true, isCurrentUser: false },
+    { id: 'mock-3', displayName: 'তাসনিম সুলতানা', email: 'tasnim_s@gmail.com', streak: 15, knowCount: 520, isMock: true, isCurrentUser: false },
+    { id: 'mock-4', displayName: 'আরিফ চৌধুরী', email: 'arif_du@gmail.com', streak: 6, knowCount: 380, isMock: true, isCurrentUser: false },
+    { id: 'mock-5', displayName: 'ফারহানা ইয়াসমিন', email: 'farhana.y@yahoo.com', streak: 9, knowCount: 290, isMock: true, isCurrentUser: false },
+    { id: 'mock-6', displayName: 'মেহেদী হাসান', email: 'mehedi_m@gmail.com', streak: 5, knowCount: 180, isMock: true, isCurrentUser: false },
+  ];
 
   // 1. Calculate overall counts
   const totalWords = words.length;
@@ -48,6 +98,32 @@ export default function StatsDashboard({
   });
 
   const overallCompleteness = totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0;
+
+  // Compute final merged leaderboard
+  const currentUserId = auth.currentUser?.uid || 'current-local';
+  const currentUserStats = {
+    id: currentUserId,
+    displayName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'আপনি (You)',
+    email: auth.currentUser?.email || 'local-user',
+    streak: goal.streak || 1,
+    knowCount: knowCount,
+    isCurrentUser: true,
+    isMock: false
+  };
+
+  const otherDbUsers = dbLeaderboard.filter(user => user.id !== currentUserId);
+  const combinedLeaderboard = [
+    ...otherDbUsers,
+    ...mockCompetitors.filter(mock => !otherDbUsers.some(dbUser => dbUser.knowCount === mock.knowCount)),
+    currentUserStats
+  ];
+
+  const sortedLeaderboard = combinedLeaderboard.sort((a, b) => {
+    if (b.knowCount !== a.knowCount) {
+      return b.knowCount - a.knowCount;
+    }
+    return b.streak - a.streak;
+  });
 
   // 2. Group wise statistics (dynamic number of groups based on current words list)
   const maxGroupNum = words.length > 0 ? Math.max(...words.map(w => w.group)) : 0;
@@ -565,45 +641,107 @@ export default function StatsDashboard({
           </div>
         </div>
 
-        {/* Goal Settings Panel */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-2">
-              <Award className="w-5 h-5 text-indigo-600" />
-              দৈনিক লক্ষ্য সেট করুন
-            </h3>
-            <p className="text-sm text-slate-500 font-sans mb-4 leading-relaxed">
-              আপনার শেখার গতি বাড়াতে প্রতিদিন কতটি শব্দ রিভিউ বা শিখবেন তা নির্ধারণ করুন।
+        {/* Study Leaderboard Panel */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between h-[480px] lg:h-[500px] min-h-[480px] my-1" id="leaderboard-panel-card">
+          <div className="space-y-4 flex flex-col h-full justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500 fill-amber-100" />
+                <span>মেমোরি লিডারবোর্ড</span>
+              </h3>
+              <button 
+                onClick={fetchLeaderboard}
+                disabled={loadingLeaderboard}
+                className={`p-1.5 hover:bg-slate-100 active:scale-95 text-slate-400 hover:text-indigo-600 rounded-lg transition cursor-pointer ${loadingLeaderboard ? 'animate-spin text-indigo-600' : ''}`}
+                title="রিলিজ ডেটা রিফ্রেশ করুন"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Subtitle / Context */}
+            <p className="text-[11px] text-slate-400 leading-normal font-sans font-semibold">
+              অন্যান্য ক্লাউড শিক্ষার্থী এবং আপনার ভার্চুয়াল প্রতিযোগীদের সাথে রিয়েল-টাইমে এগিয়ে যান।
             </p>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-100">
-                <span className="text-sm font-bold text-slate-500 font-sans">প্রতিদিনের লক্ষ্য:</span>
-                <span className="text-2xl font-black text-indigo-600 font-sans">{goal.dailyTarget} <span className="text-xs font-normal text-slate-400">শব্দ</span></span>
-              </div>
-
-              <div className="flex gap-2">
-                {[10, 15, 20, 30, 50].map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setGoal(prev => ({ ...prev, dailyTarget: t }))}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition cursor-pointer font-sans ${
-                      goal.dailyTarget === t
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+            {/* Rankings Scrollable List */}
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-200 max-h-[290px]">
+              {sortedLeaderboard.map((player, index) => {
+                const rank = index + 1;
+                const isCurrentUser = player.isCurrentUser;
+                
+                return (
+                  <div 
+                    key={player.id} 
+                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
+                      isCurrentUser 
+                        ? 'bg-gradient-to-r from-indigo-50/70 to-emerald-50/30 border-indigo-200 shadow-xs' 
+                        : 'bg-slate-50/40 border-slate-100 hover:border-slate-200'
                     }`}
                   >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Rank badge */}
+                      <div className="w-6 h-6 flex items-center justify-center font-black text-xs flex-shrink-0">
+                        {rank === 1 ? (
+                          <Trophy className="w-4.5 h-4.5 text-amber-500 fill-amber-100" />
+                        ) : rank === 2 ? (
+                          <Trophy className="w-4.5 h-4.5 text-slate-400 fill-slate-50" />
+                        ) : rank === 3 ? (
+                          <Trophy className="w-4.5 h-4.5 text-amber-700 fill-amber-50" />
+                        ) : (
+                          <span className="text-slate-400 font-mono text-[11px]">#{rank}</span>
+                        )}
+                      </div>
 
-          <div className="pt-4 border-t border-slate-100 mt-4 text-center">
-            <p className="text-xs text-slate-400 font-sans">
-              ধারাবাহিক পড়াশোনা করলে আপনার মেমোরি রিটেনশন ৮০% পর্যন্ত বেড়ে যাবে!
-            </p>
+                      {/* Initial Avatar */}
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border flex-shrink-0 ${
+                        isCurrentUser 
+                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-xs' 
+                          : 'bg-white border-slate-200 text-slate-600 font-mono'
+                      }`}>
+                        {player.displayName ? player.displayName[0].toUpperCase() : 'U'}
+                      </div>
+
+                      {/* Display name */}
+                      <div className="min-w-0 font-sans">
+                        <p className={`text-xs font-black truncate flex items-center gap-1 ${isCurrentUser ? 'text-indigo-950' : 'text-slate-700'}`}>
+                          {player.displayName}
+                          {isCurrentUser && (
+                            <span className="text-[8px] bg-indigo-600 text-white px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider scale-90">YOU</span>
+                          )}
+                        </p>
+                        <p className="text-[9px] text-slate-400 font-semibold truncate">
+                          {player.isMock ? 'ভার্চুয়াল প্রতিযোগী' : 'ক্লাউড শিক্ষার্থী'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Studied score & streak */}
+                    <div className="flex items-center gap-1.5 flex-shrink-0 text-right font-sans">
+                      <div className="flex flex-col items-end">
+                        <p className="text-xs font-black text-indigo-600 font-mono leading-none">
+                          {player.knowCount} <span className="text-[9px] font-bold text-slate-400">শব্দ</span>
+                        </p>
+                        {player.streak > 0 && (
+                          <div className="flex items-center gap-0.5 text-amber-500 mt-1 leading-none">
+                            <Flame className="w-3 h-3 fill-current" />
+                            <span className="text-[9px] font-black font-mono">{player.streak}d</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer text */}
+            <div className="pt-2 border-t border-slate-100 text-center flex-shrink-0">
+              <p className="text-[10px] text-slate-400 font-sans font-medium">
+                ধারাবাহিক পড়াশোনা করুন এবং লিডারবোর্ডের শীর্ষে উঠে আসুন!
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>

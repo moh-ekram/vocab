@@ -572,8 +572,180 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800" id="main-layout-stage">
-      {/* 1. Sidebar Panel Nav */}
-      <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200/60 flex flex-col justify-between flex-shrink-0" id="sidebar-navigator">
+      {/* Mobile Top Header (Main Banner) */}
+      <div className="md:hidden bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 flex items-center justify-between shadow-md flex-shrink-0" id="mobile-main-banner">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-sm shadow-indigo-500/10">
+            <BookOpen className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-sm font-black tracking-tight font-sans">ভোকাবুলারি মেমোরি</h1>
+            <p className="text-[9px] text-indigo-200 font-bold uppercase tracking-wider font-sans">৩৭ গ্রুপ লার্নিং ড্যাশবোর্ড</p>
+          </div>
+        </div>
+        {user ? (
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-xs border border-white/20">
+              {user.email ? user.email[0].toUpperCase() : 'U'}
+            </div>
+            <button
+              onClick={handleLogOut}
+              className="p-1 text-indigo-200 hover:text-white rounded-lg transition cursor-pointer"
+              title="লগআউট"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="text-[9px] font-extrabold px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer"
+          >
+            লগইন
+          </button>
+        )}
+      </div>
+
+      {/* Mobile Horizontal Menu: just below the main banner */}
+      <div className="md:hidden bg-white border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 p-2 scrollbar-none flex-shrink-0" id="mobile-horizontal-menu">
+        <button
+          onClick={() => {
+            setSelectedGroupFromDash(null);
+            setActiveTab('dashboard');
+          }}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'dashboard'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="ড্যাশবোর্ড"
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">ড্যাশবোর্ড</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('flashcard')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'flashcard'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="ফ্ল্যাশ কার্ড"
+        >
+          <Layers className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">ফ্ল্যাশ কার্ড</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('synonym')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'synonym'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="সিনোনিম"
+        >
+          <Sparkle className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সিনোনিম</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('quiz')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'quiz'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="কুইজ"
+        >
+          <GraduationCap className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">কুইজ</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('match')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'match'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="শব্দমিল"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">শব্দমিল</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('dictionary')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'dictionary'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="সার্চ"
+        >
+          <Search className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সার্চ</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('lists')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'lists'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="বুকমার্ক"
+        >
+          <BookMarked className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">বুকমার্ক</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('planner')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'planner'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="প্ল্যানার"
+        >
+          <CalendarCheck2 className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">প্ল্যানার</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'settings'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="সেটিংস"
+        >
+          <Settings className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সেটিংস</span>
+        </button>
+
+        {user && user.email === 'mohammad.001ekram@gmail.com' && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+              activeTab === 'admin'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'text-rose-600 hover:bg-rose-50'
+            }`}
+            title="এডমিন"
+          >
+            <FolderLock className="w-4 h-4" />
+            <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">এডমিন</span>
+          </button>
+        )}
+      </div>
+
+      {/* 1. Sidebar Panel Nav (Hidden on Mobile) */}
+      <aside className="hidden md:flex w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200/60 flex-col justify-between flex-shrink-0" id="sidebar-navigator">
         <div className="p-6 space-y-8">
           {/* Logo & Headline */}
           <div className="flex items-center gap-3">
