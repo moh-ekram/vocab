@@ -18,7 +18,9 @@ import {
   Sparkles,
   RotateCcw,
   Quote,
-  Loader2
+  Loader2,
+  Layers,
+  ArrowUpDown
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -420,37 +422,40 @@ export default function FlashcardViewer({
   return (
     <div className="space-y-6" id="flashcard-viewer-container">
       {/* Top Filter and Customization Bar */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-wrap gap-4 items-center justify-between" id="flashcard-filters">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="bg-white p-3.5 md:p-5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between" id="flashcard-filters">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-none flex-nowrap md:flex-wrap w-full md:w-auto">
           
           {/* Select Group (Multi-select) */}
-          <div className="space-y-1 relative" id="group-multi-selector">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
+          <div className="space-y-1 relative flex-shrink-0" id="group-multi-selector">
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
             <button
               type="button"
               onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
+              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 md:px-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 whitespace-nowrap cursor-pointer text-left"
             >
-              <span className="truncate max-w-[160px]">
-                {selectedGroups.length === maxGroupNum 
-                  ? `সকল গ্রুপ (১-${maxGroupNum})` 
-                  : selectedGroups.length === 0 
-                  ? 'কোনো গ্রুপ নেই' 
-                  : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                <span>
+                  {selectedGroups.length === maxGroupNum 
+                    ? `সকল গ্রুপ` 
+                    : selectedGroups.length === 0 
+                    ? 'কোনো গ্রুপ নেই' 
+                    : `${selectedGroups.length} গ্রুপ`}
+                </span>
+              </div>
               <span className="text-[10px] text-slate-400">▼</span>
             </button>
 
             {isGroupDropdownOpen && (
               <>
                 {/* Click outside overlay */}
-                <div className="fixed inset-0 z-10" onClick={() => setIsGroupDropdownOpen(false)} />
+                <div className="fixed inset-0 bg-slate-900/40 md:bg-transparent z-40 md:z-10" onClick={() => setIsGroupDropdownOpen(false)} />
                 
-                {/* Dropdown panel */}
-                <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-3 font-sans">
+                {/* Dropdown panel / Bottom sheet */}
+                <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-80 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
-                    <div className="flex gap-2 text-[10px]">
+                    <span className="text-sm md:text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                    <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
                         onClick={() => setSelectedGroups(Array.from({ length: maxGroupNum }, (_, i) => i + 1))}
@@ -485,7 +490,7 @@ export default function FlashcardViewer({
                                 : [...prev, gNum]
                             );
                           }}
-                          className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          className={`py-2 md:py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-indigo-600 text-white shadow-xs'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
@@ -501,7 +506,7 @@ export default function FlashcardViewer({
                     <button
                       type="button"
                       onClick={() => setIsGroupDropdownOpen(false)}
-                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                      className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[11px] font-bold rounded-xl transition cursor-pointer"
                     >
                       ঠিক আছে
                     </button>
@@ -512,35 +517,43 @@ export default function FlashcardViewer({
           </div>
 
           {/* Select Status (Multi-select) */}
-          <div className="space-y-1 relative" id="status-multi-selector">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
+          <div className="space-y-1 relative flex-shrink-0" id="status-multi-selector">
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
+              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 md:px-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 whitespace-nowrap cursor-pointer text-left"
             >
-              <span className="truncate max-w-[160px]">
-                {selectedStatuses.length === 4 
-                  ? 'সকল ট্যাগ' 
-                  : selectedStatuses.length === 0 
-                  ? 'কোনো ট্যাগ নেই' 
-                  : selectedStatuses.map(s => {
-                      if (s === 'know') return 'পারি';
-                      if (s === 'dont_know') return 'পারি না';
-                      if (s === 'confusion') return 'কনফিউশন';
-                      return 'পড়া হয়নি';
-                    }).join(', ')}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-amber-500" />
+                <span>
+                  {selectedStatuses.length === 4 
+                    ? 'সকল ট্যাগ' 
+                    : selectedStatuses.length === 0 
+                    ? 'কোনো ট্যাগ নেই' 
+                    : selectedStatuses.length === 1
+                    ? selectedStatuses.map(s => {
+                        if (s === 'know') return 'পারি';
+                        if (s === 'dont_know') return 'পারি না';
+                        if (s === 'confusion') return 'কনফিউশন';
+                        return 'পড়া হয়নি';
+                      })[0]
+                    : `${selectedStatuses.length} ট্যাগ`}
+                </span>
+              </div>
               <span className="text-[10px] text-slate-400">▼</span>
             </button>
 
             {isStatusDropdownOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-2.5 font-sans animate-in fade-in zoom-in-95 duration-150">
+                {/* Click outside overlay */}
+                <div className="fixed inset-0 bg-slate-900/40 md:bg-transparent z-40 md:z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                
+                {/* Dropdown panel / Bottom sheet */}
+                <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-56 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
-                    <div className="flex gap-2 text-[10px]">
+                    <span className="text-sm md:text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                    <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
                         onClick={() => setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated'])}
@@ -578,7 +591,7 @@ export default function FlashcardViewer({
                                 : [...prev, st.key]
                             );
                           }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
+                          className={`w-full text-left px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
                             isSelected ? 'bg-indigo-50 text-indigo-900' : 'hover:bg-slate-50 text-slate-600'
                           }`}
                         >
@@ -598,7 +611,7 @@ export default function FlashcardViewer({
                     <button
                       type="button"
                       onClick={() => setIsStatusDropdownOpen(false)}
-                      className="px-3.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
+                      className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[10px] font-bold rounded-xl transition cursor-pointer"
                     >
                       ঠিক আছে
                     </button>
@@ -609,56 +622,63 @@ export default function FlashcardViewer({
           </div>
 
           {/* Custom Bookmarks Select */}
-          <div className="space-y-1">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">বুকমার্ক লিস্ট</label>
-            <select
-              value={selectedFolder}
-              onChange={(e) => setSelectedFolder(e.target.value)}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
-            >
-              <option value="all">সকল লিস্ট</option>
-              {folders.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
+          <div className="space-y-1 flex-shrink-0" id="bookmark-folder-selector">
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">বুকমার্ক লিস্ট</label>
+            <div className="relative flex items-center">
+              <Bookmark className="w-3.5 h-3.5 text-emerald-500 absolute left-3 pointer-events-none" />
+              <select
+                value={selectedFolder}
+                onChange={(e) => setSelectedFolder(e.target.value)}
+                className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-8 pr-8 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer appearance-none flex-shrink-0 min-w-[120px]"
+              >
+                <option value="all">সকল লিস্ট</option>
+                {folders.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+              <span className="text-[10px] text-slate-400 absolute right-3 pointer-events-none">▼</span>
+            </div>
           </div>
 
           {/* Study Order Control */}
-          <div className="space-y-1 font-sans">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">পড়ার ক্রম (Study Order)</label>
+          <div className="space-y-1 font-sans flex-shrink-0" id="study-order-selector">
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider">পড়ার ক্রম (Study Order)</label>
             <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 items-center gap-1">
               <button
                 type="button"
                 onClick={() => setStudyOrder('serial')}
-                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                   studyOrder === 'serial'
                     ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                সিরিয়াল
+                <ArrowUpDown className="w-3 h-3" />
+                <span>সিরিয়াল</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStudyOrder('alphabetical')}
-                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                   studyOrder === 'alphabetical'
                     ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                A-Z
+                <span className="text-[9px] font-black font-mono">A-Z</span>
+                <span>অক্ষর</span>
               </button>
               <button
                 type="button"
                 onClick={() => setStudyOrder('random')}
-                className={`px-3 py-1.5 text-xs font-extrabold rounded-lg transition-all cursor-pointer ${
+                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
                   studyOrder === 'random'
                     ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                র্যান্ডম
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                <span>র্যান্ডম</span>
               </button>
             </div>
             {studyOrder === 'random' && (
@@ -678,7 +698,7 @@ export default function FlashcardViewer({
         {/* Hotkeys helper button */}
         <button
           onClick={() => setShowHotkeysHelp(prev => !prev)}
-          className={`flex items-center gap-2 px-3 py-2 border rounded-xl text-sm font-semibold transition ${
+          className={`hidden md:flex items-center gap-2 px-3 py-2 border rounded-xl text-sm font-semibold transition flex-shrink-0 ${
             showHotkeysHelp ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
           }`}
         >

@@ -11,6 +11,7 @@ import SearchDictionary from './components/SearchDictionary';
 import DailyPlanner from './components/DailyPlanner';
 import AppSettingsView from './components/AppSettingsView';
 import AdminPanel from './components/AdminPanel';
+import GlobalLeaderboard from './components/GlobalLeaderboard';
 
 import {
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   LogOut,
   User,
   AlertCircle,
+  Trophy,
   Settings
 } from 'lucide-react';
 
@@ -131,6 +133,16 @@ export default function App() {
     };
   });
 
+  const [quizScore, setQuizScore] = useState<number>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_quiz_score');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  const [quizTaken, setQuizTaken] = useState<number>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_quiz_taken');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
   // --- FIREBASE SYNC & AUTH STATES ---
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -165,6 +177,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY, activeCourseId);
   }, [activeCourseId]);
+
+  useEffect(() => {
+    localStorage.setItem('vocab_memorizer_quiz_score', String(quizScore));
+  }, [quizScore]);
+
+  useEffect(() => {
+    localStorage.setItem('vocab_memorizer_quiz_taken', String(quizTaken));
+  }, [quizTaken]);
 
   // Live listener for Custom Courses
   useEffect(() => {
@@ -237,6 +257,12 @@ export default function App() {
             if (data.activeCourseId) {
               setActiveCourseId(data.activeCourseId);
             }
+            if (data.quizScore !== undefined) {
+              setQuizScore(data.quizScore);
+            }
+            if (data.quizTaken !== undefined) {
+              setQuizTaken(data.quizTaken);
+            }
             setSyncStatus('synced');
           } else {
             // New user signup: back up current local state to cloud immediately
@@ -248,6 +274,8 @@ export default function App() {
               settings,
               enrolledCourseIds,
               activeCourseId,
+              quizScore,
+              quizTaken,
               email: currentUser.email,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
@@ -293,6 +321,8 @@ export default function App() {
           settings,
           enrolledCourseIds,
           activeCourseId,
+          quizScore,
+          quizTaken,
           email: user.email,
           updatedAt: new Date().toISOString()
         }, { merge: true });
@@ -308,7 +338,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, user]);
+  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user]);
 
   const forceSyncToCloud = async () => {
     if (!user) return;
@@ -322,6 +352,8 @@ export default function App() {
         settings,
         enrolledCourseIds,
         activeCourseId,
+        quizScore,
+        quizTaken,
         email: user.email,
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -625,6 +657,19 @@ export default function App() {
         </button>
 
         <button
+          onClick={() => setActiveTab('leaderboard')}
+          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            activeTab === 'leaderboard'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:bg-slate-50'
+          }`}
+          title="লিডারবোর্ড"
+        >
+          <Trophy className="w-4 h-4 text-amber-500" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">লিডারবোর্ড</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('flashcard')}
           className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
             activeTab === 'flashcard'
@@ -773,6 +818,18 @@ export default function App() {
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>অগ্রগতি ড্যাশবোর্ড</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
+                activeTab === 'leaderboard'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+              }`}
+            >
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>গ্লোবাল লিডারবোর্ড</span>
             </button>
 
             <button
@@ -982,7 +1039,12 @@ export default function App() {
                 setSelectedGroupFromDash(gNum);
                 setActiveTab('flashcard');
               }}
+              onSelectTab={setActiveTab}
             />
+          )}
+
+          {activeTab === 'leaderboard' && (
+            <GlobalLeaderboard />
           )}
 
           {activeTab === 'flashcard' && (
@@ -1020,6 +1082,10 @@ export default function App() {
               onRateWord={handleRateWord}
               activeGroup={selectedGroupFromDash}
               settings={settings}
+              onQuizComplete={(score, totalQuestions) => {
+                setQuizScore(prev => prev + score);
+                setQuizTaken(prev => prev + 1);
+              }}
             />
           )}
 

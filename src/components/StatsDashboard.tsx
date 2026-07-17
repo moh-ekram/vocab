@@ -16,6 +16,7 @@ interface StatsDashboardProps {
   activeCourseId: string;
   setActiveCourseId: (id: string) => void;
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
+  onSelectTab?: (tab: any) => void;
 }
 
 export default function StatsDashboard({ 
@@ -28,7 +29,8 @@ export default function StatsDashboard({
   enrolledCourseIds,
   activeCourseId,
   setActiveCourseId,
-  setEnrolledCourseIds
+  setEnrolledCourseIds,
+  onSelectTab
 }: StatsDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -696,10 +698,19 @@ export default function StatsDashboard({
             </div>
 
             {/* Footer text */}
-            <div className="pt-2 border-t border-slate-100 text-center flex-shrink-0">
+            <div className="pt-2 border-t border-slate-100 text-center flex-shrink-0 space-y-2">
               <p className="text-[10px] text-slate-400 font-sans font-medium">
                 ধারাবাহিক পড়াশোনা করুন এবং লিডারবোর্ডের শীর্ষে উঠে আসুন!
               </p>
+              {onSelectTab && (
+                <button
+                  onClick={() => onSelectTab('leaderboard')}
+                  className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer font-sans"
+                >
+                  <span>গ্লোবাল লিডারবোর্ড দেখুন</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

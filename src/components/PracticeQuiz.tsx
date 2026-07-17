@@ -8,6 +8,7 @@ interface PracticeQuizProps {
   onRateWord: (wordId: string, status: WordStatus) => void;
   activeGroup: number | null;
   settings?: AppSettings;
+  onQuizComplete?: (score: number, totalQuestions: number) => void;
 }
 
 type QuizType = 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
@@ -18,7 +19,7 @@ interface Question {
   correctAnswer: string;
 }
 
-export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings }: PracticeQuizProps) {
+export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings, onQuizComplete }: PracticeQuizProps) {
   // Quiz states
   const [quizType, setQuizType] = useState<QuizType>(() => {
     return settings?.defaultQuizType || 'mcq_en_bn';
@@ -181,6 +182,9 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
       setHintsUsed(0);
     } else {
       setGameState('summary');
+      if (onQuizComplete) {
+        onQuizComplete(score, questions.length);
+      }
     }
   };
 

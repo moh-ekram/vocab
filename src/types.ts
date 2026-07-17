@@ -27,7 +27,7 @@ export interface CustomFolder {
   createdAt?: string;
 }
 
-export type ActiveTab = 'dashboard' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner' | 'settings' | 'admin';
+export type ActiveTab = 'dashboard' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner' | 'settings' | 'admin' | 'leaderboard';
 
 export interface AppSettings {
   defaultFlashcardTags: WordStatus[];
