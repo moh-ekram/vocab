@@ -1,6 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { VocabularyWord, UserProgress, CustomFolder, WordStatus } from '../types';
-import { Search, Volume2, Bookmark, CheckCircle, AlertTriangle, XCircle, ChevronDown, ChevronUp, Edit3, Trash } from 'lucide-react';
+import { 
+  Search, 
+  Volume2, 
+  Bookmark, 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  ChevronDown, 
+  ChevronUp, 
+  ArrowUpDown, 
+  Download, 
+  Filter, 
+  RotateCcw, 
+  Check, 
+  Grid, 
+  ChevronLeft, 
+  ChevronRight,
+  BookOpen,
+  FolderHeart
+} from 'lucide-react';
 
 interface SearchDictionaryProps {
   words: VocabularyWord[];
@@ -19,32 +38,39 @@ export default function SearchDictionary({
   onUpdateNotes,
   onToggleBookmark
 }: SearchDictionaryProps) {
+  // Filters State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedFolder, setSelectedFolder] = useState<string>('all');
 
-  // Accordion details
-  const [expandedWordId, setExpandedWordId] = useState<string | null>(null);
+  // Sorting State
+  const [sortColumn, setSortColumn] = useState<'word' | 'meaning' | 'group' | 'status' | 'notes' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Filter words
-  const searchResults = words.filter(w => {
-    // Search match
-    const matchesSearch =
-      w.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      w.meaning.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (w.synonyms && w.synonyms.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (w.extraWord && w.extraWord.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(50);
 
-    // Group filter
-    const matchesGroup = selectedGroup === 'all' ? true : w.group === parseInt(selectedGroup, 10);
+  // Active word for bookmark dropdown
+  const [activeBookmarkWordId, setActiveBookmarkWordId] = useState<string | null>(null);
 
-    // Status filter
-    const status = progress[w.id]?.status || 'unrated';
-    const matchesStatus = selectedStatus === 'all' ? true : status === selectedStatus;
+  // Reset page to 1 when filters or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedGroup, selectedStatus, selectedFolder, sortColumn, sortDirection]);
 
-    return matchesSearch && matchesGroup && matchesStatus;
-  });
+  // Handle Sort Toggle
+  const handleSort = (column: 'word' | 'meaning' | 'group' | 'status' | 'notes') => {
+    if (sortColumn === column) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
 
+  // Speak Word
   const speak = (wordText: string) => {
     const utterance = new SpeechSynthesisUtterance(wordText);
     utterance.lang = 'en-US';
@@ -53,225 +79,572 @@ export default function SearchDictionary({
     window.speechSynthesis.speak(utterance);
   };
 
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedGroup('all');
+    setSelectedStatus('all');
+    setSelectedFolder('all');
+    setSortColumn(null);
+    setSortDirection('asc');
+  };
+
+  // Filter word list based on inputs
+  const searchResults = words.filter(w => {
+    // Search query match
+    const matchesSearch =
+      w.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.meaning.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (w.synonyms && w.synonyms.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (w.extraWord && w.extraWord.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (progress[w.id]?.notes && progress[w.id]?.notes?.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Group filter match
+    const matchesGroup = selectedGroup === 'all' ? true : w.group === parseInt(selectedGroup, 10);
+
+    // Status filter match
+    const status = progress[w.id]?.status || 'unrated';
+    const matchesStatus = selectedStatus === 'all' ? true : status === selectedStatus;
+
+    // Folder bookmark filter match
+    const folderList = progress[w.id]?.bookmarks || [];
+    const matchesFolder = selectedFolder === 'all' ? true : folderList.includes(selectedFolder);
+
+    return matchesSearch && matchesGroup && matchesStatus && matchesFolder;
+  });
+
+  // Sort filtered word list
+  const sortedResults = [...searchResults].sort((a, b) => {
+    if (!sortColumn) return 0;
+    
+    let valA: any = '';
+    let valB: any = '';
+
+    if (sortColumn === 'word') {
+      valA = a.word.toLowerCase();
+      valB = b.word.toLowerCase();
+    } else if (sortColumn === 'meaning') {
+      valA = a.meaning;
+      valB = b.meaning;
+    } else if (sortColumn === 'group') {
+      valA = a.group;
+      valB = b.group;
+    } else if (sortColumn === 'status') {
+      valA = progress[a.id]?.status || 'unrated';
+      valB = progress[b.id]?.status || 'unrated';
+    } else if (sortColumn === 'notes') {
+      valA = (progress[a.id]?.notes || '').toLowerCase();
+      valB = (progress[b.id]?.notes || '').toLowerCase();
+    }
+
+    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Pagination bounds calculation
+  const totalItems = sortedResults.length;
+  const totalPages = itemsPerPage === -1 ? 1 : Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = itemsPerPage === -1 ? totalItems : Math.min(startIndex + itemsPerPage, totalItems);
+  const paginatedResults = itemsPerPage === -1 ? sortedResults : sortedResults.slice(startIndex, endIndex);
+
+  // Statistics Calculation
+  const stats = {
+    total: words.length,
+    filtered: searchResults.length,
+    know: searchResults.filter(w => progress[w.id]?.status === 'know').length,
+    confusion: searchResults.filter(w => progress[w.id]?.status === 'confusion').length,
+    dont_know: searchResults.filter(w => progress[w.id]?.status === 'dont_know').length,
+    unrated: searchResults.filter(w => !progress[w.id]?.status || progress[w.id]?.status === 'unrated').length,
+  };
+
+  // Export visible items to CSV Excel sheet
+  const exportToCSV = () => {
+    const headers = [
+      'Serial', 
+      'Word', 
+      'Bengali Meaning', 
+      'Group', 
+      'Synonyms', 
+      'Extra Word', 
+      'Extra Meaning', 
+      'Status', 
+      'Mnemonic Notes'
+    ];
+    
+    const rows = sortedResults.map((w, index) => {
+      const statusVal = progress[w.id]?.status || 'unrated';
+      const statusText = 
+        statusVal === 'know' ? 'পারি (Learned)' : 
+        statusVal === 'confusion' ? 'কনফিউশন (Confused)' : 
+        statusVal === 'dont_know' ? 'পারি না (Unlearned)' : 'পড়া হয়নি (Unrated)';
+      
+      const notesVal = progress[w.id]?.notes || '';
+      
+      return [
+        index + 1,
+        w.word,
+        w.meaning,
+        w.group,
+        w.synonyms || '',
+        w.extraWord || '',
+        w.extraMeaning || '',
+        statusText,
+        notesVal
+      ];
+    });
+
+    const csvString = [
+      headers.join(','), 
+      ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `শব্দ_ভান্ডার_গ্রুপ_${selectedGroup}_কন্ডিশন_${selectedStatus}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 shadow-xs space-y-6" id="dictionary-container">
-      {/* 1. Header and search filters */}
-      <div className="space-y-4">
+    <div className="bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 shadow-xs space-y-6" id="vocabulary-catalog-container">
+      {/* Invisible backdrop to dismiss bookmark dropdown on click outside */}
+      {activeBookmarkWordId && (
+        <div className="fixed inset-0 z-10" onClick={() => setActiveBookmarkWordId(null)} />
+      )}
+
+      {/* 1. Dashboard Title & Quick Insights */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div>
-          <h2 className="text-2xl font-black text-slate-900">শব্দকোষ ও সার্চ ডিকশনারি</h2>
+          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+            <BookOpen className="w-6 h-6 text-indigo-600" />
+            শব্দ ভান্ডার (Vocabulary Catalog)
+          </h2>
           <p className="text-sm text-slate-500 font-sans mt-1 leading-relaxed">
-            ৩৭ টি গ্রুপের সকল শব্দ এখান থেকে এক ক্লিকে সার্চ করুন, উচ্চারণ শুনুন এবং পড়ার প্রগ্রেস এডিট করুন।
+            কোর্সের সকল ইংরেজি শব্দ, বাংলা অর্থ ও সমার্থক শব্দ এক্সেল স্প্রেডশিটের মতো একই গ্রিড টেবিলে দেখুন, ফিল্টার করুন এবং প্রগ্রেস আপডেট করুন।
           </p>
         </div>
 
-        {/* Filters and Search Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Main search bar */}
-          <div className="md:col-span-2 relative font-sans">
-            <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="ইংরেজি শব্দ, বাংলা অর্থ বা সিনোনিম দিয়ে খুঁজুন..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
-            />
-          </div>
-
-          {/* Group dropdown */}
-          <div className="font-sans">
-            <select
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
-            >
-              <option value="all">সকল গ্রুপ (১-৩৭)</option>
-              {Array.from({ length: 37 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>গ্রুপ {i + 1}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status tag filter */}
-          <div className="font-sans">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
-            >
-              <option value="all">সকল কন্ডিশন</option>
-              <option value="know">পারি (সবুজ)</option>
-              <option value="confusion">কনফিউশন (হলুদ)</option>
-              <option value="dont_know">পারি না (লাল)</option>
-              <option value="unrated">পড়া হয়নি (ধূসর)</option>
-            </select>
-          </div>
+        {/* CSV export and filter reset buttons */}
+        <div className="flex items-center gap-2.5 font-sans">
+          <button
+            onClick={handleResetFilters}
+            className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer"
+            title="সব ফিল্টার রিসেট করুন"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> রিসেট
+          </button>
+          
+          <button
+            onClick={exportToCSV}
+            className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition rounded-xl flex items-center gap-1.5 shadow-sm shadow-emerald-500/10 cursor-pointer"
+            title="এক্সেল ফাইল হিসেবে ডাউনলোড করুন"
+          >
+            <Download className="w-3.5 h-3.5" /> Excel / CSV ডাউনলোড
+          </button>
         </div>
       </div>
 
-      {/* 2. Results count */}
-      <div className="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider font-sans border-b border-slate-100 pb-3">
-        <span>খুঁজে পাওয়া শব্দসমূহ</span>
-        <span className="text-indigo-600">{searchResults.length} টি শব্দ মিলেছে</span>
+      {/* 2. Spreadsheet Stats Indicator Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 font-sans">
+        <div className="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">মোট শব্দ</span>
+          <span className="text-lg font-black text-slate-800">{stats.filtered} <span className="text-xs font-normal text-slate-400">/ {stats.total}</span></span>
+        </div>
+        <div className="bg-emerald-50/40 border border-emerald-100/50 p-3 rounded-2xl">
+          <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block">পারি (সবুজ)</span>
+          <span className="text-lg font-black text-emerald-700">{stats.know}</span>
+        </div>
+        <div className="bg-amber-50/40 border border-amber-100/50 p-3 rounded-2xl">
+          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">কনফিউশন (হলুদ)</span>
+          <span className="text-lg font-black text-amber-700">{stats.confusion}</span>
+        </div>
+        <div className="bg-rose-50/40 border border-rose-100/50 p-3 rounded-2xl">
+          <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">পারি না (লাল)</span>
+          <span className="text-lg font-black text-rose-700">{stats.dont_know}</span>
+        </div>
+        <div className="col-span-2 lg:col-span-1 bg-slate-50/50 border border-slate-100 p-3 rounded-2xl">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">পড়া হয়নি</span>
+          <span className="text-lg font-black text-slate-600">{stats.unrated}</span>
+        </div>
       </div>
 
-      {/* 3. Results List Accordion */}
-      <div className="space-y-2.5 max-h-[500px] overflow-y-auto pr-1" id="dictionary-results-list">
-        {searchResults.map(w => {
-          const isExpanded = expandedWordId === w.id;
-          const status = progress[w.id]?.status || 'unrated';
-          const notes = progress[w.id]?.notes || '';
+      {/* 3. Advanced Filtering Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 font-sans bg-slate-50/30 p-4 border border-slate-200/50 rounded-2xl">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="ইংরেজি শব্দ, বাংলা অর্থ, সিনোনিম বা নোট..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
+          />
+        </div>
 
-          return (
-            <div
-              key={w.id}
-              className={`border rounded-2xl transition ${
-                isExpanded ? 'border-indigo-500 bg-indigo-50/5 shadow-xs' : 'border-slate-200/60 bg-white hover:border-slate-300'
-              }`}
-            >
-              {/* Trigger row */}
-              <div
-                onClick={() => setExpandedWordId(isExpanded ? null : w.id)}
-                className="p-4 flex items-center justify-between cursor-pointer"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Status indicator badge */}
-                  <div>
-                    {status === 'know' && <CheckCircle className="w-5 h-5 text-indigo-600" />}
-                    {status === 'confusion' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
-                    {status === 'dont_know' && <XCircle className="w-5 h-5 text-rose-500" />}
-                    {status === 'unrated' && <div className="w-5 h-5 rounded-full border-2 border-slate-200"></div>}
+        {/* Group select dropdown */}
+        <div className="relative">
+          <select
+            value={selectedGroup}
+            onChange={(e) => setSelectedGroup(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
+          >
+            <option value="all">গ্রুপ ফিল্টার: সকল গ্রুপ (১-৩৭)</option>
+            {Array.from({ length: 37 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>গ্রুপ {i + 1}</option>
+            ))}
+          </select>
+          <Filter className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+
+        {/* Status selection */}
+        <div className="relative">
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
+          >
+            <option value="all">কন্ডিশন ফিল্টার: সকল কন্ডিশন</option>
+            <option value="know">পারি (সবুজ)</option>
+            <option value="confusion">কনফিউশন (হলুদ)</option>
+            <option value="dont_know">পারি না (লাল)</option>
+            <option value="unrated">পড়া হয়নি (ধূসর)</option>
+          </select>
+          <Filter className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+
+        {/* Bookmark folder filter */}
+        <div className="relative">
+          <select
+            value={selectedFolder}
+            onChange={(e) => setSelectedFolder(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
+          >
+            <option value="all">বুকমার্ক ফোল্ডার: সকল বুকমার্ক</option>
+            {folders.map(f => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+          <FolderHeart className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* 4. Excel spreadsheet table */}
+      <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
+        <div className="overflow-x-auto max-h-[600px] custom-scrollbar">
+          <table className="w-full border-collapse table-auto text-sm text-left">
+            <thead>
+              <tr className="bg-slate-100 text-slate-600 text-xs font-bold font-sans uppercase select-none border-b border-slate-200 sticky top-0 z-10 shadow-xs">
+                <th className="px-3 py-3.5 text-center border-r border-slate-200 bg-slate-100 w-12 shrink-0">#</th>
+                
+                {/* Column English Word */}
+                <th 
+                  onClick={() => handleSort('word')}
+                  className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[150px]"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>ইংরেজি শব্দ</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
+                </th>
 
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-slate-800 text-base">{w.word}</span>
-                      <span className="text-[10px] bg-indigo-50 text-indigo-800 font-extrabold px-1.5 py-0.5 rounded-md font-sans">
-                        গ্রুপ {w.group}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500 font-sans mt-0.5">{w.meaning}</p>
+                {/* Column Meaning */}
+                <th 
+                  onClick={() => handleSort('meaning')}
+                  className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[160px]"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>বাংলা অর্থ</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
-                </div>
+                </th>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      speak(w.word);
-                    }}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition"
-                    title="উচ্চারণ শুনুন"
+                {/* Column Group */}
+                <th 
+                  onClick={() => handleSort('group')}
+                  className="px-3 py-3.5 text-center border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition w-24"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>গ্রুপ</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+
+                {/* Column Synonyms */}
+                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[180px]">সমার্থক শব্দ (Synonyms)</th>
+                
+                {/* Column Companion Extra Word */}
+                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[160px]">অতিরিক্ত শব্দ ও অর্থ</th>
+
+                {/* Column Status (Rating) */}
+                <th 
+                  onClick={() => handleSort('status')}
+                  className="px-4 py-3.5 text-center border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[140px]"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>শেখার কন্ডিশন</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+
+                {/* Column Mnemonic memory aid notes */}
+                <th 
+                  onClick={() => handleSort('notes')}
+                  className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[200px]"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>স্মৃতিসহায়ক নোট</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+
+                {/* Column Bookmarks Folder selection */}
+                <th className="px-4 py-3.5 text-center border-r border-slate-200 bg-slate-100 min-w-[120px]">বুকমার্ক ফোল্ডার</th>
+                
+                {/* Column Voice Speaker */}
+                <th className="px-3 py-3.5 text-center bg-slate-100 w-16">শুনুন</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-150 font-sans">
+              {paginatedResults.map((w, index) => {
+                const globalIndex = startIndex + index + 1;
+                const status = progress[w.id]?.status || 'unrated';
+                const notes = progress[w.id]?.notes || '';
+                const wordFolders = progress[w.id]?.bookmarks || [];
+
+                return (
+                  <tr 
+                    key={w.id} 
+                    className="hover:bg-indigo-50/20 odd:bg-white even:bg-slate-50/30 transition text-slate-700"
                   >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                  {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                </div>
-              </div>
+                    {/* # Index Row */}
+                    <td className="px-3 py-2.5 text-center font-mono text-xs font-semibold text-slate-400 border-r border-slate-100">
+                      {globalIndex}
+                    </td>
 
-              {/* Collapsed content details */}
-              {isExpanded && (
-                <div className="px-12 pb-5 pt-1 border-t border-slate-100/50 space-y-4 text-sm text-slate-600 animate-slideDown">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Synonyms list */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">সমার্থক শব্দ (Synonyms)</span>
-                      <p className="font-semibold text-slate-700">{w.synonyms || 'N/A'}</p>
-                    </div>
+                    {/* Word row */}
+                    <td className="px-4 py-2.5 font-bold font-mono text-slate-900 border-r border-slate-100 tracking-tight">
+                      {w.word}
+                    </td>
 
-                    {/* Companion reference */}
-                    {w.extraWord && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">সহযোগী অতিরিক্ত শব্দ</span>
-                        <p className="font-semibold text-slate-700">
-                          {w.extraWord} : <span className="font-normal text-slate-500 font-sans">{w.extraMeaning}</span>
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                    {/* Bengali Meaning */}
+                    <td className="px-4 py-2.5 text-xs text-slate-800 border-r border-slate-100 font-semibold">
+                      {w.meaning}
+                    </td>
 
-                  {/* Bookmark quick folder toggle */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">বুকমার্ক ফোল্ডার</span>
-                    <div className="flex flex-wrap gap-2.5 font-sans">
-                      {folders.map(f => {
-                        const isBookmarked = (progress[w.id]?.bookmarks || []).includes(f.id);
-                        return (
-                          <button
-                            key={f.id}
-                            onClick={() => onToggleBookmark(w.id, f.id)}
-                            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition ${
-                              isBookmarked
-                                ? 'bg-indigo-50 border-indigo-300 text-indigo-900'
-                                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: f.color }}></div>
-                            <span>{f.name}</span>
-                          </button>
-                        );
-                      })}
-                      {folders.length === 0 && (
-                        <p className="text-xs text-slate-400">কোনো ফোল্ডার তৈরি করা নেই।</p>
+                    {/* Group number */}
+                    <td className="px-3 py-2.5 text-center border-r border-slate-100 font-bold text-xs text-indigo-700">
+                      গ্রুপ {w.group}
+                    </td>
+
+                    {/* Synonyms */}
+                    <td className="px-4 py-2.5 text-xs text-slate-500 border-r border-slate-100 max-w-[200px] truncate" title={w.synonyms || ''}>
+                      {w.synonyms || <span className="text-slate-300">-</span>}
+                    </td>
+
+                    {/* Extra companion words */}
+                    <td className="px-4 py-2.5 text-xs text-slate-500 border-r border-slate-100">
+                      {w.extraWord ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-slate-700 font-mono">{w.extraWord}</span>
+                          <span className="text-[10px] text-slate-400">{w.extraMeaning}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">-</span>
                       )}
-                    </div>
-                  </div>
+                    </td>
 
-                  {/* Status ratings adjust */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans">শেখার প্রগ্রেস পরিবর্তন করুন</span>
-                    <div className="flex gap-2 font-sans">
-                      <button
-                        onClick={() => onRateWord(w.id, 'dont_know')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border flex items-center gap-1 ${
-                          status === 'dont_know' ? 'bg-rose-500 border-rose-600 text-white' : 'bg-rose-50/50 border-rose-100 text-rose-700'
+                    {/* Status inline editor dropdown */}
+                    <td className="px-3 py-2.5 border-r border-slate-100 text-center">
+                      <select
+                        value={status}
+                        onChange={(e) => onRateWord(w.id, e.target.value as WordStatus)}
+                        className={`text-xs font-bold px-2 py-1 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500/35 cursor-pointer text-center w-full max-w-[110px] transition ${
+                          status === 'know' 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                            : status === 'confusion' 
+                            ? 'bg-amber-50 border-amber-200 text-amber-800' 
+                            : status === 'dont_know' 
+                            ? 'bg-rose-50 border-rose-200 text-rose-800' 
+                            : 'bg-slate-50 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <XCircle className="w-3.5 h-3.5" /> পারি না
-                      </button>
-                      <button
-                        onClick={() => onRateWord(w.id, 'confusion')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border flex items-center gap-1 ${
-                          status === 'confusion' ? 'bg-amber-400 border-amber-500 text-amber-950' : 'bg-amber-50/50 border-amber-100 text-amber-800'
-                        }`}
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5" /> কনফিউশন
-                      </button>
-                      <button
-                        onClick={() => onRateWord(w.id, 'know')}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition border flex items-center gap-1 ${
-                          status === 'know' ? 'bg-indigo-600 border-indigo-700 text-white' : 'bg-indigo-50/50 border-indigo-100 text-indigo-800'
-                        }`}
-                      >
-                        <CheckCircle className="w-3.5 h-3.5" /> পারি
-                      </button>
-                    </div>
-                  </div>
+                        <option value="unrated">পড়া হয়নি</option>
+                        <option value="know">পারি</option>
+                        <option value="confusion">কনফিউশন</option>
+                        <option value="dont_know">পারি না</option>
+                      </select>
+                    </td>
 
-                  {/* Notes mnemonic viewer */}
-                  <div className="pt-2 border-t border-slate-100/50 space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-sans flex items-center gap-1">
-                      <Edit3 className="w-3 h-3 text-indigo-600" />
-                      স্মৃতিসহায়ক নোট
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="শব্দটি মনে রাখার কোনো নোট বা বাক্য লিখুন..."
-                      value={notes}
-                      onChange={(e) => onUpdateNotes(w.id, e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
-                    />
-                  </div>
-                </div>
+                    {/* Editable notes cell (behaves like an Excel sheet cell) */}
+                    <td className="px-4 py-2 border-r border-slate-100">
+                      <input
+                        type="text"
+                        value={notes}
+                        placeholder="ক্লিক করে নোট লিখুন..."
+                        onChange={(e) => onUpdateNotes(w.id, e.target.value)}
+                        className="w-full bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-indigo-500 px-1 py-1 text-xs text-slate-700 focus:outline-none transition rounded font-sans"
+                      />
+                    </td>
+
+                    {/* Bookmarks multi select custom folder button */}
+                    <td className="px-4 py-2 border-r border-slate-100 text-center relative">
+                      <button
+                        onClick={() => setActiveBookmarkWordId(activeBookmarkWordId === w.id ? null : w.id)}
+                        className={`inline-flex items-center justify-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border transition cursor-pointer select-none ${
+                          wordFolders.length > 0 
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' 
+                            : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Bookmark className={`w-3 h-3 ${wordFolders.length > 0 ? 'fill-indigo-600 text-indigo-600' : ''}`} />
+                        <span>{wordFolders.length > 0 ? `${wordFolders.length} ফোল্ডার` : 'বুকমার্ক'}</span>
+                      </button>
+
+                      {/* Floating overlay popover for folder bookmarks */}
+                      {activeBookmarkWordId === w.id && (
+                        <div className="absolute right-2 top-full mt-1.5 bg-white border border-slate-200/80 rounded-xl shadow-xl p-2.5 z-20 w-48 text-left space-y-1.5 font-sans">
+                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
+                            বুকমার্ক সিলেক্ট করুন
+                          </p>
+                          <div className="space-y-1 max-h-[150px] overflow-y-auto custom-scrollbar">
+                            {folders.map(f => {
+                              const isBookmarked = wordFolders.includes(f.id);
+                              return (
+                                <button
+                                  key={f.id}
+                                  onClick={() => onToggleBookmark(w.id, f.id)}
+                                  className="w-full flex items-center justify-between text-xs font-semibold text-slate-700 hover:bg-slate-50 p-1.5 rounded-lg transition text-left"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: f.color }}></div>
+                                    <span className="truncate max-w-[110px]">{f.name}</span>
+                                  </div>
+                                  {isBookmarked ? (
+                                    <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                                  ) : (
+                                    <div className="w-3.5 h-3.5 border border-slate-300 rounded shrink-0" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {folders.length === 0 && (
+                            <p className="text-[11px] text-slate-400 p-1.5 leading-relaxed">কোনো বুকমার্ক ফোল্ডার তৈরি করা নেই। ফোল্ডার উইন্ডোতে যান।</p>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Vocal audio Pronunciation play icon */}
+                    <td className="px-3 py-2 text-center">
+                      <button
+                        onClick={() => speak(w.word)}
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer inline-flex items-center justify-center"
+                        title="ইংরেজি উচ্চারণ শুনুন"
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {paginatedResults.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="text-center text-slate-400 font-sans py-16">
+                    <Grid className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    কোনো শব্দ শব্দ ভান্ডারে খুঁজে পাওয়া যায়নি। ফিল্টার পরিবর্তন করে পুনরায় চেষ্টা করুন।
+                  </td>
+                </tr>
               )}
-            </div>
-          );
-        })}
-
-        {searchResults.length === 0 && (
-          <p className="text-center text-slate-400 font-sans py-12">কোনো শব্দ ডিকশনারিতে পাওয়া যায়নি।</p>
-        )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* 5. Pagination spreadsheet bottom panel */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 p-4 border border-slate-200/50 rounded-2xl font-sans text-xs text-slate-500">
+          {/* Row count limit selector */}
+          <div className="flex items-center gap-2">
+            <span>প্রতি পেজে সারি:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(parseInt(e.target.value, 10));
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+            >
+              <option value={25}>২৫ টি</option>
+              <option value={50}>৫০ টি</option>
+              <option value={100}>১০০ টি</option>
+              <option value={250}>২৫০ টি</option>
+              <option value={-1}>সবগুলো শব্দ</option>
+            </select>
+          </div>
+
+          {/* Records summary */}
+          <div>
+            <span>সারি {startIndex + 1} - {endIndex} (মোট {totalItems} টি ফলাফল)</span>
+          </div>
+
+          {/* Dynamic pagination step selectors */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum = currentPage;
+                if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                // Guard page boundary
+                if (pageNum < 1 || pageNum > totalPages) return null;
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-7 h-7 font-semibold rounded-lg border transition cursor-pointer ${
+                      currentPage === pageNum
+                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white transition cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

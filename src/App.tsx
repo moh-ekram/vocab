@@ -217,6 +217,17 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Auto-merge all custom courses into enrolled list whenever custom courses or enrolled list updates
+  useEffect(() => {
+    if (customCourses.length > 0) {
+      const customIds = customCourses.map(c => c.id);
+      const missingIds = customIds.filter(id => !enrolledCourseIds.includes(id));
+      if (missingIds.length > 0) {
+        setEnrolledCourseIds(prev => Array.from(new Set([...prev, ...customIds])));
+      }
+    }
+  }, [customCourses, enrolledCourseIds]);
+
   // Auth State Listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -733,10 +744,10 @@ export default function App() {
               ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-500 hover:bg-slate-50'
           }`}
-          title="সার্চ"
+          title="শব্দ ভান্ডার"
         >
-          <Search className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সার্চ</span>
+          <BookOpen className="w-4 h-4" />
+          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">শব্দ ভান্ডার</span>
         </button>
 
         <button
@@ -893,8 +904,8 @@ export default function App() {
                   : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
               }`}
             >
-              <Search className="w-4 h-4" />
-              <span>সার্চ ডিকশনারি</span>
+              <BookOpen className="w-4 h-4" />
+              <span>শব্দ ভান্ডার (Catalog)</span>
             </button>
 
             <button
