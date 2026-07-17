@@ -148,6 +148,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const isSyncingFromCloud = useRef(false);
+  const [hasLoadedFromCloud, setHasLoadedFromCloud] = useState(false);
 
   // Local Storage Save
   useEffect(() => {
@@ -222,6 +223,7 @@ export default function App() {
       setUser(currentUser);
       if (currentUser) {
         setSyncStatus('syncing');
+        setHasLoadedFromCloud(false);
         isSyncingFromCloud.current = true;
         try {
           const userDocRef = doc(db, 'users', currentUser.uid);
@@ -264,6 +266,7 @@ export default function App() {
               setQuizTaken(data.quizTaken);
             }
             setSyncStatus('synced');
+            setHasLoadedFromCloud(true);
           } else {
             // New user signup: back up current local state to cloud immediately
             await setDoc(userDocRef, {
@@ -281,6 +284,7 @@ export default function App() {
               updatedAt: new Date().toISOString()
             });
             setSyncStatus('synced');
+            setHasLoadedFromCloud(true);
           }
         } catch (err) {
           console.error('Error fetching user data from Firestore:', err);
@@ -292,6 +296,7 @@ export default function App() {
         }
       } else {
         isSyncingFromCloud.current = false;
+        setHasLoadedFromCloud(false);
         setSyncStatus('idle');
       }
     });
@@ -301,7 +306,7 @@ export default function App() {
 
   // Sync to Cloud whenever state changes and user is logged in (debounced)
   useEffect(() => {
-    if (!user) {
+    if (!user || !hasLoadedFromCloud) {
       setSyncStatus('idle');
       return;
     }
@@ -338,10 +343,10 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user]);
+  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user, hasLoadedFromCloud]);
 
   const forceSyncToCloud = async () => {
-    if (!user) return;
+    if (!user || !hasLoadedFromCloud) return;
     setSyncStatus('syncing');
     try {
       await setDoc(doc(db, 'users', user.uid), {
