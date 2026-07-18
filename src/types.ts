@@ -72,6 +72,8 @@ export interface Course {
   totalGroups: number;
   words: VocabularyWord[];
   isDefault?: boolean;
+  isRestricted?: boolean;
+  allowedUsers?: string[];
   createdAt: string;
   createdBy: string;
 }

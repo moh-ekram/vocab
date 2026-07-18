@@ -127,6 +127,20 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [creationMethod, setCreationMethod] = useState<'excel' | 'paste'>('excel');
   const [pasteInputText, setPasteInputText] = useState('');
 
+  // Course access and default settings states
+  const [newCourseIsDefault, setNewCourseIsDefault] = useState(false);
+  const [newCourseIsRestricted, setNewCourseIsRestricted] = useState(false);
+  const [newCourseAllowedUsersText, setNewCourseAllowedUsersText] = useState('');
+
+  // Editing course states
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [editIsDefault, setEditIsDefault] = useState(false);
+  const [editIsRestricted, setEditIsRestricted] = useState(false);
+  const [editAllowedUsersText, setEditAllowedUsersText] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   // Fetch custom courses
   const fetchCustomCourses = async () => {
     setCoursesLoading(true);
@@ -458,12 +472,25 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       const groups = new Set(uploadedWords.map(w => w.group));
       const totalGroups = groups.size;
 
+      // Parse allowed users list from text area (one user per line)
+      const allowedUsers: string[] = [];
+      if (newCourseIsRestricted && newCourseAllowedUsersText.trim()) {
+        newCourseAllowedUsersText
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .forEach(user => allowedUsers.push(user));
+      }
+
       const courseData: Course = {
         id: newCourseId,
         title: newCourseTitle.trim(),
         description: newCourseDesc.trim() || `${uploadedWords.length}টি শব্দের ভোকাবুলারি কোর্স।`,
         totalGroups,
         words: uploadedWords,
+        isDefault: newCourseIsDefault,
+        isRestricted: newCourseIsRestricted,
+        allowedUsers: allowedUsers,
         createdAt: new Date().toISOString(),
         createdBy: auth.currentUser?.email || 'admin@gmail.com'
       };
@@ -475,6 +502,9 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       setNewCourseDesc('');
       setUploadedWords([]);
       setPasteInputText('');
+      setNewCourseIsDefault(false);
+      setNewCourseIsRestricted(false);
+      setNewCourseAllowedUsersText('');
       fetchCustomCourses();
     } catch (err) {
       console.error('Error saving course to Firestore:', err);
@@ -494,6 +524,56 @@ export default function AdminPanel({ words }: AdminPanelProps) {
     } catch (err) {
       console.error('Error deleting course:', err);
       alert('কোর্সটি ডিলিট করতে ব্যর্থ হয়েছে।');
+    }
+  };
+
+  const handleOpenEditModal = (course: Course) => {
+    setEditingCourse(course);
+    setEditTitle(course.title);
+    setEditDesc(course.description);
+    setEditIsDefault(!!course.isDefault);
+    setEditIsRestricted(!!course.isRestricted);
+    setEditAllowedUsersText(course.allowedUsers ? course.allowedUsers.join('\n') : '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCourse) return;
+    if (!editTitle.trim()) {
+      alert('কোর্সের নাম অবশ্যই দিতে হবে!');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      // Parse allowed users list from text area (one user per line)
+      const allowedUsers: string[] = [];
+      if (editIsRestricted && editAllowedUsersText.trim()) {
+        editAllowedUsersText
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .forEach(user => allowedUsers.push(user));
+      }
+
+      const updatedCourse: Course = {
+        ...editingCourse,
+        title: editTitle.trim(),
+        description: editDesc.trim(),
+        isDefault: editIsDefault,
+        isRestricted: editIsRestricted,
+        allowedUsers: allowedUsers,
+      };
+
+      await setDoc(doc(db, 'courses', editingCourse.id), updatedCourse);
+      
+      alert('কোর্সের সেটিংস সফলভাবে আপডেট করা হয়েছে!');
+      setEditingCourse(null);
+      fetchCustomCourses();
+    } catch (err) {
+      console.error('Error updating course settings:', err);
+      alert('কোর্সের সেটিংস আপডেট করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -750,45 +830,32 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          <div className="space-y-1 w-32 sm:w-44">
-                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
-                              <span>{knowCount} টি (পারি)</span>
-                              <span>{percentKnow}%</span>
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                              <span>পারি: {knowCount} ({percentKnow}%)</span>
+                              <span className="text-[9px] font-semibold text-slate-400">
+                                {confusionCount}❓ • {dontKnowCount}❌
+                              </span>
                             </div>
-                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
-                              <div className="h-full bg-emerald-500" style={{ width: `${Math.min(100, (knowCount/1110)*100)}%` }} title="পারি"></div>
-                              <div className="h-full bg-amber-400" style={{ width: `${Math.min(100, (confusionCount/1110)*100)}%` }} title="কনফিউশন"></div>
-                              <div className="h-full bg-rose-400" style={{ width: `${Math.min(100, (dontKnowCount/1110)*100)}%` }} title="পারি না"></div>
+                            <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden flex">
+                              <div className="bg-emerald-500 h-full" style={{ width: `${percentKnow}%` }} />
+                              <div className="bg-amber-400 h-full" style={{ width: `${Math.round((confusionCount / 1110) * 100)}%` }} />
+                              <div className="bg-rose-400 h-full" style={{ width: `${Math.round((dontKnowCount / 1110) * 100)}%` }} />
                             </div>
                           </div>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <div className="text-slate-500 font-mono text-[10px] font-bold">
-                            {u.updatedAt ? (
-                              <span className="flex items-center justify-end gap-1 text-slate-600">
-                                <Clock className="w-3 h-3 text-slate-400" />
-                                {new Date(u.updatedAt).toLocaleDateString('bn-BD', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            ) : (
-                              <span className="text-slate-400">অজানা</span>
-                            )}
-                          </div>
+                          <span className="text-[10px] text-slate-500 font-mono font-semibold">
+                            {u.updatedAt ? new Date(u.updatedAt).toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' }) : 'না'}
+                          </span>
                         </td>
                         <td className="py-4 px-4 text-center">
-                          <button 
-                            onClick={() => {
-                              setSelectedUser(u);
-                              setActiveUserTab('progress');
-                              setActiveWordFilter('all');
-                            }}
-                            className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition border border-transparent hover:border-indigo-100 cursor-pointer inline-flex items-center"
+                          <button
+                            type="button"
+                            onClick={() => setSelectedUser(u)}
+                            className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black transition cursor-pointer"
                           >
-                            <ChevronRight className="w-4 h-4" />
+                            বিশদ
                           </button>
                         </td>
                       </tr>
@@ -801,175 +868,124 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         </div>
 
         {/* Hardest Vocabulary Words Card */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-4">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                <HeartCrack className="w-5 h-5 text-rose-500" />
-                <span>শীর্ষ ১০ কঠিন শব্দ</span>
-              </h3>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">সবচেয়ে বেশি সংখ্যক ব্যবহারকারী যে শব্দগুলোকে কঠিন চিহ্নিত করেছেন</p>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6 flex flex-col h-fit">
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-indigo-600" />
+              <span>সবচেয়ে কঠিন ১০টি শব্দ</span>
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">সবচেয়ে বেশি শিক্ষার্থীর কনফিউশন বা ভুল হওয়া শব্দসমূহ</p>
+          </div>
+
+          {hardestWords.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-xs font-semibold">
+              কোনো ড্যাটা নেই।
             </div>
-
-            {loading ? (
-              <div className="space-y-3 pt-2">
-                {[1, 2, 3, 4].map(n => (
-                  <div key={n} className="h-10 bg-slate-50 animate-pulse rounded-xl"></div>
-                ))}
-              </div>
-            ) : hardestWords.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 flex flex-col items-center justify-center gap-1.5">
-                <Info className="w-6 h-6 text-slate-300" />
-                <p className="text-xs font-bold">পর্যাপ্ত ডেটা পাওয়া যায়নি!</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {hardestWords.map((item, idx) => (
-                  <div key={item.word.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl hover:shadow-sm hover:border-slate-200 transition">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-800 font-mono text-sm tracking-tight">{item.word.word}</span>
-                        <span className="text-[10px] text-indigo-600 bg-indigo-50 border border-indigo-100/50 px-1.5 py-0.5 rounded font-bold">G-{item.word.group}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate font-semibold mt-0.5">{item.word.meaning}</p>
+          ) : (
+            <div className="space-y-3.5">
+              {hardestWords.map((hw, index) => (
+                <div key={hw.word.id} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-150">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-400 font-mono">#{index + 1}</span>
+                      <span className="text-sm font-extrabold text-slate-800">{hw.word.word}</span>
                     </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-xs font-black text-slate-700 font-mono">{item.count} বার</div>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-0.5 inline-block ${
-                        item.type === 'dont_know' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        {item.type === 'dont_know' ? 'পারি না' : 'কনফিউশন'}
-                      </span>
-                    </div>
+                    <p className="text-xs text-slate-500 font-bold">{hw.word.meaning}</p>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Spark Tier Optimizations Guideline Card */}
-          <div className="bg-slate-900 text-slate-300 p-6 rounded-2xl shadow-xl border border-slate-800 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-xl">
-                <Database className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-extrabold text-white text-sm">Spark Plan এবং কোটা মনিটর</h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">ফ্রি টায়ারে রিয়েল-টাইম ডাটাবেজ ব্যবহারে সেরা কর্মক্ষমতা নিশ্চিত করা হয়েছে:</p>
-              </div>
+                  <div className="text-right">
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                      hw.type === 'dont_know' 
+                        ? 'bg-rose-50 text-rose-600' 
+                        : 'bg-amber-50 text-amber-600'
+                    }`}>
+                      {hw.count} বার {hw.type === 'dont_know' ? 'পারি না' : 'কনফিউশন'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="space-y-2.5 text-xs font-medium text-slate-400">
-              <div className="flex gap-2 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div>
-                <p><strong className="text-slate-200">১০০% অপ্টিমাইজড কুয়েরি:</strong> অতিরিক্ত রিড এড়াতে ইউজার রিলেটেড কুয়েরি ও সিঙ্গেল নোড ডাটা স্ট্রাকচার ব্যবহৃত হচ্ছে।</p>
-              </div>
-              <div className="flex gap-2 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div>
-                <p><strong className="text-slate-200">লোকাল অফলাইন ক্যাশিং:</strong> ইন্ডেক্সডডিবি (IndexedDB) দিয়ে অফলাইনে প্রগ্রেস সেভ হচ্ছে যা সার্ভার কল কমায়।</p>
-              </div>
-              <div className="flex gap-2 items-start">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></div>
-                <p><strong className="text-slate-200">স্মার্ট ডিবান্সড সিঙ্ক:</strong> প্রতিটি শব্দ পড়ার পর সাথে সাথে ফায়ারস্টোরে রিকোয়েস্ট না পাঠিয়ে ১ সেকেন্ড ডিবান্স করে পাঠানো হয়।</p>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800 text-[10px] text-slate-500 leading-relaxed font-semibold">
-              দৈনিক ফ্রি কোটা: ৫০,০০০ রিড, ২০,০০০ রাইট ও ২০,০০০ ডিলিট। অ্যাপটি সাধারণ ব্যবহারের ক্ষেত্রে দৈনিক কোটা সীমার নিচে স্বাচ্ছন্দ্যে চলতে সক্ষম।
-            </div>
-          </div>
+          )}
         </div>
       </div>
     ) : (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn" id="course-admin-grid">
-        {/* Left Column: Enrolled and Created Courses */}
-        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden lg:col-span-2 flex flex-col p-6 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Course Management Left Panel */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6 lg:col-span-2">
           <div>
-            <h3 className="font-extrabold text-slate-800 text-base">বিদ্যমান কোর্সসমূহ</h3>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">সিস্টেমের ডিফল্ট এবং আপনার আপলোড করা সকল ভোকাবুলারি কোর্সের তালিকা</p>
+            <h3 className="font-extrabold text-slate-800 text-base">কোর্স ম্যানেজমেন্ট</h3>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">ডিফল্ট এবং আপলোডকৃত কাস্টম কোর্সসমূহের বিবরণ ও নিয়ন্ত্রণ</p>
           </div>
 
-          {coursesLoading ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
-              <p className="text-xs font-bold">সার্ভার থেকে কোর্স ডাটাবেজ চেক করা হচ্ছে...</p>
-            </div>
-          ) : coursesError ? (
-            <div className="p-6 text-rose-500 border border-dashed border-rose-150 rounded-2xl text-xs font-bold text-center">
-              {coursesError}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Default course card */}
-              <div className="p-5 border border-slate-200 rounded-2xl bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:bg-slate-50">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-extrabold text-slate-800 text-sm">GRE Vocabulary (Default)</h4>
-                    <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-black uppercase">সিস্টেম ডিফল্ট</span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium">৩৮ গ্রুপের ১১১০টি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স।</p>
-                  <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
-                    <span>শব্দসংখ্যা: ১১১০ টি</span>
-                    <span>গ্রুপ: ৩৭ টি</span>
-                  </div>
+          <div className="space-y-4">
+            {/* Default Course Card */}
+            <div className="p-5 border border-indigo-100 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-extrabold text-slate-800 text-sm">BARC Vocabulary Book</h4>
+                  <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded font-black uppercase font-mono">default</span>
+                  <span className="text-[10px] text-indigo-650 bg-indigo-50 px-2.5 py-0.5 rounded font-black uppercase">ডিফল্ট</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 font-extrabold font-mono uppercase bg-slate-100 px-2.5 py-1 rounded-lg">লকড (মুছা যাবে না)</span>
+                <p className="text-xs text-slate-500 font-medium">বিসিএস, ব্যাংক এবং অন্যান্য প্রতিযোগিতামূলক পরীক্ষার জন্য ১,১১০টি গুরুত্বপূর্ণ শব্দ নিয়ে সাজানো স্ট্যান্ডার্ড প্রিপারেশন কোর্স।</p>
+                <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
+                  <span>শব্দসংখ্যা: ১১১০ টি</span>
+                  <span>গ্রুপ: ৩৭ টি</span>
                 </div>
               </div>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 font-extrabold font-mono uppercase bg-slate-100 px-2.5 py-1 rounded-lg">লকড (মুছা যাবে না)</span>
+              </div>
+            </div>
 
-              {/* Custom uploaded courses card list */}
-              {customCourses.length === 0 ? (
-                <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn">
-                  <BookOpen className="w-8 h-8 text-slate-300" />
-                  <div>
-                    <p className="font-bold text-slate-600">কোনো নতুন কোর্স এখনও তৈরি করা হয়নি।</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">ডানদিকের প্যানেল ব্যবহার করে একটি এক্সেল শীট আপলোড করে এখনই প্রথম কোর্স তৈরি করুন!</p>
+            {/* Custom uploaded courses card list */}
+            {customCourses.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn">
+                <BookOpen className="w-8 h-8 text-slate-300" />
+                <div>
+                  <p className="font-bold text-slate-600">কোনো নতুন কোর্স এখনও তৈরি করা হয়নি।</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">ডানদিকের প্যানেল ব্যবহার করে একটি এক্সেল শীট আপলোড করে এখনই প্রথম কোর্স তৈরি করুন!</p>
+                </div>
+              </div>
+            ) : (
+              customCourses.map(c => (
+                <div key={c.id} className="p-5 border border-slate-150 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-slate-800 text-sm">{c.title}</h4>
+                      <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">{c.description}</p>
+                    <div className="text-[10px] text-slate-400 font-bold flex gap-4 font-mono">
+                      <span>শব্দসংখ্যা: {c.words?.length || 0} টি</span>
+                      <span>গ্রুপ: {c.totalGroups} টি</span>
+                      <span>তৈরি করেছেন: {c.createdBy || 'Unknown'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(c.id);
+                        alert(`কোর্স কোড "${c.id}" কপি করা হয়েছে! এই কোডটি অন্য ইউজারদের সাথে শেয়ার করুন।`);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
+                      title="অন্য ইউজারদের সাথে শেয়ার করার জন্য কোড কপি করুন"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>শেয়ার কোড কপি</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteCourse(c.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>মুছে ফেলুন</span>
+                    </button>
                   </div>
                 </div>
-              ) : (
-                customCourses.map(c => (
-                  <div key={c.id} className="p-5 border border-slate-150 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-extrabold text-slate-800 text-sm">{c.title}</h4>
-                        <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium">{c.description}</p>
-                      <div className="text-[10px] text-slate-400 font-bold flex gap-4 font-mono">
-                        <span>শব্দসংখ্যা: {c.words?.length || 0} টি</span>
-                        <span>গ্রুপ: {c.totalGroups} টি</span>
-                        <span>تৈরি করেছেন: {c.createdBy || 'Unknown'}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(c.id);
-                          alert(`কোর্স কোড "${c.id}" কপি করা হয়েছে! এই কোডটি অন্য ইউজারদের সাথে শেয়ার করুন।`);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
-                        title="অন্য ইউজারদের সাথে শেয়ার করার জন্য কোড কপি করুন"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>শেয়ার কোড কপি</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCourse(c.id)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>মুছে ফেলুন</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
         {/* Right Column: Upload Form */}
@@ -1018,6 +1034,56 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                   placeholder="কোর্সটির ব্যাপারে সংক্ষিপ্ত তথ্য দিন যা শিক্ষার্থীরা দেখতে পাবে।"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none"
                 />
+              </div>
+
+              {/* Course Access & Settings Section */}
+              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/60 space-y-3">
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide block">কোর্স অ্যাক্সেস ও সেটিংস</span>
+                
+                {/* Default Course Checkbox */}
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={newCourseIsDefault}
+                    onChange={(e) => setNewCourseIsDefault(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">ডিফল্ট কোর্স হিসেবে সেট করুন</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">কোর্সটি আপলোড হওয়ার পর সকল শিক্ষার্থীর তালিকায় স্বয়ংক্রিয়ভাবে ডিফল্ট কোর্স হিসেবে দেখাবে।</span>
+                  </div>
+                </label>
+
+                {/* Restricted Course Toggle */}
+                <div className="border-t border-slate-200/60 pt-2.5 space-y-2.5">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={newCourseIsRestricted}
+                      onChange={(e) => setNewCourseIsRestricted(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">ব্যবহারকারী সীমাবদ্ধ করুন (Restricted Access)</span>
+                      <span className="text-[10px] text-slate-400 font-medium block">অ্যাক্টিভ করলে শুধুমাত্র নির্দিষ্ট ইমেল বা মোবাইল নম্বরধারী শিক্ষার্থীরাই এই কোর্সটি তাদের তালিকায় যোগ করতে পারবে।</span>
+                    </div>
+                  </label>
+
+                  {/* Allowed Users Inputs (If restricted) */}
+                  {newCourseIsRestricted && (
+                    <div className="space-y-1.5 pl-6 animate-fadeIn">
+                      <label className="text-[10px] font-bold text-slate-600 block">অনুমোদিত শিক্ষার্থীদের ইমেল / মোবাইল নম্বরের তালিকা <span className="text-rose-500">*</span></label>
+                      <textarea
+                        rows={3}
+                        value={newCourseAllowedUsersText}
+                        onChange={(e) => setNewCourseAllowedUsersText(e.target.value)}
+                        placeholder="প্রতি লাইনে একটি করে ইমেল বা মোবাইল নম্বর লিখুন। যেমন:&#10;user@example.com&#10;01712345678"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none"
+                      />
+                      <span className="text-[9px] text-slate-450 block font-semibold leading-relaxed">যাদের নাম/নাম্বার বা ইমেল এখানে থাকবে, শুধুমাত্র তারাই এই নতুন কোর্সটি তাদের ড্যাশবোর্ডে যোগ করতে পারবে।</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1507,6 +1573,136 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                 className="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 transition text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
               >
                 বন্ধ করুন
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Edit Course Settings Modal */}
+      {editingCourse && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" id="edit-course-modal">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative animate-scale-up font-sans overflow-hidden border border-slate-100 flex flex-col m-4">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-sm">কোর্স সেটিংস সম্পাদনা (Edit Course Settings)</h3>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 font-mono">ID: {editingCourse.id}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingCourse(null)}
+                className="p-1.5 hover:bg-slate-150 text-slate-400 hover:text-slate-600 rounded-lg transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Course Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 block">কোর্সের নাম (Course Title) <span className="text-rose-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition"
+                />
+              </div>
+
+              {/* Course Description */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-600 block">কোর্সের বর্ণনা (Description)</label>
+                <textarea
+                  rows={2}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none"
+                />
+              </div>
+
+              {/* Settings Group */}
+              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/60 space-y-3">
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide block">কোর্স অ্যাক্সেস ও অ্যাক্টিভেশন</span>
+                
+                {/* Default course toggle */}
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editIsDefault}
+                    onChange={(e) => setEditIsDefault(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">ডিফল্ট কোর্স হিসেবে সেট করুন</span>
+                    <span className="text-[10px] text-slate-400 font-medium block">অন থাকলে সকল ইউজারদের তালিকায় এটি অটো-ডিফল্ট কোর্স হবে।</span>
+                  </div>
+                </label>
+
+                {/* Restricted Access toggle */}
+                <div className="border-t border-slate-200/60 pt-2.5 space-y-2.5">
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={editIsRestricted}
+                      onChange={(e) => setEditIsRestricted(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block">ব্যবহারকারী সীমাবদ্ধ করুন (Restricted Access)</span>
+                      <span className="text-[10px] text-slate-400 font-medium block">অন থাকলে শুধুমাত্র নিচের তালিকাভুক্ত ইমেল বা মোবাইল নম্বরধারীরাই এই কোর্সটি অ্যাক্সেস করতে পারবে।</span>
+                    </div>
+                  </label>
+
+                  {/* Allowed Users List */}
+                  {editIsRestricted && (
+                    <div className="space-y-1.5 pl-6 animate-fadeIn">
+                      <label className="text-[10px] font-bold text-slate-600 block">অনুমোদিত শিক্ষার্থীদের ইমেল / মোবাইল নম্বর <span className="text-rose-500">*</span></label>
+                      <textarea
+                        rows={3}
+                        value={editAllowedUsersText}
+                        onChange={(e) => setEditAllowedUsersText(e.target.value)}
+                        placeholder="প্রতি লাইনে একটি করে ইমেল বা মোবাইল নম্বর লিখুন।"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3.5">
+              <button 
+                onClick={() => setEditingCourse(null)}
+                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button 
+                disabled={isSavingEdit}
+                onClick={handleSaveEdit}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition flex items-center gap-1.5"
+              >
+                {isSavingEdit ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>আপডেট হচ্ছে...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>সেটিংস সেভ করুন</span>
+                  </>
+                )}
               </button>
             </div>
 

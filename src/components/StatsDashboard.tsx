@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
 import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { motion } from 'motion/react';
 import { auth, db } from '../lib/firebase';
 import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
@@ -220,6 +221,22 @@ export default function StatsDashboard({
   const todayStr = getTodayString();
   const wordsStudiedToday = goal.history[todayStr] || 0;
   const progressPercent = Math.min(100, Math.round((wordsStudiedToday / (goal.dailyTarget || 1)) * 100));
+
+  const last7DaysData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+    const formattedDate = d.toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' });
+    return {
+      date: dateStr,
+      label: formattedDate,
+      count: goal.history?.[dateStr] || 0,
+      target: goal.dailyTarget || 20,
+    };
+  });
 
   // Motion variants for staggered animations
   const containerVariants = {
@@ -646,6 +663,90 @@ export default function StatsDashboard({
                 <XCircle className="w-3.5 h-3.5" />
                 <span>পারি না</span>
               </div>
+            </div>
+          </div>
+
+          {/* Daily Study Progress Chart */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-sm">গত ৭ দিনের পড়াশোনার অগ্রগতি</h4>
+                <p className="text-[10px] text-slate-400 font-bold font-sans">প্রতিদিন কতগুলো নতুন শব্দ শিখেছেন তার ইতিহাস</p>
+              </div>
+              <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 font-sans">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 bg-indigo-500 rounded-sm" />
+                  <span>পঠিত শব্দ</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-0.5 bg-rose-400 border-t-2 border-dashed border-rose-400" />
+                  <span>দৈনিক লক্ষ্য ({goal.dailyTarget})</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-64 w-full" id="daily-study-chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={last7DaysData}
+                  margin={{ top: 15, right: 10, left: -25, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorWords" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.95}/>
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="label" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc', radius: 4 }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        const completedTarget = data.count >= data.target;
+                        return (
+                          <div className="bg-slate-900 text-white p-3 rounded-xl border border-slate-800 shadow-lg text-xs font-sans space-y-1">
+                            <p className="font-extrabold text-slate-400">{data.label}</p>
+                            <p className="font-black text-sm flex items-center gap-1">
+                              <span>{data.count} টি শব্দ</span>
+                              {completedTarget ? (
+                                <span className="text-emerald-400 text-[9px] bg-emerald-500/10 px-1.5 py-0.2 rounded font-black">লক্ষ্য অর্জিত 🔥</span>
+                              ) : (
+                                <span className="text-rose-400 text-[9px] bg-rose-50/10 px-1.5 py-0.2 rounded font-semibold font-sans">বাকি {Math.max(0, data.target - data.count)} টি</span>
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-500">দৈনিক লক্ষ্য: {data.target} টি</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine 
+                    y={goal.dailyTarget} 
+                    stroke="#f43f5e" 
+                    strokeDasharray="4 4" 
+                    strokeWidth={1.5}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill="url(#colorWords)" 
+                    radius={[6, 6, 0, 0]} 
+                    maxBarSize={32}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
