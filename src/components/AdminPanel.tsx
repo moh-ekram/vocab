@@ -947,11 +947,22 @@ export default function AdminPanel({ words }: AdminPanelProps) {
               </div>
             ) : (
               customCourses.map(c => (
-                <div key={c.id} className="p-5 border border-slate-150 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn">
+                <div 
+                  key={c.id} 
+                  onClick={() => handleOpenEditModal(c)}
+                  className="p-5 border border-slate-150 hover:border-indigo-300 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-sm animate-fadeIn cursor-pointer group animate-fadeIn"
+                  title="কোর্সের সেটিংস পরিবর্তন করতে ক্লিক করুন"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-extrabold text-slate-800 text-sm">{c.title}</h4>
+                      <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">{c.title}</h4>
                       <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
+                      {c.isDefault && (
+                        <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-black uppercase">ডিফল্ট</span>
+                      )}
+                      {c.isRestricted && (
+                        <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-black uppercase">সীমাবদ্ধ</span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 font-medium">{c.description}</p>
                     <div className="text-[10px] text-slate-400 font-bold flex gap-4 font-mono">
@@ -959,11 +970,13 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                       <span>গ্রুপ: {c.totalGroups} টি</span>
                       <span>তৈরি করেছেন: {c.createdBy || 'Unknown'}</span>
                     </div>
+                    <span className="text-[9px] text-indigo-500 font-bold block pt-1 opacity-60 group-hover:opacity-100 transition">⚙️ কোর্স সেটিংস পরিবর্তন করতে এখানে ক্লিক করুন</span>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         navigator.clipboard.writeText(c.id);
                         alert(`কোর্স কোড "${c.id}" কপি করা হয়েছে! এই কোডটি অন্য ইউজারদের সাথে শেয়ার করুন।`);
                       }}
@@ -975,7 +988,10 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeleteCourse(c.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCourse(c.id);
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1034,56 +1050,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                   placeholder="কোর্সটির ব্যাপারে সংক্ষিপ্ত তথ্য দিন যা শিক্ষার্থীরা দেখতে পাবে।"
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none"
                 />
-              </div>
-
-              {/* Course Access & Settings Section */}
-              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/60 space-y-3">
-                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide block">কোর্স অ্যাক্সেস ও সেটিংস</span>
-                
-                {/* Default Course Checkbox */}
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={newCourseIsDefault}
-                    onChange={(e) => setNewCourseIsDefault(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-slate-700 block">ডিফল্ট কোর্স হিসেবে সেট করুন</span>
-                    <span className="text-[10px] text-slate-400 font-medium block">কোর্সটি আপলোড হওয়ার পর সকল শিক্ষার্থীর তালিকায় স্বয়ংক্রিয়ভাবে ডিফল্ট কোর্স হিসেবে দেখাবে।</span>
-                  </div>
-                </label>
-
-                {/* Restricted Course Toggle */}
-                <div className="border-t border-slate-200/60 pt-2.5 space-y-2.5">
-                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={newCourseIsRestricted}
-                      onChange={(e) => setNewCourseIsRestricted(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-slate-700 block">ব্যবহারকারী সীমাবদ্ধ করুন (Restricted Access)</span>
-                      <span className="text-[10px] text-slate-400 font-medium block">অ্যাক্টিভ করলে শুধুমাত্র নির্দিষ্ট ইমেল বা মোবাইল নম্বরধারী শিক্ষার্থীরাই এই কোর্সটি তাদের তালিকায় যোগ করতে পারবে।</span>
-                    </div>
-                  </label>
-
-                  {/* Allowed Users Inputs (If restricted) */}
-                  {newCourseIsRestricted && (
-                    <div className="space-y-1.5 pl-6 animate-fadeIn">
-                      <label className="text-[10px] font-bold text-slate-600 block">অনুমোদিত শিক্ষার্থীদের ইমেল / মোবাইল নম্বরের তালিকা <span className="text-rose-500">*</span></label>
-                      <textarea
-                        rows={3}
-                        value={newCourseAllowedUsersText}
-                        onChange={(e) => setNewCourseAllowedUsersText(e.target.value)}
-                        placeholder="প্রতি লাইনে একটি করে ইমেল বা মোবাইল নম্বর লিখুন। যেমন:&#10;user@example.com&#10;01712345678"
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none"
-                      />
-                      <span className="text-[9px] text-slate-450 block font-semibold leading-relaxed">যাদের নাম/নাম্বার বা ইমেল এখানে থাকবে, শুধুমাত্র তারাই এই নতুন কোর্সটি তাদের ড্যাশবোর্ডে যোগ করতে পারবে।</span>
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
 
