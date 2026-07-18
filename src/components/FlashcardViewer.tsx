@@ -430,6 +430,45 @@ export default function FlashcardViewer({
     }
   };
 
+  // Helper to retrieve shortcut key representations for each action
+  const getShortcutKeyForAction = (action: string): string => {
+    const userShortcuts = settings?.shortcuts || {
+      'Space': 'flip',
+      'ArrowRight': 'know',
+      'ArrowLeft': 'dont_know',
+      'ArrowUp': 'confusion',
+      'ArrowDown': 'skip',
+      'Enter': 'audio'
+    };
+
+    const keys = Object.entries(userShortcuts)
+      .filter(([_, act]) => act === action)
+      .map(([key, _]) => {
+        switch (key) {
+          case 'ArrowRight': return '→';
+          case 'ArrowLeft': return '←';
+          case 'ArrowUp': return '↑';
+          case 'ArrowDown': return '↓';
+          case 'Space': return 'Space';
+          case 'Enter': return 'Enter';
+          case 'Digit1': return '1';
+          case 'Digit2': return '2';
+          case 'Digit3': return '3';
+          case 'Digit4': return '4';
+          case 'Digit5': return '5';
+          case 'Digit6': return '6';
+          case 'KeyA': return 'A';
+          case 'KeyS': return 'S';
+          case 'KeyD': return 'D';
+          case 'KeyF': return 'F';
+          case 'KeyG': return 'G';
+          default: return key;
+        }
+      });
+
+    return keys.length > 0 ? keys.join('/') : '';
+  };
+
   // Determine stage & face class names based on animation type
   let outerWrapperClass = '';
   let frontFaceClass = '';
@@ -967,6 +1006,15 @@ export default function FlashcardViewer({
                   >
                     <XCircle className="w-4 h-4" />
                     <span>পারি না</span>
+                    {getShortcutKeyForAction('dont_know') && (
+                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
+                        activeStatus === 'dont_know'
+                          ? 'bg-red-600/50 border border-red-400/40 text-red-100'
+                          : 'bg-slate-100 border border-slate-200 text-slate-400'
+                      }`}>
+                        {getShortcutKeyForAction('dont_know')}
+                      </kbd>
+                    )}
                   </button>
 
                   {/* Mark as Confusion */}
@@ -980,6 +1028,15 @@ export default function FlashcardViewer({
                   >
                     <AlertTriangle className="w-4 h-4" />
                     <span>কনফিউশন</span>
+                    {getShortcutKeyForAction('confusion') && (
+                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
+                        activeStatus === 'confusion'
+                          ? 'bg-amber-600/50 border border-amber-400/40 text-amber-100'
+                          : 'bg-slate-100 border border-slate-200 text-slate-400'
+                      }`}>
+                        {getShortcutKeyForAction('confusion')}
+                      </kbd>
+                    )}
                   </button>
 
                   {/* Mark as Know */}
@@ -993,6 +1050,15 @@ export default function FlashcardViewer({
                   >
                     <CheckCircle className="w-4 h-4" />
                     <span>পারি</span>
+                    {getShortcutKeyForAction('know') && (
+                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
+                        activeStatus === 'know'
+                          ? 'bg-emerald-600/50 border border-emerald-400/40 text-emerald-100'
+                          : 'bg-slate-100 border border-slate-200 text-slate-400'
+                      }`}>
+                        {getShortcutKeyForAction('know')}
+                      </kbd>
+                    )}
                   </button>
                 </div>
               </div>
