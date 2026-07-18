@@ -750,135 +750,135 @@ export default function App() {
             setSelectedGroupFromDash(null);
             setActiveTab('dashboard');
           }}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dashboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
-          <span>ড্যাশবোর্ড</span>
+          <span className="hidden md:inline">ড্যাশবোর্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'leaderboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <Trophy className="w-4 h-4 text-amber-500" />
-          <span>লিডারবোর্ড</span>
+          <span className="hidden md:inline">লিডারবোর্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('flashcard')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'flashcard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>ফ্ল্যাশ কার্ড</span>
+          <span className="hidden md:inline">ফ্ল্যাশ কার্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('synonym')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'synonym'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <Sparkle className="w-4 h-4 text-amber-500" />
-          <span>সিনোনিম চেক</span>
+          <span className="hidden md:inline">সিনোনিম চেক</span>
         </button>
 
         <button
           onClick={() => setActiveTab('quiz')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'quiz'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
-          <span>পরীক্ষা ও কুইজ</span>
+          <span className="hidden md:inline">পরীক্ষা ও কুইজ</span>
         </button>
 
         <button
           onClick={() => setActiveTab('match')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'match'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>শব্দমিল</span>
+          <span className="hidden md:inline">শব্দমিল</span>
         </button>
 
         <button
           onClick={() => setActiveTab('dictionary')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dictionary'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>শব্দ ভান্ডার</span>
+          <span className="hidden md:inline">শব্দ ভান্ডার</span>
         </button>
 
         <button
           onClick={() => setActiveTab('lists')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'lists'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <BookMarked className="w-4 h-4" />
-          <span>বুকমার্ক</span>
+          <span className="hidden md:inline">বুকমার্ক</span>
         </button>
 
         <button
           onClick={() => setActiveTab('planner')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'planner'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <CalendarCheck2 className="w-4 h-4" />
-          <span>প্ল্যানার</span>
+          <span className="hidden md:inline">প্ল্যানার</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'settings'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span>সেটিংস</span>
+          <span className="hidden md:inline">সেটিংস</span>
         </button>
 
         {user && user.email === 'mohammad.001ekram@gmail.com' && (
           <button
             onClick={() => setActiveTab('admin')}
-            className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
+            className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
               activeTab === 'admin'
                 ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500'
                 : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
             }`}
           >
             <FolderLock className="w-4 h-4" />
-            <span>এডমিন প্যানেল</span>
+            <span className="hidden md:inline">এডমিন প্যানেল</span>
           </button>
         )}
 
@@ -888,11 +888,11 @@ export default function App() {
         {/* Clear/Reset progress button directly in header flow */}
         <button
           onClick={handleClearAllProgress}
-          className="flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold text-rose-500 hover:bg-rose-50 border border-dashed border-rose-100"
+          className="flex items-center justify-center gap-1.5 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold text-rose-500 hover:bg-rose-50 border border-dashed border-rose-100"
           title="প্রগ্রেস রিসেট করুন"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          <span>রিসেট করুন</span>
+          <span className="hidden md:inline">রিসেট করুন</span>
         </button>
 
         {/* App Meta Info */}
