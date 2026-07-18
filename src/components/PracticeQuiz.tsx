@@ -6,7 +6,7 @@ interface PracticeQuizProps {
   words: VocabularyWord[];
   progress: Record<string, UserProgress>;
   onRateWord: (wordId: string, status: WordStatus) => void;
-  activeGroup: number | null;
+  activeGroup: number | string | null;
   settings?: AppSettings;
   onQuizComplete?: (score: number, totalQuestions: number) => void;
 }
@@ -28,13 +28,43 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
     return settings?.quizLength || 10;
   });
 
-  // Filter States (matching FlashcardViewer exactly)
-  const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
+  // Filter States (matching FlashcardViewer exactly) - Dynamic unique groups from words list
+  const uniqueGroups = React.useMemo(() => {
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
+  }, [words]);
+
+  const [selectedGroups, setSelectedGroups] = useState<(number | string)[]>(() => {
     if (activeGroup) {
       return [activeGroup];
     }
-    return Array.from({ length: 37 }, (_, i) => i + 1);
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
   });
+
+  useEffect(() => {
+    if (activeGroup) {
+      setSelectedGroups([activeGroup]);
+    } else {
+      setSelectedGroups(uniqueGroups);
+    }
+  }, [words, activeGroup, uniqueGroups]);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
 
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
@@ -63,7 +93,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
     let sourcePool = [...words];
 
     // Filter by multiple selected groups (same logic as FlashcardViewer)
-    if (selectedGroups.length < 37) {
+    if (selectedGroups.length < uniqueGroups.length) {
       sourcePool = sourcePool.filter(w => selectedGroups.includes(w.group));
     }
 
@@ -269,8 +299,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                   className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-xs md:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 w-full cursor-pointer text-left h-[46px]"
                 >
                   <span className="truncate">
-                    {selectedGroups.length === 37 
-                      ? 'সকল গ্রুপ (১-৩৭)' 
+                    {selectedGroups.length === uniqueGroups.length 
+                      ? 'সকল গ্রুপ' 
                       : selectedGroups.length === 0 
                       ? 'কোনো গ্রুপ নেই' 
                       : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
@@ -290,7 +320,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                         <div className="flex gap-2 text-[10px]">
                           <button
                             type="button"
-                            onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
+                            onClick={() => setSelectedGroups(uniqueGroups)}
                             className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                           >
                             সব সিলেক্ট
@@ -306,20 +336,19 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                         </div>
                       </div>
 
-                      {/* Grid of 37 Groups */}
+                      {/* Grid of Groups */}
                       <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                        {Array.from({ length: 37 }, (_, i) => {
-                          const gNum = i + 1;
-                          const isSelected = selectedGroups.includes(gNum);
+                        {uniqueGroups.map((gVal) => {
+                          const isSelected = selectedGroups.includes(gVal);
                           return (
                             <button
-                              key={gNum}
+                              key={gVal}
                               type="button"
                               onClick={() => {
                                 setSelectedGroups(prev => 
-                                  prev.includes(gNum)
-                                    ? prev.filter(x => x !== gNum)
-                                    : [...prev, gNum]
+                                  prev.includes(gVal)
+                                    ? prev.filter(x => x !== gVal)
+                                    : [...prev, gVal]
                                 );
                               }}
                               className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
@@ -328,7 +357,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                                   : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
                               }`}
                             >
-                              {gNum}
+                              {gVal}
                             </button>
                           );
                         })}

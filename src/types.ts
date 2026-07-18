@@ -1,6 +1,6 @@
 export interface VocabularyWord {
   id: string; // unique id, e.g. "g1-w1"
-  group: number; // 1 to 37
+  group: number | string; // Support both numeric (1 to 37) and custom group names (like 'ক')
   word: string; // Base Word
   meaning: string; // Bengali Meaning
   synonyms: string; // Synonyms

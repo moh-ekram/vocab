@@ -30,7 +30,7 @@ interface FlashcardViewerProps {
   onRateWord: (wordId: string, status: WordStatus) => void;
   onUpdateNotes: (wordId: string, notes: string) => void;
   onToggleBookmark: (wordId: string, folderId: string) => void;
-  initialGroup?: number | null;
+  initialGroup?: number | string | null;
   settings?: AppSettings;
 }
 
@@ -44,23 +44,43 @@ export default function FlashcardViewer({
   initialGroup = null,
   settings
 }: FlashcardViewerProps) {
-  // Filter States
-  const maxGroupNum = words.length > 0 ? Math.max(...words.map(w => w.group)) : 37;
+  // Filter States - Dynamic unique groups from words list
+  const uniqueGroups = React.useMemo(() => {
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
+  }, [words]);
 
-  const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
+  const [selectedGroups, setSelectedGroups] = useState<(number | string)[]>(() => {
     if (initialGroup) {
       return [initialGroup];
     }
-    return Array.from({ length: maxGroupNum }, (_, i) => i + 1);
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
   });
 
   useEffect(() => {
     if (initialGroup) {
       setSelectedGroups([initialGroup]);
     } else {
-      setSelectedGroups(Array.from({ length: maxGroupNum }, (_, i) => i + 1));
+      setSelectedGroups(uniqueGroups);
     }
-  }, [words, initialGroup, maxGroupNum]);
+  }, [words, initialGroup, uniqueGroups]);
 
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
@@ -142,7 +162,7 @@ export default function FlashcardViewer({
     let result = [...words];
 
     // Filter by multiple selected groups
-    if (selectedGroups.length < maxGroupNum) {
+    if (selectedGroups.length < uniqueGroups.length) {
       result = result.filter(w => selectedGroups.includes(w.group));
     }
 
@@ -436,7 +456,7 @@ export default function FlashcardViewer({
               <div className="flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-indigo-500" />
                 <span>
-                  {selectedGroups.length === maxGroupNum 
+                  {selectedGroups.length === uniqueGroups.length 
                     ? `সকল গ্রুপ` 
                     : selectedGroups.length === 0 
                     ? 'কোনো গ্রুপ নেই' 
@@ -458,7 +478,7 @@ export default function FlashcardViewer({
                     <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
-                        onClick={() => setSelectedGroups(Array.from({ length: maxGroupNum }, (_, i) => i + 1))}
+                        onClick={() => setSelectedGroups(uniqueGroups)}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
                         সব সিলেক্ট
@@ -476,18 +496,17 @@ export default function FlashcardViewer({
 
                   {/* Grid of Groups */}
                   <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {Array.from({ length: maxGroupNum }, (_, i) => {
-                      const gNum = i + 1;
-                      const isSelected = selectedGroups.includes(gNum);
+                    {uniqueGroups.map((gVal) => {
+                      const isSelected = selectedGroups.includes(gVal);
                       return (
                         <button
-                          key={gNum}
+                          key={gVal}
                           type="button"
                           onClick={() => {
                             setSelectedGroups(prev => 
-                              prev.includes(gNum)
-                                ? prev.filter(x => x !== gNum)
-                                : [...prev, gNum]
+                              prev.includes(gVal)
+                                ? prev.filter(x => x !== gVal)
+                                : [...prev, gVal]
                             );
                           }}
                           className={`py-2 md:py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
@@ -496,7 +515,7 @@ export default function FlashcardViewer({
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
                           }`}
                         >
-                          {gNum}
+                          {gVal}
                         </button>
                       );
                     })}

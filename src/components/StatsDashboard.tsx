@@ -11,7 +11,7 @@ interface StatsDashboardProps {
   progress: Record<string, UserProgress>;
   goal: StudyGoal;
   setGoal: React.Dispatch<React.SetStateAction<StudyGoal>>;
-  onSelectGroup: (group: number) => void;
+  onSelectGroup: (group: number | string) => void;
   allCourses: Course[];
   enrolledCourseIds: string[];
   activeCourseId: string;
@@ -182,33 +182,46 @@ export default function StatsDashboard({
   });
 
   // 2. Group wise statistics (dynamic number of groups based on current words list)
-  const maxGroupNum = words.length > 0 ? Math.max(...words.map(w => w.group)) : 0;
-  const groupStats = Array.from({ length: maxGroupNum }, (_, i) => {
-    const groupNum = i + 1;
-    const groupWords = words.filter(w => w.group === groupNum);
-    const total = groupWords.length;
-    let groupKnow = 0;
-    let groupDontKnow = 0;
-    let groupConfusion = 0;
-
-    groupWords.forEach(w => {
-      const status = progress[w.id]?.status || 'unrated';
-      if (status === 'know') groupKnow++;
-      else if (status === 'dont_know') groupDontKnow++;
-      else if (status === 'confusion') groupConfusion++;
+  const uniqueGroups = React.useMemo(() => {
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
     });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
+  }, [words]);
 
-    const completionPercent = total > 0 ? Math.round((groupKnow / total) * 100) : 0;
+  const groupStats = React.useMemo(() => {
+    return uniqueGroups.map(gVal => {
+      const groupWords = words.filter(w => w.group === gVal);
+      const total = groupWords.length;
+      let groupKnow = 0;
+      let groupDontKnow = 0;
+      let groupConfusion = 0;
 
-    return {
-      group: groupNum,
-      total,
-      know: groupKnow,
-      dontKnow: groupDontKnow,
-      confusion: groupConfusion,
-      percent: completionPercent
-    };
-  }).filter(g => g.total > 0);
+      groupWords.forEach(w => {
+        const status = progress[w.id]?.status || 'unrated';
+        if (status === 'know') groupKnow++;
+        else if (status === 'dont_know') groupDontKnow++;
+        else if (status === 'confusion') groupConfusion++;
+      });
+
+      const completionPercent = total > 0 ? Math.round((groupKnow / total) * 100) : 0;
+
+      return {
+        group: gVal,
+        total,
+        know: groupKnow,
+        dontKnow: groupDontKnow,
+        confusion: groupConfusion,
+        percent: completionPercent
+      };
+    }).filter(g => g.total > 0);
+  }, [uniqueGroups, words, progress]);
 
   // Filter groups
   const filteredGroups = groupStats.filter(g => {

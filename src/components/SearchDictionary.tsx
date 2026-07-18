@@ -44,6 +44,20 @@ export default function SearchDictionary({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
 
+  // Dynamic unique groups from words list
+  const uniqueGroups = React.useMemo(() => {
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
+  }, [words]);
+
   // Session stable states to prevent immediate list re-ordering or item removal when tag/bookmark is changed
   const [originalStatuses, setOriginalStatuses] = useState<Record<string, WordStatus>>({});
   const [originalBookmarks, setOriginalBookmarks] = useState<Record<string, string[]>>({});
@@ -124,7 +138,7 @@ export default function SearchDictionary({
       (progress[w.id]?.notes && progress[w.id]?.notes?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Group filter match
-    const matchesGroup = selectedGroup === 'all' ? true : w.group === parseInt(selectedGroup, 10);
+    const matchesGroup = selectedGroup === 'all' ? true : String(w.group) === selectedGroup;
 
     // Status filter match using session-stable status
     const status = progress[w.id]?.status || 'unrated';
@@ -322,9 +336,9 @@ export default function SearchDictionary({
             onChange={(e) => setSelectedGroup(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
           >
-            <option value="all">গ্রুপ ফিল্টার: সকল গ্রুপ (১-৩৭)</option>
-            {Array.from({ length: 37 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>গ্রুপ {i + 1}</option>
+            <option value="all">গ্রুপ ফিল্টার: সকল গ্রুপ</option>
+            {uniqueGroups.map((gVal) => (
+              <option key={gVal} value={String(gVal)}>গ্রুপ {gVal}</option>
             ))}
           </select>
           <Filter className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />

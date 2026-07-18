@@ -262,20 +262,20 @@ export default function AdminPanel({ words }: AdminPanelProps) {
           
           const findKey = (candidates: string[]) => {
             return rowKeys.find(k => {
-              const cleanK = k.toLowerCase().replace(/[\s_-]/g, '');
-              return candidates.some(c => cleanK === c || cleanK.includes(c));
+              const cleanK = k.toLowerCase().trim();
+              return candidates.some(c => cleanK === c);
             });
           };
 
-          const wordKey = findKey(['mainword', 'englishword', 'word', 'english']);
-          const meaningKey = findKey(['banglameaning', 'meaning', 'bangla', 'bengali']);
-          const groupKey = findKey(['groupnumber', 'group', 'groupno', 'groupid']);
+          const wordKey = findKey(['word', 'main word']);
+          const meaningKey = findKey(['meaning', 'bangla meaning']);
+          const groupKey = findKey(['group']);
           const synonym1Key = findKey(['synonym1', 'syn1']);
           const synonym2Key = findKey(['synonym2', 'syn2']);
-          const synonymsKey = findKey(['synonyms', 'synonym']);
-          const exampleKey = findKey(['example', 'sentence', 'examplesentence']);
-          const extraWordKey = findKey(['extraword']);
-          const extraMeaningKey = findKey(['extrameaning']);
+          const synonymsKey = findKey(['synonyms']);
+          const extraWordKey = findKey(['extra word']);
+          const extraMeaningKey = findKey(['extra meaning']);
+          const exampleKey = findKey(['example']);
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
@@ -284,8 +284,18 @@ export default function AdminPanel({ words }: AdminPanelProps) {
             continue; // Skip invalid rows
           }
 
-          const groupVal = groupKey ? parseInt(String(row[groupKey]).trim(), 10) : 1;
-          const group = isNaN(groupVal) ? 1 : groupVal;
+          let group: string | number = 1;
+          if (groupKey && row[groupKey] !== undefined && row[groupKey] !== null) {
+            const rawGrp = String(row[groupKey]).trim();
+            if (rawGrp) {
+              const num = parseInt(rawGrp, 10);
+              if (!isNaN(num) && String(num) === rawGrp) {
+                group = num;
+              } else {
+                group = rawGrp;
+              }
+            }
+          }
 
           let synonyms = '';
           if (synonymsKey && row[synonymsKey]) {
@@ -349,11 +359,36 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
       // Check if first line has headers like 'word', 'meaning'
       let startIdx = 0;
+      let colIdxs = {
+        word: 0,
+        meaning: 1,
+        group: 2,
+        synonyms: 3,
+        extraWord: 4,
+        extraMeaning: 5,
+        example: 6
+      };
+
       if (lines.length > 0) {
-        const firstLineCells = lines[0].split('\t');
-        const firstCellLower = firstLineCells[0].toLowerCase().trim();
-        if (firstCellLower.includes('word') || firstCellLower.includes('english') || firstCellLower.includes('main')) {
+        const firstLineCells = lines[0].split('\t').map(c => c.toLowerCase().trim());
+        const hasHeader = firstLineCells.some(c => c === 'word' || c === 'main word' || c === 'meaning' || c === 'bangla meaning');
+        if (hasHeader) {
           startIdx = 1; // skip header row
+          const wordPos = firstLineCells.findIndex(c => c === 'word' || c === 'main word');
+          const meaningPos = firstLineCells.findIndex(c => c === 'meaning' || c === 'bangla meaning');
+          const groupPos = firstLineCells.findIndex(c => c === 'group');
+          const synsPos = firstLineCells.findIndex(c => c === 'synonyms');
+          const extraWPos = firstLineCells.findIndex(c => c === 'extra word');
+          const extraMPos = firstLineCells.findIndex(c => c === 'extra meaning');
+          const exPos = firstLineCells.findIndex(c => c === 'example');
+
+          if (wordPos !== -1) colIdxs.word = wordPos;
+          if (meaningPos !== -1) colIdxs.meaning = meaningPos;
+          colIdxs.group = groupPos !== -1 ? groupPos : -1;
+          colIdxs.synonyms = synsPos !== -1 ? synsPos : -1;
+          colIdxs.extraWord = extraWPos !== -1 ? extraWPos : -1;
+          colIdxs.extraMeaning = extraMPos !== -1 ? extraMPos : -1;
+          colIdxs.example = exPos !== -1 ? exPos : -1;
         }
       }
 
@@ -370,20 +405,30 @@ export default function AdminPanel({ words }: AdminPanelProps) {
           }
         }
 
-        const baseWord = cells[0]?.trim() || '';
-        const banglaMeaning = cells[1]?.trim() || '';
+        const baseWord = cells[colIdxs.word]?.trim() || '';
+        const banglaMeaning = cells[colIdxs.meaning]?.trim() || '';
 
         if (!baseWord || !banglaMeaning) {
           continue; // Skip invalid rows
         }
 
-        const groupVal = cells[2] ? parseInt(cells[2].trim(), 10) : 1;
-        const group = isNaN(groupVal) ? 1 : groupVal;
+        let group: string | number = 1;
+        if (colIdxs.group !== -1 && cells[colIdxs.group]) {
+          const rawGrp = cells[colIdxs.group].trim();
+          if (rawGrp) {
+            const num = parseInt(rawGrp, 10);
+            if (!isNaN(num) && String(num) === rawGrp) {
+              group = num;
+            } else {
+              group = rawGrp;
+            }
+          }
+        }
         
-        const synonyms = cells[3]?.trim() || '';
-        const extraWord = cells[4]?.trim() || '';
-        const extraMeaning = cells[5]?.trim() || '';
-        const example = cells[6]?.trim() || '';
+        const synonyms = colIdxs.synonyms !== -1 ? cells[colIdxs.synonyms]?.trim() || '' : '';
+        const extraWord = colIdxs.extraWord !== -1 ? cells[colIdxs.extraWord]?.trim() || '' : '';
+        const extraMeaning = colIdxs.extraMeaning !== -1 ? cells[colIdxs.extraMeaning]?.trim() || '' : '';
+        const example = colIdxs.example !== -1 ? cells[colIdxs.example]?.trim() || '' : '';
 
         parsedWords.push({
           id: `${newCourseId}_g${group}_w${index}`,
@@ -1042,16 +1087,29 @@ export default function AdminPanel({ words }: AdminPanelProps) {
               )}
 
               {/* Requirement guidelines column checker */}
-              <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl space-y-2 text-[10px] text-slate-500">
-                <span className="font-extrabold text-slate-700 block text-xs">Required Spreadsheet Columns (In Order):</span>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-semibold">
-                  <span className="text-emerald-600 flex items-center gap-1">• 1. word / main word</span>
-                  <span className="text-emerald-600 flex items-center gap-1">• 2. meaning / bangla meaning</span>
-                  <span className="text-slate-600 flex items-center gap-1">• 3. group (optional)</span>
-                  <span className="text-slate-400 flex items-center gap-1">• 4. synonyms (optional)</span>
-                  <span className="text-slate-400 flex items-center gap-1">• 5. extra word (optional)</span>
-                  <span className="text-slate-400 flex items-center gap-1">• 6. extra meaning (optional)</span>
-                  <span className="text-slate-400 flex items-center gap-1">• 7. example (optional)</span>
+              <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3.5 text-xs text-slate-600">
+                <span className="font-extrabold text-slate-800 block text-sm">এক্সেল / স্প্রেডশিট কলামের নির্দেশনা (Spreadsheet Column Guidelines):</span>
+                <p className="text-[11px] leading-relaxed text-slate-500 font-semibold">
+                  কোর্সের শব্দসমূহ আপলোড করার জন্য আপনার স্প্রেডশিটে কলামের নামগুলো অবশ্যই নিচের তালিকায় প্রদর্শিত থার্ড ব্র্যাকেট <code className="font-mono text-indigo-600 font-bold bg-indigo-50 px-1 py-0.5 rounded">[...]</code> এর মতো ফিক্সড হতে হবে (কেস ইনসেনসিটিভ - Case Insensitive)।
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-[11px] font-bold">
+                  <span className="text-indigo-600 flex items-center gap-1.5">• ১. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[word]</code> বা <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[main word]</code> (আবশ্যক)</span>
+                  <span className="text-indigo-600 flex items-center gap-1.5">• ২. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[meaning]</code> বা <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[bangla meaning]</code> (আবশ্যক)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• ৩. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[group]</code> (ঐচ্ছিক)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• ৪. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[synonyms]</code> (ঐচ্ছিক)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• ৫. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[extra word]</code> (ঐচ্ছিক)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• ৬. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[extra meaning]</code> (ঐচ্ছিক)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• ৭. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">[example]</code> (ঐচ্ছিক)</span>
+                </div>
+                <div className="border-t border-slate-200/80 pt-3 space-y-2 text-[11px] leading-relaxed font-semibold text-slate-500">
+                  <p className="flex gap-1.5 items-start">
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 সিনোনিম রিকোয়ারমেন্ট:</span>
+                    <span>প্রতিটি ফ্ল্যাশ কার্ডে কমপক্ষে ২টি সিনোনিম থাকা প্রয়োজন (সিনোনিম কলামে কমা দিয়ে আলাদা করে লিখবেন, যেমন: <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">subside, decrease</code>)।</span>
+                  </p>
+                  <p className="flex gap-1.5 items-start">
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 গ্রুপ নাম ম্যাপিং:</span>
+                    <span>গ্রুপের নাম এক্সেল টেবিলে যা থাকবে ঠিক সেই নামেই সেট হবে। যেমন: যদি গ্রুপ কলামে <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">ক</code> থাকে, তবে শব্দটি <strong className="text-slate-700 font-extrabold">"গ্রুপ ক"</strong> এর অন্তর্ভুক্ত হয়ে যাবে।</span>
+                  </p>
                 </div>
               </div>
 

@@ -57,7 +57,7 @@ const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | null>(null);
+  const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | string | null>(null);
 
   // --- PERSISTED STATES ---
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>(() => {

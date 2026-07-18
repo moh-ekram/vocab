@@ -27,7 +27,7 @@ interface SynonymCheckProps {
   words: VocabularyWord[];
   synonymProgress: Record<string, { correct: boolean; updatedAt: string }>;
   onUpdateSynonymProgress: (wordId: string, correct: boolean) => void;
-  activeGroup: number | null;
+  activeGroup: number | string | null;
   progress: Record<string, UserProgress>;
   folders: CustomFolder[];
   onRateWord: (wordId: string, status: WordStatus) => void;
@@ -49,11 +49,41 @@ export default function SynonymCheck({
   settings
 }: SynonymCheckProps) {
   
-  // Filter States (Same as FlashcardViewer)
-  const [selectedGroups, setSelectedGroups] = useState<number[]>(() => {
+  // Filter States - Dynamic unique groups from words list
+  const uniqueGroups = React.useMemo(() => {
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
+  }, [words]);
+
+  const [selectedGroups, setSelectedGroups] = useState<(number | string)[]>(() => {
     if (activeGroup) return [activeGroup];
-    return Array.from({ length: 37 }, (_, i) => i + 1);
+    const grps = new Set<string | number>();
+    words.forEach(w => {
+      if (w.group !== undefined && w.group !== null) {
+        grps.add(w.group);
+      }
+    });
+    return Array.from(grps).sort((a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      return String(a).localeCompare(String(b), 'bn');
+    });
   });
+
+  useEffect(() => {
+    if (activeGroup) {
+      setSelectedGroups([activeGroup]);
+    } else {
+      setSelectedGroups(uniqueGroups);
+    }
+  }, [words, activeGroup, uniqueGroups]);
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
@@ -122,7 +152,7 @@ export default function SynonymCheck({
     let result = [...words];
 
     // Filter by multiple selected groups
-    if (selectedGroups.length < 37) {
+    if (selectedGroups.length < uniqueGroups.length) {
       result = result.filter(w => selectedGroups.includes(w.group));
     }
 
@@ -399,7 +429,7 @@ export default function SynonymCheck({
   };
 
   // Group wise progress stats calculation
-  const getGroupStats = (groupNum: number) => {
+  const getGroupStats = (groupNum: number | string) => {
     const groupWords = words.filter(w => w.group === groupNum && getSynonymsList(w).length >= 2);
     const total = groupWords.length;
     let completed = 0;
@@ -437,7 +467,7 @@ export default function SynonymCheck({
   };
 
   // Bengali number converter helper
-  const toBengaliNumber = (num: number) => {
+  const toBengaliNumber = (num: number | string) => {
     const bnNums = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
     return num.toString().replace(/\d/g, d => bnNums[parseInt(d)]);
   };
@@ -460,8 +490,8 @@ export default function SynonymCheck({
               className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 min-w-[180px] cursor-pointer text-left"
             >
               <span className="truncate max-w-[160px]">
-                {selectedGroups.length === 37 
-                  ? 'সকল গ্রুপ (১-৩৭)' 
+                {selectedGroups.length === uniqueGroups.length 
+                  ? 'সকল গ্রুপ' 
                   : selectedGroups.length === 0 
                   ? 'কোনো গ্রুপ নেই' 
                   : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
@@ -478,7 +508,7 @@ export default function SynonymCheck({
                     <div className="flex gap-2 text-[10px]">
                       <button
                         type="button"
-                        onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
+                        onClick={() => setSelectedGroups(uniqueGroups)}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
                         সব সিলেক্ট
@@ -495,18 +525,17 @@ export default function SynonymCheck({
                   </div>
 
                   <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {Array.from({ length: 37 }, (_, i) => {
-                      const gNum = i + 1;
-                      const isSelected = selectedGroups.includes(gNum);
+                    {uniqueGroups.map((gVal) => {
+                      const isSelected = selectedGroups.includes(gVal);
                       return (
                         <button
-                          key={gNum}
+                          key={gVal}
                           type="button"
                           onClick={() => {
                             setSelectedGroups(prev => 
-                              prev.includes(gNum)
-                                ? prev.filter(x => x !== gNum)
-                                : [...prev, gNum]
+                              prev.includes(gVal)
+                                ? prev.filter(x => x !== gVal)
+                                : [...prev, gVal]
                             );
                           }}
                           className={`py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
@@ -515,7 +544,7 @@ export default function SynonymCheck({
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
                           }`}
                         >
-                          {gNum}
+                          {gVal}
                         </button>
                       );
                     })}
@@ -972,23 +1001,22 @@ export default function SynonymCheck({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
                   <Award className="w-4 h-4 text-amber-500" />
-                  <span>গ্রুপভিত্তিক অগ্রগতি (১-৩৭)</span>
+                  <span>গ্রুপভিত্তিক অগ্রগতি</span>
                 </h3>
                 <span className="text-[10px] text-slate-400 font-bold font-sans">ক্লিক করুন ফিল্টার করতে</span>
               </div>
 
               <div className="grid grid-cols-1 gap-2.5 max-h-[350px] overflow-y-auto pr-1">
-                {Array.from({ length: 37 }, (_, i) => {
-                  const gNum = i + 1;
-                  const stats = getGroupStats(gNum);
-                  const isFiltered = selectedGroups.length === 1 && selectedGroups.includes(gNum);
+                {uniqueGroups.map((gVal) => {
+                  const stats = getGroupStats(gVal);
+                  const isFiltered = selectedGroups.length === 1 && selectedGroups.includes(gVal);
                   
                   return (
                     <div 
-                      key={gNum} 
+                      key={gVal} 
                       onClick={() => {
                         // Clicking filters synonym check to exclusively study this group!
-                        setSelectedGroups([gNum]);
+                        setSelectedGroups([gVal]);
                       }}
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
                         isFiltered 
@@ -997,7 +1025,7 @@ export default function SynonymCheck({
                       }`}
                     >
                       <div className="flex justify-between items-center text-[11px] font-extrabold">
-                        <span className="text-slate-700">গ্রুপ {toBengaliNumber(gNum)}</span>
+                        <span className="text-slate-700">গ্রুপ {toBengaliNumber(gVal)}</span>
                         <span className="text-slate-400 font-normal font-sans">
                           {toBengaliNumber(stats.completed)} / {toBengaliNumber(stats.total)}
                         </span>
