@@ -30,7 +30,8 @@ import {
   User,
   AlertCircle,
   Trophy,
-  Settings
+  Settings,
+  CreditCard
 } from 'lucide-react';
 
 import {
@@ -775,6 +776,18 @@ export default function App() {
         </button>
 
         <button
+          onClick={() => setActiveTab('flashcard')}
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+            activeTab === 'flashcard'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          }`}
+        >
+          <CreditCard className="w-4 h-4 animate-icon-flip" />
+          <span className="hidden md:inline">ফ্ল্যাশ কার্ড</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('leaderboard')}
           className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'leaderboard'
@@ -784,18 +797,6 @@ export default function App() {
         >
           <Trophy className="w-4 h-4 text-amber-500" />
           <span className="hidden md:inline">লিডারবোর্ড</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('flashcard')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'flashcard'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span className="hidden md:inline">ফ্ল্যাশ কার্ড</span>
         </button>
 
         <button

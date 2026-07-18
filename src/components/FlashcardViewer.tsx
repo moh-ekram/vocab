@@ -404,15 +404,15 @@ export default function FlashcardViewer({
   const getDynamicFontSizeClass = (word: string) => {
     const len = word ? word.length : 0;
     if (len <= 6) {
-      return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
+      return 'text-5xl sm:text-6xl md:text-7xl lg:text-8xl';
     } else if (len <= 9) {
-      return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+      return 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl';
     } else if (len <= 12) {
-      return 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl';
+      return 'text-3xl sm:text-4xl md:text-5xl lg:text-6xl';
     } else if (len <= 15) {
-      return 'text-xl sm:text-3xl md:text-4xl lg:text-5xl break-all';
+      return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl break-all';
     } else {
-      return 'text-lg sm:text-2xl md:text-3xl lg:text-4xl break-all';
+      return 'text-xl sm:text-2xl md:text-3xl lg:text-4xl break-all';
     }
   };
 
@@ -476,34 +476,34 @@ export default function FlashcardViewer({
 
   if (animationType === 'flip-h') {
     outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
-    backFaceClass = 'absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between';
+    frontFaceClass = 'absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-3.5 sm:p-8 flex flex-col justify-between backface-hidden shadow-xl hover:shadow-2xl transition-all duration-300 before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
+    backFaceClass = 'absolute inset-0 bg-white p-3.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl transform rotate-y-180 backface-hidden flex flex-col justify-between before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
   } else if (animationType === 'flip-v') {
     outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-x-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
-    backFaceClass = 'absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-x-180 backface-hidden flex flex-col justify-between';
+    frontFaceClass = 'absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-3.5 sm:p-8 flex flex-col justify-between backface-hidden shadow-xl hover:shadow-2xl transition-all duration-300 before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
+    backFaceClass = 'absolute inset-0 bg-white p-3.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl transform rotate-x-180 backface-hidden flex flex-col justify-between before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
   } else if (animationType === 'slide') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-500 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-3.5 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all duration-500 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-500 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-3.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-all duration-500 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
     }`;
   } else if (animationType === 'fade') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-opacity duration-300 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-3.5 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-opacity duration-300 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-opacity duration-300 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-3.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-opacity duration-300 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'
     }`;
   } else if (animationType === 'zoom') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-3.5 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? 'scale-75 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-300 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-3.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-all duration-300 ease-in-out before:absolute before:inset-2.5 before:border before:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
       isFlipped ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'
     }`;
   }
@@ -846,14 +846,14 @@ export default function FlashcardViewer({
             {/* The Flash Card Container with Flip Animation */}
             <div
               onClick={() => setIsFlipped(prev => !prev)}
-              className="group cursor-pointer perspective h-[28rem] relative w-full"
+              className="group cursor-pointer perspective h-[28rem] relative w-full animate-card-float"
               id="vocabulary-card-stage"
             >
               <div className={outerWrapperClass}>
                 {/* FRONT FACE (Word) */}
                 <div className={frontFaceClass}>
                   {/* Spacer to keep layout centered */}
-                  <div className="h-8"></div>
+                  <div className="h-4 sm:h-8"></div>
 
                   {/* Main display word */}
                   <div className="text-center space-y-3 w-full max-w-full overflow-hidden px-1">

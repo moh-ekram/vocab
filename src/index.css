@@ -68,3 +68,34 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0.5deg);
+  }
+}
+
+.animate-card-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes flip-menu {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+.animate-icon-flip {
+  animation: flip-menu 3s ease-in-out infinite;
+  transform-style: preserve-3d;
+  perspective: 100px;
+}

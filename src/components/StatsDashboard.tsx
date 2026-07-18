@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy } from 'lucide-react';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { motion } from 'motion/react';
 import { auth, db } from '../lib/firebase';
@@ -304,54 +304,45 @@ export default function StatsDashboard({
       {/* Top Banner with Streak & Daily Target */}
       <motion.div 
         variants={itemVariants}
-        className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-8 text-white shadow-xl shadow-indigo-950/15 relative overflow-hidden" 
+        className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-indigo-950/15 relative overflow-hidden" 
         id="dashboard-welcome-banner"
       >
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <h2 className="text-2xl md:text-3xl font-black font-sans tracking-tight">আপনার শব্দভাণ্ডার ড্যাশবোর্ড</h2>
-            <p className="text-indigo-200 text-sm md:text-base font-sans font-medium">
-              ৩৭টি গ্রুপ জুড়ে আপনার শেখার অগ্রগতি ট্র্যাক করুন এবং ভোকাবুলারি আয়ত্তে আনুন।
-            </p>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
+          <div className="space-y-1 md:space-y-2">
+            <h2 className="text-xl md:text-3xl font-black font-sans tracking-tight">আপনার শব্দভাণ্ডার ড্যাশবোর্ড</h2>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="grid grid-cols-3 md:flex md:items-center md:justify-end gap-2.5 sm:gap-4 w-full md:w-auto">
             {/* Streak card */}
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs"
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-2 sm:p-4 flex flex-col sm:flex-row items-center text-center sm:text-left gap-1.5 sm:gap-3 border border-white/10 shadow-xs w-full justify-center sm:justify-start col-span-1 md:w-36 md:flex-shrink-0"
             >
-              <div className="p-2 bg-amber-400 rounded-xl text-amber-950 animate-pulse">
-                <Flame className="w-6 h-6 fill-current" />
+              <div className="p-1 sm:p-2 bg-amber-400 rounded-xl text-amber-950 animate-pulse flex-shrink-0">
+                <Flame className="w-4 h-4 sm:w-6 sm:h-6 fill-current" />
               </div>
-              <div>
-                <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans">অ্যাক্টিভ স্ট্রিক</p>
-                <p className="text-xl font-black font-sans">{goal.streak} দিন</p>
+              <div className="min-w-0">
+                <p className="text-[8px] sm:text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans truncate">স্ট্রিক</p>
+                <p className="text-xs sm:text-xl font-black font-sans truncate">{goal.streak} দিন</p>
               </div>
             </motion.div>
 
             {/* Daily Goal card */}
             <motion.div 
               whileHover={{ scale: 1.05 }}
-              className="bg-white/10 backdrop-blur-md rounded-2xl p-4 flex items-center gap-3 border border-white/10 shadow-xs"
+              onClick={() => onSelectTab?.('flashcard')}
+              className="bg-white/10 backdrop-blur-md rounded-2xl p-2 sm:p-4 flex flex-row items-center text-left gap-2 sm:gap-3 border border-white/10 shadow-xs cursor-pointer hover:bg-white/15 transition-all w-full justify-start col-span-2 md:flex-1 md:max-w-[280px]"
+              title="ফ্ল্যাশকার্ডে যান"
             >
-              <div className="p-2 bg-indigo-500 rounded-xl text-white">
-                <Trophy className="w-6 h-6" />
+              <div className="p-1 sm:p-2 bg-indigo-500 rounded-xl text-white flex-shrink-0">
+                <CreditCard className="w-4 h-4 sm:w-6 sm:h-6 animate-icon-flip" />
               </div>
-              <div>
-                <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans">আজকের লক্ষ্য ({wordsStudiedToday}/{goal.dailyTarget})</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xl font-black font-sans">{progressPercent}%</p>
-                  <div className="w-20 bg-indigo-950/60 h-2 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressPercent}%` }}
-                      transition={{ duration: 1, ease: 'easeOut' }}
-                      className="bg-indigo-400 h-full"
-                    />
-                  </div>
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-xl font-black font-sans flex items-center justify-between sm:justify-start gap-1 truncate">
+                  <span>ফ্ল্যাশকার্ড প্র্যাকটিস</span>
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-200 flex-shrink-0" />
+                </p>
               </div>
             </motion.div>
           </div>
@@ -360,17 +351,17 @@ export default function StatsDashboard({
 
       {/* Course Enrollment & Active Course Selection */}
       <motion.div variants={itemVariants} className="space-y-4" id="dashboard-courses-section">
-        <div className="flex justify-between items-center">
-          <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <span>আমার এনরোলড কোর্সসমূহ (My Courses)</span>
+        <div className="flex flex-row justify-between items-center gap-2 w-full">
+          <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-1.5 min-w-0">
+            <BookOpen className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-indigo-600 flex-shrink-0" />
+            <span className="truncate">My Courses</span>
           </h3>
           <button
             onClick={() => setShowEnrollModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100/85 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100/85 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer whitespace-nowrap flex-shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>নতুন কোর্স যোগ করুন</span>
+            <span>Add Course</span>
           </button>
         </div>
 
@@ -520,46 +511,6 @@ export default function StatsDashboard({
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {/* Course code import section */}
-              <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-3">
-                <label className="text-xs font-bold text-slate-700 block flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>কোর্স কোড দিয়ে সরাসরি যুক্ত করুন (Enroll via Code)</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="যেমন: chemistry-101"
-                    value={inputCourseCode}
-                    onChange={(e) => setInputCourseCode(e.target.value)}
-                    className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none font-mono text-slate-700 uppercase font-bold"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleImportByCode}
-                    disabled={isImporting}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    {isImporting ? 'লোড হচ্ছে...' : 'যুক্ত করুন'}
-                  </button>
-                </div>
-                {importError && (
-                  <p className="text-[10px] text-rose-500 font-bold">{importError}</p>
-                )}
-                {importSuccess && (
-                  <p className="text-[10px] text-emerald-600 font-bold">{importSuccess}</p>
-                )}
-                <p className="text-[9px] text-slate-400 font-semibold leading-normal">
-                  অ্যাডমিন বা অন্য কোনো ইউজারের তৈরি করা কোর্সের ID বা কোডটি এখানে পেস্ট করে সরাসরি আপনার আইডিতে যুক্ত করে নিন।
-                </p>
-              </div>
-
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-150"></div>
-                <span className="flex-shrink mx-3 text-[9px] text-slate-400 font-extrabold uppercase tracking-wider font-sans">পাবলিক কোর্স তালিকা</span>
-                <div className="flex-grow border-t border-slate-150"></div>
-              </div>
-
               {allCourses.filter(c => !enrolledCourseIds.includes(c.id)).length === 0 ? (
                 <div className="p-8 text-center text-slate-400 font-bold border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2">
                   <Check className="w-8 h-8 text-emerald-500 bg-emerald-50 p-1.5 rounded-full" />
@@ -618,11 +569,11 @@ export default function StatsDashboard({
       {/* Visual Progress Chart & Goal Editing */}
       <motion.div 
         variants={itemVariants}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6" 
+        className="grid grid-cols-1 gap-6" 
         id="charts-and-goals"
       >
         {/* Progress Representation */}
-        <div className="lg:col-span-2 flex flex-col gap-6 p-0 border-0 shadow-none bg-transparent">
+        <div className="flex flex-col gap-6 p-0 border-0 shadow-none bg-transparent">
           {/* Header section with counts */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/60 pb-4 gap-4">
             <div>
@@ -824,119 +775,6 @@ export default function StatsDashboard({
                   />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Study Leaderboard Panel */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col justify-between h-[480px] lg:h-[500px] min-h-[480px] my-1" id="leaderboard-panel-card">
-          <div className="space-y-4 flex flex-col h-full justify-between">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
-                <Crown className="w-5 h-5 text-amber-500 fill-amber-100" />
-                <span>মেমোরি লিডারবোর্ড</span>
-              </h3>
-              <button 
-                onClick={fetchLeaderboard}
-                disabled={loadingLeaderboard}
-                className={`p-1.5 hover:bg-slate-100 active:scale-95 text-slate-400 hover:text-indigo-600 rounded-lg transition cursor-pointer ${loadingLeaderboard ? 'animate-spin text-indigo-600' : ''}`}
-                title="রিলিজ ডেটা রিফ্রেশ করুন"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Subtitle / Context */}
-            <p className="text-[11px] text-slate-400 leading-normal font-sans font-semibold">
-              অন্যান্য ক্লাউড শিক্ষার্থীদের সাথে রিয়েল-টাইমে এগিয়ে যান।
-            </p>
-
-            {/* Rankings Scrollable List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-200 max-h-[290px]">
-              {sortedLeaderboard.map((player, index) => {
-                const rank = index + 1;
-                const isCurrentUser = player.isCurrentUser;
-                
-                return (
-                  <div 
-                    key={player.id} 
-                    className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all ${
-                      isCurrentUser 
-                        ? 'bg-gradient-to-r from-indigo-50/70 to-emerald-50/30 border-indigo-200 shadow-xs' 
-                        : 'bg-slate-50/40 border-slate-100 hover:border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {/* Rank badge */}
-                      <div className="w-6 h-6 flex items-center justify-center font-black text-xs flex-shrink-0">
-                        {rank === 1 ? (
-                          <Trophy className="w-4.5 h-4.5 text-amber-500 fill-amber-100" />
-                        ) : rank === 2 ? (
-                          <Trophy className="w-4.5 h-4.5 text-slate-400 fill-slate-50" />
-                        ) : rank === 3 ? (
-                          <Trophy className="w-4.5 h-4.5 text-amber-700 fill-amber-50" />
-                        ) : (
-                          <span className="text-slate-400 font-mono text-[11px]">#{rank}</span>
-                        )}
-                      </div>
-
-                      {/* Initial Avatar */}
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs border flex-shrink-0 ${
-                        isCurrentUser 
-                          ? 'bg-indigo-600 border-indigo-400 text-white shadow-xs' 
-                          : 'bg-white border-slate-200 text-slate-600 font-mono'
-                      }`}>
-                        {player.displayName ? player.displayName[0].toUpperCase() : 'U'}
-                      </div>
-
-                      {/* Display name */}
-                      <div className="min-w-0 font-sans">
-                        <p className={`text-xs font-black truncate flex items-center gap-1 ${isCurrentUser ? 'text-indigo-950' : 'text-slate-700'}`}>
-                          {player.displayName}
-                          {isCurrentUser && (
-                            <span className="text-[8px] bg-indigo-600 text-white px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider scale-90">YOU</span>
-                          )}
-                        </p>
-                        <p className="text-[9px] text-slate-400 font-semibold truncate">
-                          {player.id === 'current-local' ? 'অফলাইন শিক্ষার্থী' : 'ক্লাউড শিক্ষার্থী'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Studied score & streak */}
-                    <div className="flex items-center gap-1.5 flex-shrink-0 text-right font-sans">
-                      <div className="flex flex-col items-end">
-                        <p className="text-xs font-black text-indigo-600 font-mono leading-none">
-                          {player.knowCount} <span className="text-[9px] font-bold text-slate-400">শব্দ</span>
-                        </p>
-                        {player.streak > 0 && (
-                          <div className="flex items-center gap-0.5 text-amber-500 mt-1 leading-none">
-                            <Flame className="w-3 h-3 fill-current" />
-                            <span className="text-[9px] font-black font-mono">{player.streak}d</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Footer text */}
-            <div className="pt-2 border-t border-slate-100 text-center flex-shrink-0 space-y-2">
-              <p className="text-[10px] text-slate-400 font-sans font-medium">
-                ধারাবাহিক পড়াশোনা করুন এবং লিডারবোর্ডের শীর্ষে উঠে আসুন!
-              </p>
-              {onSelectTab && (
-                <button
-                  onClick={() => onSelectTab('leaderboard')}
-                  className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer font-sans"
-                >
-                  <span>গ্লোবাল লিডারবোর্ড দেখুন</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              )}
             </div>
           </div>
         </div>
