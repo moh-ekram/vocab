@@ -400,6 +400,36 @@ export default function FlashcardViewer({
 
   const animationType = settings?.flashcardAnimation === 'shuffle' ? currentRandomAnim : (settings?.flashcardAnimation || 'flip-h');
 
+  // Helper to dynamically adjust vocabulary word font size based on character count
+  const getDynamicFontSizeClass = (word: string) => {
+    const len = word ? word.length : 0;
+    if (len <= 6) {
+      return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
+    } else if (len <= 9) {
+      return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
+    } else if (len <= 12) {
+      return 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl';
+    } else if (len <= 15) {
+      return 'text-xl sm:text-3xl md:text-4xl lg:text-5xl break-all';
+    } else {
+      return 'text-lg sm:text-2xl md:text-3xl lg:text-4xl break-all';
+    }
+  };
+
+  // Helper to dynamically adjust synonyms font size based on character count
+  const getDynamicSynonymsFontSizeClass = (synonyms: string) => {
+    const len = synonyms ? synonyms.length : 0;
+    if (len <= 12) {
+      return 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl';
+    } else if (len <= 20) {
+      return 'text-xl sm:text-2xl md:text-3xl lg:text-4xl';
+    } else if (len <= 30) {
+      return 'text-lg sm:text-xl md:text-2xl lg:text-3xl';
+    } else {
+      return 'text-base sm:text-lg md:text-xl lg:text-2xl break-all';
+    }
+  };
+
   // Determine stage & face class names based on animation type
   let outerWrapperClass = '';
   let frontFaceClass = '';
@@ -407,34 +437,34 @@ export default function FlashcardViewer({
 
   if (animationType === 'flip-h') {
     outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
-    backFaceClass = 'absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between';
+    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
+    backFaceClass = 'absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-y-180 backface-hidden flex flex-col justify-between';
   } else if (animationType === 'flip-v') {
     outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-x-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
-    backFaceClass = 'absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-x-180 backface-hidden flex flex-col justify-between';
+    frontFaceClass = 'absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between backface-hidden shadow-sm hover:shadow-md transition-all duration-300';
+    backFaceClass = 'absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md transform rotate-x-180 backface-hidden flex flex-col justify-between';
   } else if (animationType === 'slide') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-500 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-500 ease-in-out ${
       isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-500 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-500 ease-in-out ${
       isFlipped ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
     }`;
   } else if (animationType === 'fade') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-opacity duration-300 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-opacity duration-300 ease-in-out ${
       isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-opacity duration-300 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-opacity duration-300 ease-in-out ${
       isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'
     }`;
   } else if (animationType === 'zoom') {
     outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
+    frontFaceClass = `absolute inset-0 bg-white border-2 border-indigo-100 rounded-3xl p-4 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all duration-300 ease-in-out ${
       isFlipped ? 'scale-75 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
     }`;
-    backFaceClass = `absolute inset-0 bg-white p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-300 ease-in-out ${
+    backFaceClass = `absolute inset-0 bg-white p-4 sm:p-5 rounded-3xl border-2 border-indigo-100 shadow-md flex flex-col justify-between transition-all duration-300 ease-in-out ${
       isFlipped ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'
     }`;
   }
@@ -787,8 +817,8 @@ export default function FlashcardViewer({
                   <div className="h-8"></div>
 
                   {/* Main display word */}
-                  <div className="text-center space-y-3">
-                    <h1 className={`text-6xl md:text-7xl lg:text-8xl font-black tracking-tight select-none py-1 ${frontWordColorClass}`}>
+                  <div className="text-center space-y-3 w-full max-w-full overflow-hidden px-1">
+                    <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} font-black tracking-tight select-none py-1 break-words ${frontWordColorClass}`}>
                       {currentActiveWord.word}
                     </h1>
                     <div className="flex items-center justify-center gap-2">
@@ -866,9 +896,9 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Synonyms */}
-                    <div className="space-y-0 text-center py-1.5 border-t border-slate-100/30">
+                    <div className="space-y-0 text-center py-1.5 border-t border-slate-100/30 w-full max-w-full overflow-hidden px-1">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synonyms</p>
-                      <p className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-indigo-950 tracking-tight leading-normal">{currentActiveWord.synonyms || 'N/A'}</p>
+                      <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words`}>{currentActiveWord.synonyms || 'N/A'}</p>
                     </div>
 
                     {/* Example Sentences */}
