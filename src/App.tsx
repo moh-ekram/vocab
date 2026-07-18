@@ -491,18 +491,21 @@ export default function App() {
   }
 
   // --- COURSE RESOLVERS ---
+  const dbGreCourse = customCourses.find(c => c.id === 'gre');
   const defaultGreCourse: Course = {
     id: 'gre',
-    title: 'GRE Vocabulary',
-    description: '৩৮ গ্রুপের ১১লোটি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স (Default)',
+    title: dbGreCourse?.title || 'BARC Vocabulary Book',
+    description: dbGreCourse?.description || '৩৮ গ্রুপের ১১লোটি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স (Default)',
     totalGroups: 37,
     words: vocabulary,
-    isDefault: true,
-    createdAt: new Date('2026-01-01').toISOString(),
-    createdBy: 'system'
+    isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
+    isRestricted: dbGreCourse?.isRestricted || false,
+    allowedUsers: dbGreCourse?.allowedUsers || [],
+    createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
+    createdBy: dbGreCourse?.createdBy || 'system'
   };
 
-  const allCourses: Course[] = [defaultGreCourse, ...filteredCustomCourses, ...importedCourses];
+  const allCourses: Course[] = [defaultGreCourse, ...filteredCustomCourses.filter(c => c.id !== 'gre'), ...importedCourses];
 
   const handleImportCourse = (course: Course) => {
     setImportedCourses(prev => {
