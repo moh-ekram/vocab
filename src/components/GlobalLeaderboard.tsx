@@ -26,7 +26,35 @@ export default function GlobalLeaderboard() {
   const [currentUserRank, setCurrentUserRank] = useState<number | null>(null);
   const [currentUserData, setCurrentUserData] = useState<LeaderboardEntry | null>(null);
 
-  const fetchLeaderboardData = async () => {
+  const fetchLeaderboardData = async (forceRefetch = false) => {
+    // Check cache first if not forced
+    if (!forceRefetch) {
+      const cached = localStorage.getItem('vocab_memorizer_cached_leaderboard');
+      const cachedTime = localStorage.getItem('vocab_memorizer_cached_leaderboard_timestamp');
+      if (cached && cachedTime) {
+        const ageInMs = Date.now() - Number(cachedTime);
+        const fifteenMinutesInMs = 15 * 60 * 1000;
+        if (ageInMs < fifteenMinutesInMs) {
+          try {
+            const sorted = JSON.parse(cached);
+            setLeaderboard(sorted);
+            const currentUserId = auth.currentUser?.uid;
+            if (currentUserId) {
+              const rankIndex = sorted.findIndex((item: any) => item.id === currentUserId);
+              if (rankIndex !== -1) {
+                setCurrentUserRank(rankIndex + 1);
+                setCurrentUserData(sorted[rankIndex]);
+              }
+            }
+            setLoading(false);
+            return;
+          } catch (e) {
+            console.error("Failed to parse cached leaderboard:", e);
+          }
+        }
+      }
+    }
+
     setLoading(true);
     try {
       const usersRef = collection(db, 'users');
@@ -76,6 +104,8 @@ export default function GlobalLeaderboard() {
       });
 
       setLeaderboard(sorted);
+      localStorage.setItem('vocab_memorizer_cached_leaderboard', JSON.stringify(sorted));
+      localStorage.setItem('vocab_memorizer_cached_leaderboard_timestamp', String(Date.now()));
 
       // Locate current user rank
       if (currentUserId) {
@@ -93,7 +123,7 @@ export default function GlobalLeaderboard() {
   };
 
   useEffect(() => {
-    fetchLeaderboardData();
+    fetchLeaderboardData(false);
   }, []);
 
   const filteredLeaderboard = leaderboard.filter(user => 
@@ -125,7 +155,7 @@ export default function GlobalLeaderboard() {
         </div>
 
         <button 
-          onClick={fetchLeaderboardData}
+          onClick={() => fetchLeaderboardData(true)}
           disabled={loading}
           className="px-4 py-2.5 bg-indigo-700/50 hover:bg-indigo-600/60 border border-indigo-650/80 rounded-xl transition-all font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
         >

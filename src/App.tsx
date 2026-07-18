@@ -43,7 +43,7 @@ import {
   signOut,
   User as FirebaseUser
 } from './lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { Course } from './types';
 import AuthModal from './components/AuthModal';
 
@@ -70,7 +70,17 @@ export default function App() {
     return saved ? saved : 'gre';
   });
 
-  const [customCourses, setCustomCourses] = useState<Course[]>([]);
+  const [customCourses, setCustomCourses] = useState<Course[]>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_cached_custom_courses');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
   const [importedCourses, setImportedCourses] = useState<Course[]>(() => {
     const saved = localStorage.getItem('vocab_memorizer_imported_courses');
     if (saved) {
@@ -198,19 +208,23 @@ export default function App() {
     localStorage.setItem('vocab_memorizer_quiz_taken', String(quizTaken));
   }, [quizTaken]);
 
-  // Live listener for Custom Courses
+  // Load custom courses with an offline-first caching mechanism (one-time fetch instead of continuous snapshot reads)
   useEffect(() => {
-    const coursesRef = collection(db, 'courses');
-    const unsubscribe = onSnapshot(coursesRef, (snapshot) => {
-      const loaded: Course[] = [];
-      snapshot.forEach(doc => {
-        loaded.push({ id: doc.id, ...doc.data() } as Course);
-      });
-      setCustomCourses(loaded);
-    }, (error) => {
-      console.error("Error reading courses collection inside App:", error);
-    });
-    return () => unsubscribe();
+    const fetchCourses = async () => {
+      try {
+        const coursesRef = collection(db, 'courses');
+        const querySnapshot = await getDocs(coursesRef);
+        const loaded: Course[] = [];
+        querySnapshot.forEach(doc => {
+          loaded.push({ id: doc.id, ...doc.data() } as Course);
+        });
+        setCustomCourses(loaded);
+        localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(loaded));
+      } catch (error) {
+        console.error("Error reading courses from Firestore (Offline-first mode active):", error);
+      }
+    };
+    fetchCourses();
   }, []);
 
   // Filter custom courses based on user permissions

@@ -104,7 +104,24 @@ export default function StatsDashboard({
   const [dbLeaderboard, setDbLeaderboard] = useState<any[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (forceRefetch = false) => {
+    if (!forceRefetch) {
+      const cached = localStorage.getItem('vocab_memorizer_cached_dashboard_leaderboard');
+      const cachedTime = localStorage.getItem('vocab_memorizer_cached_dashboard_leaderboard_timestamp');
+      if (cached && cachedTime) {
+        const ageInMs = Date.now() - Number(cachedTime);
+        const fifteenMinutesInMs = 15 * 60 * 1000;
+        if (ageInMs < fifteenMinutesInMs) {
+          try {
+            setDbLeaderboard(JSON.parse(cached));
+            return;
+          } catch (e) {
+            console.error("Failed to parse cached dashboard leaderboard:", e);
+          }
+        }
+      }
+    }
+
     setLoadingLeaderboard(true);
     try {
       const usersRef = collection(db, 'users');
@@ -128,6 +145,8 @@ export default function StatsDashboard({
         });
       });
       setDbLeaderboard(fetchedList);
+      localStorage.setItem('vocab_memorizer_cached_dashboard_leaderboard', JSON.stringify(fetchedList));
+      localStorage.setItem('vocab_memorizer_cached_dashboard_leaderboard_timestamp', String(Date.now()));
     } catch (err) {
       console.error("Error fetching leaderboard from Firestore:", err);
     } finally {
@@ -136,7 +155,7 @@ export default function StatsDashboard({
   };
 
   useEffect(() => {
-    fetchLeaderboard();
+    fetchLeaderboard(false);
   }, []);
 
   // 1. Calculate overall counts
