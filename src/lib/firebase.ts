@@ -22,18 +22,22 @@ import firebaseConfigJson from '../../firebase-applet-config.json';
 const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyDmtLGiJRUq-9D1bwSuvWrziSdX88VkXHQ",
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "extended-sprite-8dpgw.firebaseapp.com",
-  projectId: env.VITE_FIREBASE_PROJECT_ID || "extended-sprite-8dpgw",
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "extended-sprite-8dpgw.firebasestorage.app",
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "647429845805",
-  appId: env.VITE_FIREBASE_APP_ID || "1:647429845805:web:f132f482099757b9bed9a4"
+  apiKey: env.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey || "AIzaSyCYIkpASqZD6R2bOOi9F3hvQMl_iTLsjBI",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigJson.authDomain || "myvocab-13ebc.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseConfigJson.projectId || "myvocab-13ebc",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigJson.storageBucket || "myvocab-13ebc.firebasestorage.app",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigJson.messagingSenderId || "531149838847",
+  appId: env.VITE_FIREBASE_APP_ID || firebaseConfigJson.appId || "1:531149838847:web:a4577c60628b9c4c6b2fca"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app, firebaseConfigJson.firestoreDatabaseId || "ai-studio-vocabularymemori-82d2e4c7-2d1e-4297-8ae1-0701377b48e6");
+
+// Use custom database ID if specified and not "(default)", otherwise use the default database ID
+const db = firebaseConfigJson.firestoreDatabaseId && firebaseConfigJson.firestoreDatabaseId !== "(default)"
+  ? getFirestore(app, firebaseConfigJson.firestoreDatabaseId)
+  : getFirestore(app);
 
 // Enable offline persistence for firestore
 try {

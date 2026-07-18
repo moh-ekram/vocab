@@ -1,11 +1,11 @@
 {
-  "projectId": "extended-sprite-8dpgw",
-  "appId": "1:647429845805:web:f132f482099757b9bed9a4",
-  "apiKey": "AIzaSyDmtLGiJRUq-9D1bwSuvWrziSdX88VkXHQ",
-  "authDomain": "extended-sprite-8dpgw.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-vocabularymemori-82d2e4c7-2d1e-4297-8ae1-0701377b48e6",
-  "storageBucket": "extended-sprite-8dpgw.firebasestorage.app",
-  "messagingSenderId": "647429845805",
-  "measurementId": "",
-  "oAuthClientId": "647429845805-2re024mmjfi8objkihqspf80avqovk3l.apps.googleusercontent.com"
+  "projectId": "myvocab-13ebc",
+  "appId": "1:531149838847:web:a4577c60628b9c4c6b2fca",
+  "apiKey": "AIzaSyCYIkpASqZD6R2bOOi9F3hvQMl_iTLsjBI",
+  "authDomain": "myvocab-13ebc.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "myvocab-13ebc.firebasestorage.app",
+  "messagingSenderId": "531149838847",
+  "measurementId": "G-9H02B1YN1D",
+  "oAuthClientId": ""
 }
