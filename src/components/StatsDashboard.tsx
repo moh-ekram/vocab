@@ -369,7 +369,7 @@ export default function StatsDashboard({
                   <h4 className={`font-black tracking-tight leading-snug line-clamp-2 text-base md:text-lg lg:text-xl ${isActive ? 'text-white' : 'text-slate-850'}`} title={c.title}>
                     {c.title}
                   </h4>
-                  <div className="mt-2 flex items-center gap-2">
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
                     {isActive ? (
                       <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-white text-emerald-600 font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs">
                         <Check className="w-2.5 h-2.5" /> সক্রিয়
@@ -379,6 +379,44 @@ export default function StatsDashboard({
                         <Check className="w-2.5 h-2.5" /> ইনরোলড
                       </span>
                     )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`আপনি কি "${c.title}" কোর্সটির এনরোলমেন্ট বাতিল করতে চান?`)) {
+                          setEnrolledCourseIds(prev => {
+                            const updated = prev.filter(id => id !== c.id);
+                            if (activeCourseId === c.id) {
+                              if (updated.length > 0) {
+                                setActiveCourseId(updated[0]);
+                              } else {
+                                const defaultC = allCourses.find(course => course.isDefault);
+                                if (defaultC) {
+                                  setActiveCourseId(defaultC.id);
+                                  if (!updated.includes(defaultC.id)) {
+                                    return [...updated, defaultC.id];
+                                  }
+                                } else if (allCourses.length > 0) {
+                                  setActiveCourseId(allCourses[0].id);
+                                  if (!updated.includes(allCourses[0].id)) {
+                                    return [...updated, allCourses[0].id];
+                                  }
+                                }
+                              }
+                            }
+                            return updated;
+                          });
+                        }
+                      }}
+                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase transition border cursor-pointer ${
+                        isActive
+                          ? 'bg-emerald-600/40 border-white/30 text-emerald-100 hover:bg-emerald-600/70 hover:text-white'
+                          : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600'
+                      }`}
+                      title="এনরোলমেন্ট বাতিল করুন"
+                    >
+                      <XCircle className="w-2.5 h-2.5" /> বাতিল
+                    </button>
                   </div>
                 </div>
 
