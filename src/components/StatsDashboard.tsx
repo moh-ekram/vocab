@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw } from 'lucide-react';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy } from 'lucide-react';
 import { motion } from 'motion/react';
 import { auth, db } from '../lib/firebase';
-import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
 
 interface StatsDashboardProps {
   words: VocabularyWord[];
@@ -16,6 +16,7 @@ interface StatsDashboardProps {
   activeCourseId: string;
   setActiveCourseId: (id: string) => void;
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
+  onImportCourse: (course: Course) => void;
   onSelectTab?: (tab: any) => void;
 }
 
@@ -30,10 +31,66 @@ export default function StatsDashboard({
   activeCourseId,
   setActiveCourseId,
   setEnrolledCourseIds,
+  onImportCourse,
   onSelectTab
 }: StatsDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
+
+  // --- COURSE CODE IMPORT STATES & LOGIC ---
+  const [inputCourseCode, setInputCourseCode] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+
+  const handleImportByCode = async () => {
+    const code = inputCourseCode.trim().toLowerCase();
+    if (!code) {
+      setImportError('অনুগ্রহ করে একটি কোর্স কোড লিখুন।');
+      return;
+    }
+    
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(null);
+
+    try {
+      // First, check if it's already in allCourses
+      const existing = allCourses.find(c => c.id === code);
+      if (existing) {
+        onImportCourse(existing);
+        setImportSuccess(`সফলভাবে "${existing.title}" কোর্সে যুক্ত হয়েছেন!`);
+        setInputCourseCode('');
+        setTimeout(() => {
+          setShowEnrollModal(false);
+          setImportSuccess(null);
+        }, 1500);
+        return;
+      }
+
+      // Fetch from Firestore
+      const courseDocRef = doc(db, 'courses', code);
+      const docSnap = await getDoc(courseDocRef);
+
+      if (docSnap.exists()) {
+        const courseData = docSnap.data() as Course;
+        onImportCourse(courseData);
+        setImportSuccess(`সফলভাবে "${courseData.title}" কোর্সটি ক্লাউড থেকে ইমপোর্ট করা হয়েছে!`);
+        setInputCourseCode('');
+        setTimeout(() => {
+          setShowEnrollModal(false);
+          setImportSuccess(null);
+        }, 1500);
+      } else {
+        setImportError('এই কোডের কোনো কোর্স পাওয়া যায়নি। অনুগ্রহ করে সঠিক কোর্স কোড দিন।');
+      }
+    } catch (err) {
+      console.error('Error importing course by code:', err);
+      setImportError('কোর্স ইমপোর্ট করতে ব্যর্থ হয়েছে। নেটওয়ার্ক চেক করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   // --- LEADERBOARD LOGIC & STATES ---
   const [dbLeaderboard, setDbLeaderboard] = useState<any[]>([]);
@@ -369,6 +426,46 @@ export default function StatsDashboard({
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Course code import section */}
+              <div className="p-4 bg-slate-50 border border-slate-150 rounded-2xl space-y-3">
+                <label className="text-xs font-bold text-slate-700 block flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>কোর্স কোড দিয়ে সরাসরি যুক্ত করুন (Enroll via Code)</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="যেমন: chemistry-101"
+                    value={inputCourseCode}
+                    onChange={(e) => setInputCourseCode(e.target.value)}
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 outline-none font-mono text-slate-700 uppercase font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImportByCode}
+                    disabled={isImporting}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isImporting ? 'লোড হচ্ছে...' : 'যুক্ত করুন'}
+                  </button>
+                </div>
+                {importError && (
+                  <p className="text-[10px] text-rose-500 font-bold">{importError}</p>
+                )}
+                {importSuccess && (
+                  <p className="text-[10px] text-emerald-600 font-bold">{importSuccess}</p>
+                )}
+                <p className="text-[9px] text-slate-400 font-semibold leading-normal">
+                  অ্যাডমিন বা অন্য কোনো ইউজারের তৈরি করা কোর্সের ID বা কোডটি এখানে পেস্ট করে সরাসরি আপনার আইডিতে যুক্ত করে নিন।
+                </p>
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-150"></div>
+                <span className="flex-shrink mx-3 text-[9px] text-slate-400 font-extrabold uppercase tracking-wider font-sans">পাবলিক কোর্স তালিকা</span>
+                <div className="flex-grow border-t border-slate-150"></div>
+              </div>
+
               {allCourses.filter(c => !enrolledCourseIds.includes(c.id)).length === 0 ? (
                 <div className="p-8 text-center text-slate-400 font-bold border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2">
                   <Check className="w-8 h-8 text-emerald-500 bg-emerald-50 p-1.5 rounded-full" />
@@ -422,87 +519,7 @@ export default function StatsDashboard({
         </div>
       )}
 
-      {/* Main Statistics Cards */}
-      <motion.div 
-        variants={containerVariants}
-        className="grid grid-cols-2 lg:grid-cols-5 gap-4" 
-        id="stats-grid-cards"
-      >
-        {/* Total words */}
-        <motion.div 
-          variants={itemVariants}
-          whileHover={{ scale: 1.03, y: -4 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
-        >
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <BookOpen className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">মোট শব্দ</p>
-            <p className="text-2xl font-black font-sans text-slate-800">{totalWords}</p>
-          </div>
-        </motion.div>
 
-        {/* Know */}
-        <motion.div 
-          variants={itemVariants}
-          whileHover={{ scale: 1.03, y: -4 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
-        >
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <CheckCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পারি</p>
-            <p className="text-2xl font-black font-sans text-emerald-600">{knowCount}</p>
-          </div>
-        </motion.div>
-
-        {/* Confusion */}
-        <motion.div 
-          variants={itemVariants}
-          whileHover={{ scale: 1.03, y: -4 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
-        >
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">কনফিউশন</p>
-            <p className="text-2xl font-black font-sans text-amber-600">{confusionCount}</p>
-          </div>
-        </motion.div>
-
-        {/* Don't Know */}
-        <motion.div 
-          variants={itemVariants}
-          whileHover={{ scale: 1.03, y: -4 }}
-          className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
-        >
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
-            <XCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পারি না</p>
-            <p className="text-2xl font-black font-sans text-rose-600">{dontKnowCount}</p>
-          </div>
-        </motion.div>
-
-        {/* Unrated */}
-        <motion.div 
-          variants={itemVariants}
-          whileHover={{ scale: 1.03, y: -4 }}
-          className="bg-white col-span-2 lg:col-span-1 p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center gap-4 hover:shadow-md transition cursor-default"
-        >
-          <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
-            <HelpCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">পড়া হয়নি</p>
-            <p className="text-2xl font-black font-sans text-slate-500">{unratedCount}</p>
-          </div>
-        </motion.div>
-      </motion.div>
 
       {/* Visual Progress Chart & Goal Editing */}
       <motion.div 
@@ -511,92 +528,123 @@ export default function StatsDashboard({
         id="charts-and-goals"
       >
         {/* Progress Representation */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs lg:col-span-2 flex flex-col md:flex-row items-center gap-8">
-          <div className="relative flex-shrink-0 w-40 h-40">
-            {/* SVG Progress Circle */}
-            <svg viewBox="0 0 160 160" className="w-40 h-40 transform -rotate-90">
-              <circle cx="80" cy="80" r="70" className="text-slate-100" strokeWidth="12" stroke="currentColor" fill="transparent" />
-              <motion.circle 
-                cx="80" 
-                cy="80" 
-                r="70" 
-                className="text-indigo-600" 
-                strokeWidth="12" 
-                strokeDasharray="439.8" 
-                initial={{ strokeDashoffset: 439.8 }}
-                animate={{ strokeDashoffset: 439.8 - (439.8 * overallCompleteness) / 100 }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
-                strokeLinecap="round" 
-                stroke="currentColor" 
-                fill="transparent" 
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-3xl font-black text-slate-800 font-sans">{overallCompleteness}%</p>
-              <p className="text-xs text-slate-400 font-bold font-sans">সম্পন্ন</p>
+        <div className="lg:col-span-2 flex flex-col gap-6 p-0 border-0 shadow-none bg-transparent">
+          {/* Header section with counts */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/60 pb-4 gap-4">
+            <div>
+              <h3 className="text-base md:text-lg font-black text-slate-800 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-indigo-600" />
+                <span>অগ্রগতি ও শেখার বন্টন</span>
+              </h3>
+              <p className="text-[11px] text-slate-400 font-bold font-sans">শব্দভাণ্ডারের সার্বিক অবস্থা এবং শিখন অগ্রগতির সামগ্রিক বিবরণী</p>
             </div>
           </div>
 
-          <div className="flex-1 space-y-4 w-full">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-indigo-600" />
-              শেখার সামগ্রিক বন্টন
-            </h3>
+          {/* Large Beautiful English Numbers for Total Words & Unread */}
+          <div className="flex flex-row items-center gap-12 py-3">
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">TOTAL WORDS</span>
+              <span className="text-4xl md:text-5xl font-black text-indigo-600 tracking-tight font-sans mt-1 leading-none">{totalWords}</span>
+            </div>
+            <div className="h-10 w-[1.5px] bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">NOT STUDIED</span>
+              <span className="text-4xl md:text-5xl font-black text-slate-500 tracking-tight font-sans mt-1 leading-none">{unratedCount}</span>
+            </div>
+          </div>
 
-            {/* Simple elegant progress bars instead of bulky duplicate circles */}
-            <div className="space-y-4 pt-2">
-              <div>
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
-                  <span className="flex items-center gap-1.5 font-sans">
-                    <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                    পারি (সম্পন্ন)
-                  </span>
-                  <span className="font-mono text-indigo-600 font-black">{knowCount} শব্দ ({totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%)</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-indigo-600 rounded-full" 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${totalWords > 0 ? (knowCount / totalWords) * 100 : 0}%` }}
-                    transition={{ duration: 1 }}
+          {/* Three large circular progress bars for status */}
+          <div className="flex flex-row gap-2 sm:gap-4 pt-4 w-full max-w-md">
+            {/* Know progress circle */}
+            <div className="flex flex-col items-center text-center transition group flex-1">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
+                  <motion.circle 
+                    cx="50" 
+                    cy="50" 
+                    r="38" 
+                    className="text-emerald-500" 
+                    strokeWidth="11" 
+                    strokeDasharray="238.76" 
+                    initial={{ strokeDashoffset: 238.76 }}
+                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    strokeLinecap="round" 
+                    stroke="currentColor" 
+                    fill="transparent" 
                   />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base sm:text-xl font-black text-emerald-600 font-sans leading-none">{knowCount}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
                 </div>
               </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-emerald-700 font-sans">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>পারি</span>
+              </div>
+            </div>
 
-              <div>
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
-                  <span className="flex items-center gap-1.5 font-sans">
-                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    কনফিউশন আছে
-                  </span>
-                  <span className="font-mono text-amber-600 font-black">{confusionCount} শব্দ ({totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%)</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-amber-500 rounded-full" 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${totalWords > 0 ? (confusionCount / totalWords) * 100 : 0}%` }}
-                    transition={{ duration: 1 }}
+            {/* Confusion progress circle */}
+            <div className="flex flex-col items-center text-center transition group flex-1">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
+                  <motion.circle 
+                    cx="50" 
+                    cy="50" 
+                    r="38" 
+                    className="text-amber-500" 
+                    strokeWidth="11" 
+                    strokeDasharray="238.76" 
+                    initial={{ strokeDashoffset: 238.76 }}
+                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    strokeLinecap="round" 
+                    stroke="currentColor" 
+                    fill="transparent" 
                   />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base sm:text-xl font-black text-amber-600 font-sans leading-none">{confusionCount}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
                 </div>
               </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-700 font-sans">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>কনফিউশন</span>
+              </div>
+            </div>
 
-              <div>
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600 mb-1.5">
-                  <span className="flex items-center gap-1.5 font-sans">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    পারি না
-                  </span>
-                  <span className="font-mono text-rose-600 font-black">{dontKnowCount} শব্দ ({totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%)</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-rose-500 rounded-full" 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0}%` }}
-                    transition={{ duration: 1 }}
+            {/* Don't Know progress circle */}
+            <div className="flex flex-col items-center text-center transition group flex-1">
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
+                  <motion.circle 
+                    cx="50" 
+                    cy="50" 
+                    r="38" 
+                    className="text-rose-500" 
+                    strokeWidth="11" 
+                    strokeDasharray="238.76" 
+                    initial={{ strokeDashoffset: 238.76 }}
+                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100 }}
+                    transition={{ duration: 1.2, ease: "easeOut" }}
+                    strokeLinecap="round" 
+                    stroke="currentColor" 
+                    fill="transparent" 
                   />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-base sm:text-xl font-black text-rose-600 font-sans leading-none">{dontKnowCount}</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
                 </div>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-rose-700 font-sans">
+                <XCircle className="w-3.5 h-3.5" />
+                <span>পারি না</span>
               </div>
             </div>
           </div>

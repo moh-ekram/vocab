@@ -71,6 +71,17 @@ export default function App() {
   });
 
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
+  const [importedCourses, setImportedCourses] = useState<Course[]>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_imported_courses');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
 
   const [progress, setProgress] = useState<Record<string, UserProgress>>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_PROGRESS_KEY);
@@ -474,7 +485,27 @@ export default function App() {
     createdBy: 'system'
   };
 
-  const allCourses: Course[] = [defaultGreCourse, ...customCourses];
+  const allCourses: Course[] = [defaultGreCourse, ...customCourses, ...importedCourses];
+
+  const handleImportCourse = (course: Course) => {
+    setImportedCourses(prev => {
+      if (prev.some(c => c.id === course.id)) {
+        return prev;
+      }
+      const updated = [...prev, course];
+      localStorage.setItem('vocab_memorizer_imported_courses', JSON.stringify(updated));
+      return updated;
+    });
+
+    setEnrolledCourseIds(prev => {
+      if (!prev.includes(course.id)) {
+        return [...prev, course.id];
+      }
+      return prev;
+    });
+
+    setActiveCourseId(course.id);
+  };
 
   const activeCourse = allCourses.find(c => c.id === activeCourseId) || defaultGreCourse;
   const activeWords = activeCourse.words || [];
@@ -619,423 +650,238 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800" id="main-layout-stage">
-      {/* Mobile Top Header (Main Banner) */}
-      <div className="md:hidden bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 flex items-center justify-between shadow-md flex-shrink-0" id="mobile-main-banner">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-indigo-600 rounded-xl text-white shadow-sm shadow-indigo-500/10">
-            <BookOpen className="w-4 h-4" />
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800" id="main-layout-stage">
+      {/* Top Header / Main Banner (Unified for Mobile & Desktop) */}
+      <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 md:px-8 md:py-5 flex items-center justify-between shadow-md flex-shrink-0" id="main-header-banner">
+        <div className="flex items-center gap-2.5 md:gap-3.5">
+          <div className="p-2 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
+            <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div>
-            <h1 className="text-sm font-black tracking-tight font-sans">ভোকাবুলারি মেমোরি</h1>
-            <p className="text-[9px] text-indigo-200 font-bold uppercase tracking-wider font-sans">৩৭ গ্রুপ লার্নিং ড্যাশবোর্ড</p>
+            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans">ভোকাবুলারি মেমোরি</h1>
+            <p className="text-[9px] md:text-xs text-indigo-200 font-bold uppercase tracking-wider font-sans">৩৭ গ্রুপ লার্নিং ড্যাশবোর্ড</p>
           </div>
         </div>
-        {user ? (
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-xs border border-white/20">
-              {user.email ? user.email[0].toUpperCase() : 'U'}
-            </div>
-            <button
-              onClick={handleLogOut}
-              className="p-1 text-indigo-200 hover:text-white rounded-lg transition cursor-pointer"
-              title="লগআউট"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="text-[9px] font-extrabold px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer"
-          >
-            লগইন
-          </button>
-        )}
-      </div>
 
-      {/* Mobile Horizontal Menu: just below the main banner */}
-      <div className="md:hidden bg-white border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 p-2 scrollbar-none flex-shrink-0" id="mobile-horizontal-menu">
+        {/* User Stats & Auth (Unified Header UI) */}
+        <div className="flex items-center gap-2 md:gap-3.5">
+          {user ? (
+            <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
+              <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/15 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
+                {user.email ? user.email[0].toUpperCase() : 'U'}
+              </div>
+              <div className="hidden sm:block text-left max-w-[120px] md:max-w-[150px]">
+                <p className="text-[11px] md:text-xs font-extrabold text-white truncate">
+                  {user.displayName || user.email?.split('@')[0]}
+                </p>
+                <span className="text-[9px] md:text-[10px] text-indigo-200 font-bold block truncate">
+                  {user.email}
+                </span>
+              </div>
+              
+              {/* Sync Status Info */}
+              <div className="hidden md:flex items-center gap-1.5 bg-indigo-950/45 border border-indigo-500/15 px-2 py-1 rounded-lg text-[9px]">
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  syncStatus === 'synced' ? 'bg-emerald-400 animate-pulse' :
+                  syncStatus === 'syncing' ? 'bg-indigo-400 animate-spin' :
+                  syncStatus === 'error' ? 'bg-rose-400' : 'bg-slate-400'
+                }`} />
+                <span className="text-indigo-200 font-semibold">
+                  {syncStatus === 'synced' && 'ব্যাকআপ সচল'}
+                  {syncStatus === 'syncing' && 'সিঙ্ক হচ্ছে...'}
+                  {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
+                  {syncStatus === 'idle' && 'অপেক্ষমাণ'}
+                </span>
+              </div>
+
+              {/* Force Sync button */}
+              <button
+                onClick={forceSyncToCloud}
+                className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md transition"
+                disabled={syncStatus === 'syncing'}
+                title="ম্যানুয়াল সিঙ্ক করুন"
+              >
+                {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
+              </button>
+
+              <button
+                onClick={handleLogOut}
+                className="p-1 text-indigo-200 hover:text-rose-400 rounded-lg transition cursor-pointer"
+                title="লগআউট"
+              >
+                <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="text-[10px] md:text-xs font-extrabold px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20"
+            >
+              ক্লাউড ব্যাকআপ (লগইন)
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Unified Horizontal Menu Bar (Sits directly under the main banner) */}
+      <div className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center gap-1.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0" id="horizontal-menu-navigation">
         <button
           onClick={() => {
             setSelectedGroupFromDash(null);
             setActiveTab('dashboard');
           }}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dashboard'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="ড্যাশবোর্ড"
         >
           <LayoutDashboard className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">ড্যাশবোর্ড</span>
+          <span>ড্যাশবোর্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'leaderboard'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="লিডারবোর্ড"
         >
           <Trophy className="w-4 h-4 text-amber-500" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">লিডারবোর্ড</span>
+          <span>লিডারবোর্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('flashcard')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'flashcard'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="ফ্ল্যাশ কার্ড"
         >
           <Layers className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">ফ্ল্যাশ কার্ড</span>
+          <span>ফ্ল্যাশ কার্ড</span>
         </button>
 
         <button
           onClick={() => setActiveTab('synonym')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'synonym'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="সিনোনিম"
         >
-          <Sparkle className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সিনোনিম</span>
+          <Sparkle className="w-4 h-4 text-amber-500" />
+          <span>সিনোনিম চেক</span>
         </button>
 
         <button
           onClick={() => setActiveTab('quiz')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'quiz'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="কুইজ"
         >
           <GraduationCap className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">কুইজ</span>
+          <span>পরীক্ষা ও কুইজ</span>
         </button>
 
         <button
           onClick={() => setActiveTab('match')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'match'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="শব্দমিল"
         >
           <Sparkles className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">শব্দমিল</span>
+          <span>শব্দমিল</span>
         </button>
 
         <button
           onClick={() => setActiveTab('dictionary')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dictionary'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="শব্দ ভান্ডার"
         >
           <BookOpen className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">শব্দ ভান্ডার</span>
+          <span>শব্দ ভান্ডার</span>
         </button>
 
         <button
           onClick={() => setActiveTab('lists')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'lists'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="বুকমার্ক"
         >
           <BookMarked className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">বুকমার্ক</span>
+          <span>বুকমার্ক</span>
         </button>
 
         <button
           onClick={() => setActiveTab('planner')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'planner'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="প্ল্যানার"
         >
           <CalendarCheck2 className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">প্ল্যানার</span>
+          <span>প্ল্যানার</span>
         </button>
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+          className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'settings'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-500 hover:bg-slate-50'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
-          title="সেটিংস"
         >
           <Settings className="w-4 h-4" />
-          <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">সেটিংস</span>
+          <span>সেটিংস</span>
         </button>
 
         {user && user.email === 'mohammad.001ekram@gmail.com' && (
           <button
             onClick={() => setActiveTab('admin')}
-            className={`flex flex-col items-center justify-center flex-shrink-0 w-14 h-11 rounded-lg transition cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
               activeTab === 'admin'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'text-rose-600 hover:bg-rose-50'
+                ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500'
+                : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
             }`}
-            title="এডমিন"
           >
             <FolderLock className="w-4 h-4" />
-            <span className="text-[8px] font-bold mt-0.5 whitespace-nowrap">এডমিন</span>
+            <span>এডমিন প্যানেল</span>
           </button>
         )}
+
+        {/* Separator / Spacer */}
+        <div className="h-4 w-px bg-slate-200 flex-shrink-0 mx-1 hidden md:block" />
+
+        {/* Clear/Reset progress button directly in header flow */}
+        <button
+          onClick={handleClearAllProgress}
+          className="flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold text-rose-500 hover:bg-rose-50 border border-dashed border-rose-100"
+          title="প্রগ্রেস রিসেট করুন"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>রিসেট করুন</span>
+        </button>
+
+        {/* App Meta Info */}
+        <div className="hidden lg:flex items-center gap-1 text-[10px] text-slate-400 font-mono ml-auto pl-4 flex-shrink-0">
+          <span>v2.5.0</span>
+          <span>•</span>
+          <span>{activeWords.length} Words ({activeCourseId.toUpperCase()})</span>
+        </div>
       </div>
-
-      {/* 1. Sidebar Panel Nav (Hidden on Mobile) */}
-      <aside className="hidden md:flex w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-200/60 flex-col justify-between flex-shrink-0" id="sidebar-navigator">
-        <div className="p-6 space-y-8">
-          {/* Logo & Headline */}
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-base font-extrabold text-slate-900 tracking-tight font-sans">ভোকাবুলারি মেমোরি</h1>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-sans">৩৭ গ্রুপ লার্নিং ড্যাশবোর্ড</p>
-            </div>
-          </div>
-
-          {/* Navigation Checklist items */}
-          <nav className="space-y-1.5 font-sans">
-            <button
-              onClick={() => {
-                setSelectedGroupFromDash(null);
-                setActiveTab('dashboard');
-              }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'dashboard'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>অগ্রগতি ড্যাশবোর্ড</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('leaderboard')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'leaderboard'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Trophy className="w-4 h-4 text-amber-500" />
-              <span>গ্লোবাল লিডারবোর্ড</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('flashcard')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'flashcard'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>ফ্ল্যাশ কার্ড রিভিউ</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('synonym')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'synonym'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Sparkle className="w-4 h-4 text-amber-500" />
-              <span>সিনোনিম চেক</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('quiz')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'quiz'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <GraduationCap className="w-4 h-4" />
-              <span>পরীক্ষা ও কুইজ</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('match')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'match'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>শব্দমিল খেলা (Match)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('dictionary')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'dictionary'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>শব্দ ভান্ডার (Catalog)</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('lists')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'lists'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <BookMarked className="w-4 h-4" />
-              <span>বুকমার্ক ফোল্ডার</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('planner')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'planner'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <CalendarCheck2 className="w-4 h-4" />
-              <span>দৈনিক প্ল্যানার</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                activeTab === 'settings'
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-            >
-              <Settings className="w-4 h-4" />
-              <span>সেটিংস ও ডিফল্ট</span>
-            </button>
-
-            {user && user.email === 'mohammad.001ekram@gmail.com' && (
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition border border-dashed border-rose-200 ${
-                  activeTab === 'admin'
-                    ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500 animate-pulse'
-                    : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
-                }`}
-              >
-                <FolderLock className="w-4 h-4" />
-                <span>সিস্টেম এডমিন প্যানেল</span>
-              </button>
-            )}
-
-            {/* Aligned Cloud Sync / Login Button under Daily Planner */}
-            <div className="pt-3 border-t border-slate-100 mt-2 space-y-2.5">
-              {user ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs border border-indigo-100 flex-shrink-0">
-                        {user.email ? user.email[0].toUpperCase() : 'U'}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-extrabold text-slate-800 truncate" title={user.email || ''}>
-                          {user.displayName || user.email?.split('@')[0]}
-                        </p>
-                        <span className="text-[9px] text-slate-400 font-bold block truncate">
-                          {user.email}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleLogOut}
-                      className="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                      title="লগআউট করুন"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Sync Status Badge */}
-                  <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-2 rounded-xl text-[9px]">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        syncStatus === 'synced' ? 'bg-emerald-500 animate-pulse' :
-                        syncStatus === 'syncing' ? 'bg-indigo-500 animate-spin' :
-                        syncStatus === 'error' ? 'bg-rose-500' : 'bg-slate-400'
-                      }`} />
-                      <span className="text-slate-500 font-semibold">
-                        {syncStatus === 'synced' && 'ব্যাকআপ সচল'}
-                        {syncStatus === 'syncing' && 'সিঙ্ক হচ্ছে...'}
-                        {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
-                        {syncStatus === 'idle' && 'অপেক্ষমাণ'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={forceSyncToCloud}
-                      className="text-indigo-600 hover:text-indigo-700 font-bold cursor-pointer hover:underline"
-                      disabled={syncStatus === 'syncing'}
-                    >
-                      {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition text-slate-500 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer border border-dashed border-indigo-200"
-                >
-                  <Cloud className="w-4 h-4 text-indigo-500 animate-pulse" />
-                  <span>ক্লাউড ব্যাকআপ (লগইন)</span>
-                </button>
-              )}
-            </div>
-          </nav>
-        </div>
-
-        {/* Clear/Reset progress panel footer */}
-        <div className="p-6 border-t border-slate-100 font-sans space-y-2">
-          <button
-            onClick={handleClearAllProgress}
-            className="w-full py-2 px-3 hover:bg-rose-50 text-rose-500 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition border border-transparent hover:border-rose-100"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>প্রগ্রেস রিসেট করুন</span>
-          </button>
-          <div className="text-center text-[10px] text-slate-400 font-mono">
-            v2.5.0 • {activeWords.length} Vocab Words ({activeCourseId.toUpperCase()})
-          </div>
-        </div>
-      </aside>
 
       {/* 2. Main Workspace Layout */}
       <main className="flex-1 overflow-y-auto p-6 md:p-8" id="main-content-display">
@@ -1051,6 +897,7 @@ export default function App() {
               activeCourseId={activeCourseId}
               setActiveCourseId={setActiveCourseId}
               setEnrolledCourseIds={setEnrolledCourseIds}
+              onImportCourse={handleImportCourse}
               onSelectGroup={(gNum) => {
                 setSelectedGroupFromDash(gNum);
                 setActiveTab('flashcard');

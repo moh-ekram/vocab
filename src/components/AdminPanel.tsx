@@ -124,6 +124,8 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [creationMethod, setCreationMethod] = useState<'excel' | 'paste'>('excel');
+  const [pasteInputText, setPasteInputText] = useState('');
 
   // Fetch custom courses
   const fetchCustomCourses = async () => {
@@ -273,8 +275,8 @@ export default function AdminPanel({ words }: AdminPanelProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = e.target?.result;
-        const workbook = read(data, { type: 'binary' });
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rawRows = utils.sheet_to_json(sheet) as any[];
@@ -357,12 +359,94 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         setUploadError('ফাইল প্রসেস করতে ব্যর্থ হয়েছে। সঠিক এক্সেল (.xlsx / .xls) ফাইল দিন।');
       }
     };
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
+  };
+
+  const processPastedText = (text: string) => {
+    setUploadError(null);
+    setUploadedWords([]);
+    
+    if (!newCourseId) {
+      setUploadError('কোর্সের নাম দিন এবং কোর্স আইডি জেনারেট হতে দিন।');
+      return;
+    }
+
+    if (!text.trim()) {
+      return;
+    }
+
+    try {
+      const lines = text.split(/\r?\n/);
+      const parsedWords: VocabularyWord[] = [];
+      let index = 1;
+
+      // Check if first line has headers like 'word', 'meaning'
+      let startIdx = 0;
+      if (lines.length > 0) {
+        const firstLineCells = lines[0].split('\t');
+        const firstCellLower = firstLineCells[0].toLowerCase().trim();
+        if (firstCellLower.includes('word') || firstCellLower.includes('english') || firstCellLower.includes('main')) {
+          startIdx = 1; // skip header row
+        }
+      }
+
+      for (let i = startIdx; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+
+        const cells = line.split('\t');
+        if (cells.length < 2) {
+          // Try split by comma or semi-colon if they pasted CSV/SSV
+          const commaCells = line.split(',');
+          if (commaCells.length >= 2) {
+            cells.splice(0, cells.length, ...commaCells);
+          }
+        }
+
+        const baseWord = cells[0]?.trim() || '';
+        const banglaMeaning = cells[1]?.trim() || '';
+
+        if (!baseWord || !banglaMeaning) {
+          continue; // Skip invalid rows
+        }
+
+        const groupVal = cells[2] ? parseInt(cells[2].trim(), 10) : 1;
+        const group = isNaN(groupVal) ? 1 : groupVal;
+        
+        const synonyms = cells[3]?.trim() || '';
+        const extraWord = cells[4]?.trim() || '';
+        const extraMeaning = cells[5]?.trim() || '';
+        const example = cells[6]?.trim() || '';
+
+        parsedWords.push({
+          id: `${newCourseId}_g${group}_w${index}`,
+          group,
+          word: baseWord,
+          meaning: banglaMeaning,
+          synonyms,
+          extraWord,
+          extraMeaning,
+          example
+        });
+
+        index++;
+      }
+
+      if (parsedWords.length === 0) {
+        setUploadError('কোনো সঠিক তথ্য পাওয়া যায়নি। প্রথম কলামে ইংরেজি শব্দ এবং দ্বিতীয় কলামে বাংলা অর্থ থাকা আবশ্যক।');
+        return;
+      }
+
+      setUploadedWords(parsedWords);
+    } catch (err) {
+      console.error(err);
+      setUploadError('টেক্সট প্রসেস করতে ব্যর্থ হয়েছে। অনুগ্রহ করে সঠিক ট্যাব-সেপারেটেড (Tab-separated) বা কমা-সেপারেটেড ফরম্যাট দিন।');
+    }
   };
 
   const handleSaveCourse = async () => {
     if (!newCourseTitle.trim() || !newCourseId.trim() || uploadedWords.length === 0) {
-      setSaveError('সবগুলো ফিল্ড পূরণ করুন এবং একটি ভ্যালিড এক্সেল ফাইল দিন।');
+      setSaveError('সবগুলো ফিল্ড পূরণ করুন এবং একটি ভ্যালিড এক্সেল ফাইল অথবা কপি-পেস্ট করা ডাটা দিন।');
       return;
     }
 
@@ -390,6 +474,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       setNewCourseTitle('');
       setNewCourseDesc('');
       setUploadedWords([]);
+      setPasteInputText('');
       fetchCustomCourses();
     } catch (err) {
       console.error('Error saving course to Firestore:', err);
@@ -858,8 +943,21 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                         <span>تৈরি করেছেন: {c.createdBy || 'Unknown'}</span>
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-2 flex-wrap">
                       <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.id);
+                          alert(`কোর্স কোড "${c.id}" কপি করা হয়েছে! এই কোডটি অন্য ইউজারদের সাথে শেয়ার করুন।`);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
+                        title="অন্য ইউজারদের সাথে শেয়ার করার জন্য কোড কপি করুন"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>শেয়ার কোড কপি</span>
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleDeleteCourse(c.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
                       >
@@ -923,47 +1021,115 @@ export default function AdminPanel({ words }: AdminPanelProps) {
               </div>
             </div>
 
-            {/* Excel Drag and Drop / Select Zone */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-600 block">এক্সেল শীট আপলোড (.xlsx / .xls) <span className="text-rose-500">*</span></label>
-              
-              <div
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-2 cursor-pointer ${
-                  dragActive 
-                    ? "border-indigo-500 bg-indigo-50/50" 
-                    : "border-slate-200 hover:border-slate-300 bg-slate-50/40 hover:bg-slate-50/75"
+            {/* Method switcher */}
+            <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setCreationMethod('excel');
+                  setUploadError(null);
+                  setUploadedWords([]);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  creationMethod === 'excel'
+                    ? 'bg-white text-indigo-600 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
-                onClick={() => document.getElementById('excel-file-picker')?.click()}
               >
-                <UploadCloud className="w-8 h-8 text-slate-400 animate-pulse" />
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-slate-700">ক্লিক করে অথবা ড্র্যাগ করে ফাইল নির্বাচন করুন</p>
-                  <p className="text-[10px] text-slate-400 font-semibold">সমর্থিত ফরম্যাট: .xlsx, .xls</p>
-                </div>
-                <input
-                  id="excel-file-picker"
-                  type="file"
-                  accept=".xlsx, .xls"
-                  className="hidden"
-                  onChange={handleFileInputChange}
-                />
-              </div>
+                ১. এক্সেল আপলোড (Excel)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreationMethod('paste');
+                  setUploadError(null);
+                  setUploadedWords([]);
+                }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                  creationMethod === 'paste'
+                    ? 'bg-white text-indigo-600 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                ২. সরাসরি কপি-পেস্ট (Copy-Paste)
+              </button>
             </div>
+
+            {/* Excel Drag and Drop / Select Zone */}
+            {creationMethod === 'excel' ? (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-600 block">এক্সেল শীট আপলোড (.xlsx / .xls) <span className="text-rose-500">*</span></label>
+                
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-2xl p-6 text-center transition flex flex-col items-center justify-center gap-2 cursor-pointer ${
+                    dragActive 
+                      ? "border-indigo-500 bg-indigo-50/50" 
+                      : "border-slate-200 hover:border-slate-300 bg-slate-50/40 hover:bg-slate-50/75"
+                  }`}
+                  onClick={() => document.getElementById('excel-file-picker')?.click()}
+                >
+                  <UploadCloud className="w-8 h-8 text-slate-400 animate-pulse" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-700">ক্লিক করে অথবা ড্র্যাগ করে ফাইল নির্বাচন করুন</p>
+                    <p className="text-[10px] text-slate-400 font-semibold">সমর্থিত ফরম্যাট: .xlsx, .xls</p>
+                  </div>
+                  <input
+                    id="excel-file-picker"
+                    type="file"
+                    accept=".xlsx, .xls"
+                    className="hidden"
+                    onChange={handleFileInputChange}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-600 block">এক্সেল/স্প্রেডশিট থেকে কপি করে এখানে পেস্ট করুন <span className="text-rose-500">*</span></label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Pre-populate with sample data
+                      const sample = `word\tmeaning\tgroup\tsynonyms\textraWord\textraMeaning\texample\nApple\tআপেল\t1\tMalus domestica\t\t\tAn apple a day keeps the doctor away.\nBanana\tকলা\t1\tMusa sapientum\t\t\tBananas are rich in potassium.`;
+                      setPasteInputText(sample);
+                      processPastedText(sample);
+                    }}
+                    className="text-[10px] text-indigo-600 hover:underline font-bold"
+                  >
+                    ডেমো ডাটা লোড করুন
+                  </button>
+                </div>
+                <textarea
+                  rows={6}
+                  value={pasteInputText}
+                  onChange={(e) => {
+                    setPasteInputText(e.target.value);
+                    processPastedText(e.target.value);
+                  }}
+                  placeholder="ইংরেজি শব্দ[Tab]বাংলা অর্থ[Tab]গ্রুপ নম্বর[Tab]সমার্থক শব্দ&#10;যেমন:&#10;Word1&#09;অর্থ১&#09;১&#09;synonym&#10;Word2&#09;অর্থ২&#09;১&#09;synonym"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition"
+                />
+                <p className="text-[9px] text-slate-450 leading-relaxed font-semibold">
+                  গুগল শীট (Google Sheets) বা এক্সেল থেকে সরাসরি কলামগুলো কপি (Ctrl+C) করে এখানে পেস্ট (Ctrl+V) করুন। এটি স্বয়ংক্রিয়ভাবে কলাম শনাক্ত করে নিবে!
+                </p>
+              </div>
+            )}
 
             {/* Requirement guidelines column checker */}
             <div className="bg-slate-50 border border-slate-150 p-4 rounded-xl space-y-2 text-[10px] text-slate-500">
-              <span className="font-extrabold text-slate-700 block text-xs">প্রয়োজনীয় কলাম হেডারসমূহ (Case-Insensitive):</span>
+              <span className="font-extrabold text-slate-700 block text-xs">প্রয়োজনীয় কলামের তথ্য (অর্ডার অনুযায়ী):</span>
               <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-bold">
-                <span className="text-emerald-600 flex items-center gap-1">• main word</span>
-                <span className="text-emerald-600 flex items-center gap-1">• bangla meaning</span>
-                <span className="text-slate-600 flex items-center gap-1">• group number</span>
-                <span className="text-slate-450 flex items-center gap-1">• synonym1 (ঐচ্ছিক)</span>
-                <span className="text-slate-450 flex items-center gap-1">• synonym2 (ঐচ্ছিক)</span>
-                <span className="text-slate-450 flex items-center gap-1">• example (ঐচ্ছিক)</span>
+                <span className="text-emerald-600 flex items-center gap-1">• ১. word / main word</span>
+                <span className="text-emerald-600 flex items-center gap-1">• ২. meaning / bangla meaning</span>
+                <span className="text-slate-600 flex items-center gap-1">• ৩. group (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• ৪. synonyms (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• ৫. extra word (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• ৬. extra meaning (ঐচ্ছিক)</span>
+                <span className="text-slate-450 flex items-center gap-1">• ৭. example (ঐচ্ছিক)</span>
               </div>
             </div>
 
