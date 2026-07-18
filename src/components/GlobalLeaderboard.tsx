@@ -294,103 +294,104 @@ export default function GlobalLeaderboard() {
             <p className="text-sm font-bold text-slate-400 font-sans">কোন শিক্ষার্থী পাওয়া যায়নি।</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse font-sans">
-              <thead>
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
-                  <th className="py-3 px-4 text-center w-16">র‍্যাঙ্ক</th>
-                  <th className="py-3 px-4">শিক্ষার্থী</th>
-                  <th className="py-3 px-4 text-center">জানা শব্দ</th>
-                  <th className="py-3 px-4 text-center">সম্পন্ন কুইজ</th>
-                  <th className="py-3 px-4 text-center">কুইজ স্কোর</th>
-                  <th className="py-3 px-4 text-center">দিনের স্ট্রাইক</th>
-                  <th className="py-3 px-4 text-right">মোট পয়েন্ট</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {top10.map((player, index) => {
-                  const rank = index + 1;
-                  const isCurrent = player.isCurrentUser;
+          <div className="space-y-3">
+            {top10.map((player, index) => {
+              const rank = index + 1;
+              const isCurrent = player.isCurrentUser;
 
-                  return (
-                    <tr 
-                      key={player.id} 
-                      className={`hover:bg-slate-50/50 transition-colors ${
-                        isCurrent 
-                          ? 'bg-gradient-to-r from-indigo-50/40 to-indigo-100/10 font-bold border-l-4 border-l-indigo-600' 
-                          : ''
-                      }`}
-                    >
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex items-center justify-center">
-                          {rank === 1 ? (
-                            <Medal className="w-5 h-5 text-amber-500 fill-amber-100" />
-                          ) : rank === 2 ? (
-                            <Medal className="w-5 h-5 text-slate-400 fill-slate-50" />
-                          ) : rank === 3 ? (
-                            <Medal className="w-5 h-5 text-amber-700 fill-amber-50" />
-                          ) : (
-                            <span className="text-slate-400 font-mono text-xs">#{rank}</span>
-                          )}
-                        </div>
-                      </td>
+              return (
+                <div 
+                  key={player.id}
+                  className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                    isCurrent 
+                      ? 'bg-gradient-to-r from-indigo-50/50 to-indigo-100/10 border-indigo-200/80 shadow-xs ring-1 ring-indigo-100' 
+                      : 'bg-slate-50/40 hover:bg-slate-50/90 border-slate-200/60'
+                  }`}
+                >
+                  {/* Left Section: Rank, Avatar and Name */}
+                  <div className="flex items-center gap-4 min-w-0">
+                    {/* Rank Badge */}
+                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      {rank === 1 ? (
+                        <Medal className="w-7 h-7 text-amber-500 fill-amber-100" />
+                      ) : rank === 2 ? (
+                        <Medal className="w-7 h-7 text-slate-400 fill-slate-50" />
+                      ) : rank === 3 ? (
+                        <Medal className="w-7 h-7 text-amber-700 fill-amber-50" />
+                      ) : (
+                        <span className="text-slate-400 font-black font-mono text-xs">#{rank}</span>
+                      )}
+                    </div>
 
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border flex-shrink-0 ${
-                            isCurrent 
-                              ? 'bg-indigo-600 border-indigo-400 text-white shadow-xs' 
-                              : 'bg-slate-100 border-slate-200 text-slate-600 font-mono'
-                          }`}>
-                            {player.displayName ? player.displayName[0].toUpperCase() : 'U'}
+                    {/* Avatar */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border flex-shrink-0 ${
+                      isCurrent 
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-xs' 
+                        : 'bg-white border-slate-200 text-slate-600 font-mono'
+                    }`}>
+                      {player.displayName ? player.displayName[0].toUpperCase() : 'U'}
+                    </div>
+
+                    {/* Name & Email */}
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-slate-800 truncate flex items-center gap-1.5">
+                        {player.displayName}
+                        {isCurrent && (
+                          <span className="text-[8px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-wider uppercase">YOU</span>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-slate-400 font-semibold truncate">{player.email}</p>
+                    </div>
+                  </div>
+
+                  {/* Right Section: Stats Row */}
+                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 sm:border-transparent">
+                    {/* Stats badges */}
+                    <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-initial">
+                      {/* Known words */}
+                      <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">জানা শব্দ:</span>
+                        <span className="font-mono font-black text-slate-700">{player.knowCount}</span>
+                      </div>
+
+                      {/* Quiz Count */}
+                      <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">কুইজ:</span>
+                        <span className="font-mono font-black text-slate-700">{player.quizTaken}</span>
+                      </div>
+
+                      {/* Quiz Score */}
+                      <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">স্কোর:</span>
+                        <span className="font-mono font-black text-slate-700">{player.quizScore}</span>
+                      </div>
+
+                      {/* Streak */}
+                      <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">স্ট্রাইক:</span>
+                        {player.streak > 0 ? (
+                          <div className="flex items-center gap-0.5">
+                            <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <span className="font-mono text-xs text-amber-600 font-black">{player.streak}</span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-black text-slate-800 truncate flex items-center gap-1.5">
-                              {player.displayName}
-                              {isCurrent && (
-                                <span className="text-[8px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-black tracking-wider uppercase">YOU</span>
-                              )}
-                            </p>
-                            <p className="text-[10px] text-slate-400 font-semibold truncate">{player.email}</p>
-                          </div>
-                        </div>
-                      </td>
+                        ) : (
+                          <span className="text-slate-400 font-bold font-mono">-</span>
+                        )}
+                      </div>
+                    </div>
 
-                      <td className="py-4 px-4 text-center font-mono text-xs text-slate-600">
-                        {player.knowCount}
-                      </td>
+                    {/* Total points */}
+                    <div className="text-right flex items-center gap-2 sm:flex-col sm:items-end justify-between w-full sm:w-auto bg-indigo-50/30 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-xl mt-1 sm:mt-0 min-w-[70px]">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider sm:hidden md:block">পয়েন্ট</span>
+                      <span className="text-xs font-black text-indigo-600 font-mono block">
+                        {player.points} XP
+                      </span>
+                    </div>
+                  </div>
 
-                      <td className="py-4 px-4 text-center font-mono text-xs text-slate-600">
-                        {player.quizTaken}
-                      </td>
-
-                      <td className="py-4 px-4 text-center font-mono text-xs text-slate-600">
-                        {player.quizScore}
-                      </td>
-
-                      <td className="py-4 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {player.streak > 0 ? (
-                            <>
-                              <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                              <span className="font-mono text-xs text-amber-600 font-black">{player.streak}</span>
-                            </>
-                          ) : (
-                            <span className="text-slate-300 font-mono text-xs">-</span>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 text-right">
-                        <span className="text-xs font-black text-indigo-600 font-mono">
-                          {player.points} XP
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                </div>
+              );
+            })}
           </div>
         )}
 
