@@ -8,6 +8,7 @@ import {
 import { collection, getDocs, deleteDoc } from 'firebase/firestore';
 import { VocabularyWord, UserProgress, Course } from '../types';
 import { read, utils } from 'xlsx';
+import { CourseSettings } from './CourseSettings';
 import { 
   Users, 
   ShieldCheck, 
@@ -134,12 +135,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
   // Editing course states
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDesc, setEditDesc] = useState('');
-  const [editIsDefault, setEditIsDefault] = useState(false);
-  const [editIsRestricted, setEditIsRestricted] = useState(false);
-  const [editAllowedUsersText, setEditAllowedUsersText] = useState('');
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Fetch custom courses
   const fetchCustomCourses = async () => {
@@ -529,52 +524,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
   const handleOpenEditModal = (course: Course) => {
     setEditingCourse(course);
-    setEditTitle(course.title);
-    setEditDesc(course.description);
-    setEditIsDefault(!!course.isDefault);
-    setEditIsRestricted(!!course.isRestricted);
-    setEditAllowedUsersText(course.allowedUsers ? course.allowedUsers.join('\n') : '');
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingCourse) return;
-    if (!editTitle.trim()) {
-      alert('কোর্সের নাম অবশ্যই দিতে হবে!');
-      return;
-    }
-
-    setIsSavingEdit(true);
-    try {
-      // Parse allowed users list from text area (one user per line)
-      const allowedUsers: string[] = [];
-      if (editIsRestricted && editAllowedUsersText.trim()) {
-        editAllowedUsersText
-          .split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .forEach(user => allowedUsers.push(user));
-      }
-
-      const updatedCourse: Course = {
-        ...editingCourse,
-        title: editTitle.trim(),
-        description: editDesc.trim(),
-        isDefault: editIsDefault,
-        isRestricted: editIsRestricted,
-        allowedUsers: allowedUsers,
-      };
-
-      await setDoc(doc(db, 'courses', editingCourse.id), updatedCourse);
-      
-      alert('কোর্সের সেটিংস সফলভাবে আপডেট করা হয়েছে!');
-      setEditingCourse(null);
-      fetchCustomCourses();
-    } catch (err) {
-      console.error('Error updating course settings:', err);
-      alert('কোর্সের সেটিংস আপডেট করতে ব্যর্থ হয়েছে।');
-    } finally {
-      setIsSavingEdit(false);
-    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -1548,132 +1497,11 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
       {/* Edit Course Settings Modal */}
       {editingCourse && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in" id="edit-course-modal">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative animate-scale-up font-sans overflow-hidden border border-slate-100 flex flex-col m-4">
-            
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                  <Sliders className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-sm">কোর্স সেটিংস সম্পাদনা (Edit Course Settings)</h3>
-                  <p className="text-[10px] text-slate-400 font-bold mt-0.5 font-mono">ID: {editingCourse.id}</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setEditingCourse(null)}
-                className="p-1.5 hover:bg-slate-150 text-slate-400 hover:text-slate-600 rounded-lg transition cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Course Title */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 block">কোর্সের নাম (Course Title) <span className="text-rose-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition"
-                />
-              </div>
-
-              {/* Course Description */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-600 block">কোর্সের বর্ণনা (Description)</label>
-                <textarea
-                  rows={2}
-                  value={editDesc}
-                  onChange={(e) => setEditDesc(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none"
-                />
-              </div>
-
-              {/* Settings Group */}
-              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200/60 space-y-3">
-                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wide block">কোর্স অ্যাক্সেস ও অ্যাক্টিভেশন</span>
-                
-                {/* Default course toggle */}
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={editIsDefault}
-                    onChange={(e) => setEditIsDefault(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-slate-700 block">ডিফল্ট কোর্স হিসেবে সেট করুন</span>
-                    <span className="text-[10px] text-slate-400 font-medium block">অন থাকলে সকল ইউজারদের তালিকায় এটি অটো-ডিফল্ট কোর্স হবে।</span>
-                  </div>
-                </label>
-
-                {/* Restricted Access toggle */}
-                <div className="border-t border-slate-200/60 pt-2.5 space-y-2.5">
-                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={editIsRestricted}
-                      onChange={(e) => setEditIsRestricted(e.target.checked)}
-                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-0.5"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-slate-700 block">ব্যবহারকারী সীমাবদ্ধ করুন (Restricted Access)</span>
-                      <span className="text-[10px] text-slate-400 font-medium block">অন থাকলে শুধুমাত্র নিচের তালিকাভুক্ত ইমেল বা মোবাইল নম্বরধারীরাই এই কোর্সটি অ্যাক্সেস করতে পারবে।</span>
-                    </div>
-                  </label>
-
-                  {/* Allowed Users List */}
-                  {editIsRestricted && (
-                    <div className="space-y-1.5 pl-6 animate-fadeIn">
-                      <label className="text-[10px] font-bold text-slate-600 block">অনুমোদিত শিক্ষার্থীদের ইমেল / মোবাইল নম্বর <span className="text-rose-500">*</span></label>
-                      <textarea
-                        rows={3}
-                        value={editAllowedUsersText}
-                        onChange={(e) => setEditAllowedUsersText(e.target.value)}
-                        placeholder="প্রতি লাইনে একটি করে ইমেল বা মোবাইল নম্বর লিখুন।"
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3.5">
-              <button 
-                onClick={() => setEditingCourse(null)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
-              >
-                বাতিল
-              </button>
-              <button 
-                disabled={isSavingEdit}
-                onClick={handleSaveEdit}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition flex items-center gap-1.5"
-              >
-                {isSavingEdit ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>আপডেট হচ্ছে...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>সেটিংস সেভ করুন</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-          </div>
-        </div>
+        <CourseSettings 
+          course={editingCourse} 
+          onClose={() => setEditingCourse(null)} 
+          onSaveSuccess={fetchCustomCourses} 
+        />
       )}
     </div>
   );
