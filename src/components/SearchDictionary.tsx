@@ -44,6 +44,10 @@ export default function SearchDictionary({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
 
+  // Session stable states to prevent immediate list re-ordering or item removal when tag/bookmark is changed
+  const [originalStatuses, setOriginalStatuses] = useState<Record<string, WordStatus>>({});
+  const [originalBookmarks, setOriginalBookmarks] = useState<Record<string, string[]>>({});
+
   // Sorting State
   const [sortColumn, setSortColumn] = useState<'word' | 'meaning' | 'group' | 'status' | 'notes' | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -55,10 +59,30 @@ export default function SearchDictionary({
   // Active word for bookmark dropdown
   const [activeBookmarkWordId, setActiveBookmarkWordId] = useState<string | null>(null);
 
-  // Reset page to 1 when filters or sorting change
+  // Reset page and caches when filters or sorting change
   useEffect(() => {
     setCurrentPage(1);
+    setOriginalStatuses({});
+    setOriginalBookmarks({});
   }, [searchTerm, selectedGroup, selectedStatus, selectedFolder, sortColumn, sortDirection]);
+
+  const handleRateWordWithSession = (wordId: string, status: WordStatus) => {
+    const currentStatus = progress[wordId]?.status || 'unrated';
+    setOriginalStatuses(prev => {
+      if (prev[wordId] !== undefined) return prev;
+      return { ...prev, [wordId]: currentStatus };
+    });
+    onRateWord(wordId, status);
+  };
+
+  const handleToggleBookmarkWithSession = (wordId: string, folderId: string) => {
+    const currentBookmarks = progress[wordId]?.bookmarks || [];
+    setOriginalBookmarks(prev => {
+      if (prev[wordId] !== undefined) return prev;
+      return { ...prev, [wordId]: currentBookmarks };
+    });
+    onToggleBookmark(wordId, folderId);
+  };
 
   // Handle Sort Toggle
   const handleSort = (column: 'word' | 'meaning' | 'group' | 'status' | 'notes') => {
@@ -102,13 +126,15 @@ export default function SearchDictionary({
     // Group filter match
     const matchesGroup = selectedGroup === 'all' ? true : w.group === parseInt(selectedGroup, 10);
 
-    // Status filter match
+    // Status filter match using session-stable status
     const status = progress[w.id]?.status || 'unrated';
-    const matchesStatus = selectedStatus === 'all' ? true : status === selectedStatus;
+    const filterStatus = originalStatuses[w.id] !== undefined ? originalStatuses[w.id] : status;
+    const matchesStatus = selectedStatus === 'all' ? true : filterStatus === selectedStatus;
 
-    // Folder bookmark filter match
+    // Folder bookmark filter match using session-stable bookmarks
     const folderList = progress[w.id]?.bookmarks || [];
-    const matchesFolder = selectedFolder === 'all' ? true : folderList.includes(selectedFolder);
+    const filterFolders = originalBookmarks[w.id] !== undefined ? originalBookmarks[w.id] : folderList;
+    const matchesFolder = selectedFolder === 'all' ? true : filterFolders.includes(selectedFolder);
 
     return matchesSearch && matchesGroup && matchesStatus && matchesFolder;
   });
@@ -130,8 +156,10 @@ export default function SearchDictionary({
       valA = a.group;
       valB = b.group;
     } else if (sortColumn === 'status') {
-      valA = progress[a.id]?.status || 'unrated';
-      valB = progress[b.id]?.status || 'unrated';
+      const statusA = progress[a.id]?.status || 'unrated';
+      const statusB = progress[b.id]?.status || 'unrated';
+      valA = originalStatuses[a.id] !== undefined ? originalStatuses[a.id] : statusA;
+      valB = originalStatuses[b.id] !== undefined ? originalStatuses[b.id] : statusB;
     } else if (sortColumn === 'notes') {
       valA = (progress[a.id]?.notes || '').toLowerCase();
       valB = (progress[b.id]?.notes || '').toLowerCase();
@@ -463,7 +491,7 @@ export default function SearchDictionary({
                     <td className="px-3 py-2.5 border-r border-slate-100 text-center">
                       <select
                         value={status}
-                        onChange={(e) => onRateWord(w.id, e.target.value as WordStatus)}
+                        onChange={(e) => handleRateWordWithSession(w.id, e.target.value as WordStatus)}
                         className={`text-xs font-bold px-2 py-1 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500/35 cursor-pointer text-center w-full max-w-[110px] transition ${
                           status === 'know' 
                             ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
@@ -518,7 +546,7 @@ export default function SearchDictionary({
                               return (
                                 <button
                                   key={f.id}
-                                  onClick={() => onToggleBookmark(w.id, f.id)}
+                                  onClick={() => handleToggleBookmarkWithSession(w.id, f.id)}
                                   className="w-full flex items-center justify-between text-xs font-semibold text-slate-700 hover:bg-slate-50 p-1.5 rounded-lg transition text-left"
                                 >
                                   <div className="flex items-center gap-2">

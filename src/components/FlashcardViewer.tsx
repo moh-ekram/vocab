@@ -685,11 +685,10 @@ export default function FlashcardViewer({
               <button
                 type="button"
                 onClick={() => setShuffleKey(prev => prev + 1)}
-                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-extrabold flex items-center gap-0.5 cursor-pointer transition hover:underline mt-0.5 ml-1 absolute"
-                title="নতুন করে শাফেল করুন"
+                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-1 rounded-lg cursor-pointer transition flex items-center justify-center mt-0.5 ml-1 absolute left-full top-0"
+                title="পুনরায় শাফেল করুন"
               >
-                <RotateCcw className="w-2.5 h-2.5" />
-                <span>পুনরায় শাফেল করুন</span>
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
