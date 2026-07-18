@@ -45,8 +45,8 @@ export default function StatsDashboard({
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
 
   const handleImportByCode = async () => {
-    const code = inputCourseCode.trim().toLowerCase();
-    if (!code) {
+    const rawCode = inputCourseCode.trim();
+    if (!rawCode) {
       setImportError('অনুগ্রহ করে একটি কোর্স কোড লিখুন।');
       return;
     }
@@ -55,9 +55,11 @@ export default function StatsDashboard({
     setImportError(null);
     setImportSuccess(null);
 
+    const codeLower = rawCode.toLowerCase();
+
     try {
-      // First, check if it's already in allCourses
-      const existing = allCourses.find(c => c.id === code);
+      // First, check if it's already in allCourses (exact or lowercase)
+      const existing = allCourses.find(c => c.id === rawCode || c.id === codeLower);
       if (existing) {
         onImportCourse(existing);
         setImportSuccess(`সফলভাবে "${existing.title}" কোর্সে যুক্ত হয়েছেন!`);
@@ -69,9 +71,14 @@ export default function StatsDashboard({
         return;
       }
 
-      // Fetch from Firestore
-      const courseDocRef = doc(db, 'courses', code);
-      const docSnap = await getDoc(courseDocRef);
+      // Fetch from Firestore (exact first, then fallback to lowercase)
+      let courseDocRef = doc(db, 'courses', rawCode);
+      let docSnap = await getDoc(courseDocRef);
+
+      if (!docSnap.exists() && rawCode !== codeLower) {
+        courseDocRef = doc(db, 'courses', codeLower);
+        docSnap = await getDoc(courseDocRef);
+      }
 
       if (docSnap.exists()) {
         const courseData = docSnap.data() as Course;

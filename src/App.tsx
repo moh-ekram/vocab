@@ -207,37 +207,54 @@ export default function App() {
         loaded.push({ id: doc.id, ...doc.data() } as Course);
       });
       setCustomCourses(loaded);
-      
-      // Auto-enroll all custom courses so they are immediately visible to all users (new or old)
-      if (loaded.length > 0) {
-        setEnrolledCourseIds(prev => {
-          const newIds = [...prev];
-          let updated = false;
-          loaded.forEach(c => {
-            if (!newIds.includes(c.id)) {
-              newIds.push(c.id);
-              updated = true;
-            }
-          });
-          return updated ? newIds : prev;
-        });
-      }
     }, (error) => {
       console.error("Error reading courses collection inside App:", error);
     });
     return () => unsubscribe();
   }, []);
 
-  // Auto-merge all custom courses into enrolled list whenever custom courses or enrolled list updates
+  // Filter custom courses based on user permissions
+  const filteredCustomCourses = customCourses.filter(c => {
+    // Admin user email bypasses all restrictions
+    const isAdmin = user?.email === 'mohammad.001ekram@gmail.com';
+    if (isAdmin) return true;
+
+    // Course creator bypasses restrictions
+    if (c.createdBy === user?.email) return true;
+
+    // If restricted, check if user's email or mobile is listed
+    if (c.isRestricted) {
+      if (!user?.email) return false;
+      const userIdentifier = user.email.trim().toLowerCase();
+      return c.allowedUsers?.some(allowed => {
+        const allowedClean = allowed.trim().toLowerCase();
+        return allowedClean === userIdentifier;
+      });
+    }
+
+    // Public courses (not restricted) are accessible to anyone
+    return true;
+  });
+
+  // Auto-enroll default custom courses so they are immediately visible to users
   useEffect(() => {
-    if (customCourses.length > 0) {
-      const customIds = customCourses.map(c => c.id);
-      const missingIds = customIds.filter(id => !enrolledCourseIds.includes(id));
-      if (missingIds.length > 0) {
-        setEnrolledCourseIds(prev => Array.from(new Set([...prev, ...customIds])));
+    if (filteredCustomCourses.length > 0) {
+      const defaultIds = filteredCustomCourses.filter(c => c.isDefault).map(c => c.id);
+      if (defaultIds.length > 0) {
+        setEnrolledCourseIds(prev => {
+          const newIds = [...prev];
+          let updated = false;
+          defaultIds.forEach(id => {
+            if (!newIds.includes(id)) {
+              newIds.push(id);
+              updated = true;
+            }
+          });
+          return updated ? newIds : prev;
+        });
       }
     }
-  }, [customCourses, enrolledCourseIds]);
+  }, [filteredCustomCourses]);
 
   // Auth State Listener
   useEffect(() => {
@@ -485,7 +502,7 @@ export default function App() {
     createdBy: 'system'
   };
 
-  const allCourses: Course[] = [defaultGreCourse, ...customCourses, ...importedCourses];
+  const allCourses: Course[] = [defaultGreCourse, ...filteredCustomCourses, ...importedCourses];
 
   const handleImportCourse = (course: Course) => {
     setImportedCourses(prev => {
