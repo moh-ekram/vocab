@@ -417,6 +417,10 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       return;
     }
 
+    if (!window.confirm('Are you sure you want to create and save this course?')) {
+      return;
+    }
+
     setSaveStatus('saving');
     setSaveError(null);
 

@@ -93,6 +93,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       return;
     }
 
+    if (!window.confirm('Are you sure you want to update this course\'s settings?')) {
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     setSuccess(false);
