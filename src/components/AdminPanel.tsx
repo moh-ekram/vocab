@@ -769,7 +769,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
             <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base">User Directory</h3>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">List of registered students and summary of their study performance</p>
               </div>
 
               {/* Filter controls */}
@@ -912,7 +911,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
           <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6 lg:col-span-2">
             <div>
               <h3 className="font-extrabold text-slate-800 text-base">Course Management</h3>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">Control system defaults and manage custom uploaded courses</p>
             </div>
 
             <div className="space-y-4">
@@ -1017,7 +1015,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                   <PlusCircle className="w-5 h-5 text-indigo-600" />
                   <span>Upload & Build Course</span>
                 </h3>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">Auto-generate courses and vocabulary content from sheets</p>
               </div>
 
               {/* Course Info Form Inputs */}
@@ -1157,26 +1154,26 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
               {/* Requirement guidelines column checker */}
               <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 text-xs text-slate-600">
-                <span className="font-extrabold text-slate-800 block text-sm">এক্সেল কলাম নির্দেশিকা (Excel Column Guidelines):</span>
+                <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
                 <div className="flex flex-col space-y-1.5 text-[11px] font-bold">
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [word] (বা [main word]) (আবশ্যক)</span>
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [meaning] (বা [bangla meaning]) (আবশ্যক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [group] (ঐচ্ছিক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm1] (বা [synonym1]) (ঐচ্ছিক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm2] (বা [synonym2]) (ঐচ্ছিক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [extra word] (ঐচ্ছিক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [extra meaning] (ঐচ্ছিক)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [example] (ঐচ্ছিক)</span>
+                  <span className="text-indigo-600 flex items-center gap-1.5">• [word] (or [main word]) (Required)</span>
+                  <span className="text-indigo-600 flex items-center gap-1.5">• [meaning] (or [bangla meaning]) (Required)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [group] (Optional)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm1] (or [synonym1]) (Optional)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm2] (or [synonym2]) (Optional)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [extra word] (Optional)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [extra meaning] (Optional)</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [example] (Optional)</span>
                 </div>
                 
                 <div className="border-t border-slate-200/80 pt-3 space-y-2 text-[11px] leading-relaxed font-semibold text-slate-500">
                   <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 সিনোনিম রিকোয়ারমেন্ট:</span>
-                    <span>প্রতিটি ফ্ল্যাশ কার্ডে ২টি সিনোনিম রাখার জন্য Excel ফাইলে <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">synonm1</code> এবং <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">synonm2</code> কলামে আলাদা আলাদা লিখবেন (অথবা <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">synonyms</code> কলামে কমা দিয়ে আলাদা করে লিখবেন, যেমন: <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">subside, decrease</code>)।</span>
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Synonyms Requirement:</span>
+                    <span>To include 2 synonyms for each flashcard, use separate columns 'synonm1' and 'synonm2' in your Excel file (or write them separated by a comma in the 'synonyms' column, e.g., subside, decrease).</span>
                   </p>
                   <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 গ্রুপ নাম ম্যাপিং:</span>
-                    <span>গ্রুপের নাম এক্সেল টেবিলে যা থাকবে ঠিক সেই নামেই সেট হবে। যেমন: যদি গ্রুপ কলামে <code className="font-mono text-slate-700 bg-slate-100 px-1 py-0.5 rounded">ক</code> থাকে, তবে শব্দটি <strong className="text-slate-700 font-extrabold">"গ্রুপ ক"</strong> এর অন্তর্ভুক্ত হয়ে যাবে।</span>
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Group Name Mapping:</span>
+                    <span>Group names will be assigned exactly as written in the spreadsheet group column. For example, if group column contains '1', the word will be added to 'Group 1'.</span>
                   </p>
                 </div>
               </div>
@@ -1305,9 +1302,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
           <div>
             <h3 className="font-extrabold text-slate-800 text-base">User Word Issue Reports</h3>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">
-              Review and manage spelling, meaning, or explanation errors reported by students during flashcard study sessions.
-            </p>
           </div>
 
           {reportsLoading ? (

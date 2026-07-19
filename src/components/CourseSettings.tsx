@@ -24,7 +24,8 @@ import {
   Settings,
   HelpCircle,
   Eye,
-  Volume2
+  Volume2,
+  UserCheck
 } from 'lucide-react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -42,7 +43,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   onSaveSuccess,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'wordlist' | 'addwords'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords'>('general');
 
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(course.title);
@@ -50,8 +51,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
   const [isRestricted, setIsRestricted] = useState(!!course.isRestricted);
   const [allowedUsers, setAllowedUsers] = useState<string[]>(course.allowedUsers || []);
+  const [allowedUsersExpiry, setAllowedUsersExpiry] = useState<Record<string, string>>(course.allowedUsersExpiry || {});
   const [newUserInput, setNewUserInput] = useState('');
+  const [newStudentExpiry, setNewStudentExpiry] = useState('');
   const [bulkInput, setBulkInput] = useState('');
+  const [bulkExpiryDate, setBulkExpiryDate] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
 
   // --- FEATURE & VARIABLE TOGGLES ---
@@ -113,6 +117,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setIsDefault(!!course.isDefault);
     setIsRestricted(!!course.isRestricted);
     setAllowedUsers(course.allowedUsers || []);
+    setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
     setLocalWords(course.words || []);
     setToggles({
@@ -154,18 +159,30 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     if (!input) return;
 
     if (allowedUsers.includes(input)) {
-      setError('This user is already in the list.');
+      setError('This student is already in the list.');
       return;
     }
 
     setAllowedUsers(prev => [...prev, input]);
+    if (newStudentExpiry) {
+      setAllowedUsersExpiry(prev => ({
+        ...prev,
+        [input]: newStudentExpiry
+      }));
+    }
     setNewUserInput('');
+    setNewStudentExpiry('');
     setError(null);
   };
 
   // Handle removing a single user
   const handleRemoveUser = (userToRemove: string) => {
     setAllowedUsers(prev => prev.filter(u => u !== userToRemove));
+    setAllowedUsersExpiry(prev => {
+      const copy = { ...prev };
+      delete copy[userToRemove];
+      return copy;
+    });
   };
 
   // Sync bulk input when switching modes
@@ -182,8 +199,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       .map(line => line.trim())
       .filter(line => line.length > 0);
     
-    const unique = Array.from(new Set(parsed));
+    const unique: string[] = Array.from(new Set(parsed));
     setAllowedUsers(unique);
+
+    if (bulkExpiryDate) {
+      const newExpiries: Record<string, string> = { ...allowedUsersExpiry };
+      unique.forEach(user => {
+        newExpiries[user] = bulkExpiryDate;
+      });
+      setAllowedUsersExpiry(newExpiries);
+    }
+    
     setIsBulkMode(false);
     setError(null);
   };
@@ -544,7 +570,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         description: description.trim(),
         isDefault: isDefault,
         isRestricted: isRestricted,
-        allowedUsers: isRestricted ? finalAllowedUsers : [],
+        allowedUsers: finalAllowedUsers, // Always preserve the allowed users list
+        allowedUsersExpiry: allowedUsersExpiry, // Save student access expiry dates map
         words: localWords,
         variableToggles: finalToggles,
         totalGroups: uniqueGroupsSize || 1,
@@ -567,11 +594,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   // Navigation Items with Icons and Count Badges
   const menuItems = [
-    { id: 'general' as const, label: 'Course Identity', desc: 'Basic title, description', icon: Sliders },
-    { id: 'variables' as const, label: 'Features & Variables', desc: 'Manage variable switches', icon: Settings },
-    { id: 'access' as const, label: 'Student Access', desc: 'Privacy & student emails', icon: Users },
-    { id: 'wordlist' as const, label: 'Word List & Editing', desc: 'Search, edit and delete', icon: BookOpen, badge: localWords.length },
-    { id: 'addwords' as const, label: 'Add & Upload Words', desc: 'Add individual or excel', icon: PlusCircle },
+    { id: 'general' as const, label: 'Course Identity', icon: Sliders },
+    { id: 'variables' as const, label: 'Features & Variables', icon: Settings },
+    { id: 'access' as const, label: 'Student Access', icon: Users },
+    { id: 'students' as const, label: 'Allowed Students', icon: UserCheck, badge: allowedUsers.length },
+    { id: 'wordlist' as const, label: 'Word List & Editing', icon: BookOpen, badge: localWords.length },
+    { id: 'addwords' as const, label: 'Add & Upload Words', icon: PlusCircle },
   ];
 
   return (
@@ -629,8 +657,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <div className="truncate">
-                      <p className={`text-xs font-bold leading-none ${isActive ? 'text-white' : 'text-slate-800'}`}>{item.label}</p>
-                      <span className={`text-[9px] mt-0.5 block truncate leading-none ${isActive ? 'text-indigo-200' : 'text-slate-400'}`}>{item.desc}</span>
+                      <p className={`text-xs font-bold ${isActive ? 'text-white' : 'text-slate-800'}`}>{item.label}</p>
                     </div>
                   </div>
                   {item.badge !== undefined && (
@@ -689,7 +716,6 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Course Identity & Basic Information</h4>
-                  <p className="text-xs text-slate-400">Modify course title, description, and metadata identity</p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -732,7 +758,6 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Feature & Variable Controller</h4>
-                  <p className="text-xs text-slate-400">Toggle individual vocabulary fields and features for student study sessions</p>
                 </div>
 
                 <div className="bg-amber-50 border border-amber-100 text-amber-900 p-4 rounded-2xl text-xs flex items-start gap-2.5 leading-relaxed">
@@ -747,12 +772,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                 <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white divide-y divide-slate-100">
                   {[
-                    { key: 'meaning', label: 'বাংলা অর্থ (Bengali Meaning)', desc: 'ফ্ল্যাশকার্ডের উল্টো পিঠে বাংলা অর্থ প্রদর্শন করবে', icon: BookOpen },
-                    { key: 'synonyms', label: 'সমার্থক শব্দ (Synonyms)', desc: 'ফ্ল্যাশকার্ডের উল্টো পিঠে synonyms প্রদর্শন করবে। এটি অফ থাকলে meaning কার্ডের ঠিক মাঝখানে বড় করে ভেসে উঠবে।', icon: Eye },
-                    { key: 'extraWord', label: 'অতিরিক্ত শব্দ ও ফর্ম (Extra Word Derivative)', desc: 'ফ্ল্যাশকার্ডের সামনের পিঠে মূল শব্দের নিচে derivatives প্রদর্শন করবে', icon: PlusCircle },
-                    { key: 'extraMeaning', label: 'অতিরিক্ত শব্দার্থ (Extra Derivative Meaning)', desc: 'ফ্ল্যাশকার্ডের সামনের পিঠে derivative শব্দের বাংলা অর্থ প্রদর্শন করবে', icon: HelpCircle },
-                    { key: 'example', label: 'উদাহরণ বাক্য (Example Sentences)', desc: 'ফ্ল্যাশকার্ডের উল্টো পিঠে বাস্তব উদাহরণের বাক্য ও ব্যবহার দেখাবে', icon: FileSpreadsheet },
-                    { key: 'audio', label: 'ভয়েস উচ্চারণ (Voice Pronunciation Audio)', desc: 'ফ্ল্যাশকার্ডে শব্দ ও উচ্চারণের অডিও স্পিকার সচল রাখবে', icon: Volume2 },
+                    { key: 'meaning', label: 'Bengali Meaning', desc: 'Displays the Bengali translation on the back side of the flashcard', icon: BookOpen },
+                    { key: 'synonyms', label: 'Synonyms', desc: 'Displays synonyms on the back side of the flashcard. If disabled, the primary meaning is centered.', icon: Eye },
+                    { key: 'extraWord', label: 'Extra Word Derivative', desc: 'Displays word derivatives below the main word on the front side of the flashcard', icon: PlusCircle },
+                    { key: 'extraMeaning', label: 'Extra Derivative Meaning', desc: 'Displays the Bengali meaning of the derivative word on the front side of the flashcard', icon: HelpCircle },
+                    { key: 'example', label: 'Example Sentences', desc: 'Displays real-world usage examples and sentences on the back side of the flashcard', icon: FileSpreadsheet },
+                    { key: 'audio', label: 'Voice Pronunciation Audio', desc: 'Enables audio speaker button for word pronunciation on the flashcard', icon: Volume2 },
                   ].map(item => {
                     const hasData = variableAvailability[item.key as keyof typeof variableAvailability];
                     const isEnabled = toggles[item.key] !== false;
@@ -810,12 +835,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               </div>
             )}
 
-            {/* --- SECTION 3: STUDENT ACCESS & BULK USERS --- */}
+            {/* --- SECTION 3: STUDENT ACCESS & PRIVACY SETTINGS --- */}
             {activeTab === 'access' && (
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Student Access & Enroll Security</h4>
-                  <p className="text-xs text-slate-450">Control who can access this course and manage student enrollment lists</p>
                 </div>
 
                 {/* Switch list */}
@@ -843,7 +867,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   <div className="border-t border-slate-200/50 pt-3.5 flex items-start justify-between gap-4">
                     <div className="space-y-1">
                       <span className="text-xs font-extrabold text-slate-800 block">Restricted Access (Restricted Course)</span>
-                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, only registered students in the allowed list below can access and enroll in this course.</span>
+                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, only registered students in the allowed list can access and enroll in this course.</span>
                     </div>
                     <button
                       type="button"
@@ -859,91 +883,215 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   </div>
                 </div>
 
-                {/* Restricted Users block */}
-                {isRestricted && (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 animate-fadeIn">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
-                        <Users className="w-4 h-4 text-slate-500" />
-                        <span>Allowed Student List ({allowedUsers.length})</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsBulkMode(!isBulkMode)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer bg-indigo-50 px-2.5 py-1 rounded-lg"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>{isBulkMode ? 'Back to List' : 'Bulk Import'}</span>
-                      </button>
+                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs text-indigo-950 flex items-start gap-2.5 leading-relaxed font-semibold">
+                  <AlertCircle className="w-4.5 h-4.5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span>Access Configuration Guideline</span>
+                    <p className="font-normal text-[11px] text-indigo-900 mt-0.5">
+                      To manage allowed students or configure their individual access expiration dates, please switch to the <strong className="font-extrabold text-indigo-950">Allowed Students</strong> menu tab in the sidebar on the left. The student roster remains fully preserved regardless of whether this course is currently public or restricted.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- SECTION 3.5: ALLOWED STUDENTS LIST & EXPIRY (NEW) --- */}
+            {activeTab === 'students' && (
+              <div className="space-y-5 animate-fadeIn">
+                <div className="border-b border-slate-100 pb-3 mb-2 flex items-center justify-between">
+                  <h4 className="font-extrabold text-slate-900 text-sm">Allowed Students Access & Expiry Management</h4>
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkMode(!isBulkMode)}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer bg-indigo-50 px-2.5 py-1.5 rounded-lg"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    <span>{isBulkMode ? 'Back to Individual Add' : 'Bulk Import Lists'}</span>
+                  </button>
+                </div>
+
+                {isBulkMode ? (
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <span className="text-xs font-extrabold text-slate-800 block">Bulk Import Student List</span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Default Expiry Date (Optional)</label>
+                        <input
+                          type="date"
+                          value={bulkExpiryDate}
+                          onChange={(e) => setBulkExpiryDate(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition cursor-pointer"
+                        />
+                      </div>
+                      <div className="text-xs text-slate-500 flex items-center font-semibold leading-relaxed">
+                        If specified, this expiration date will be applied to all students in the bulk import list. If left empty, their access will be permanent.
+                      </div>
                     </div>
 
-                    {isBulkMode ? (
-                      <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">পেস্টিং বাল্ক ইনপুট</label>
-                        <textarea
-                          rows={6}
-                          value={bulkInput}
-                          onChange={(e) => setBulkInput(e.target.value)}
-                          placeholder="এখানে লাইনে লাইনে ইমেইল বা ফোন নম্বর পেস্ট করুন। উদাহরণ:&#10;user1@gmail.com&#10;01712345678&#10;01987654321"
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none text-slate-700"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleApplyBulk}
-                          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow-sm hover:shadow transition cursor-pointer"
-                        >
-                          বাল্ক তালিকা আপডেট করুন (Apply Lists)
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-3.5">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newUserInput}
-                            onChange={(e) => setNewUserInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAddUser();
-                              }
-                            }}
-                            placeholder="ইমেইল বা ফোন নম্বর লিখুন"
-                            className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition"
-                          />
-                          <button
-                            type="button"
-                            onClick={handleAddUser}
-                            className="px-4 bg-indigo-600 hover:bg-indigo-550 text-white rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Paste Emails or Phone Numbers (One per line)</label>
+                      <textarea
+                        rows={6}
+                        value={bulkInput}
+                        onChange={(e) => setBulkInput(e.target.value)}
+                        placeholder="user1@gmail.com&#10;user2@gmail.com&#10;01712345678"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition resize-none text-slate-700"
+                      />
+                    </div>
 
-                        {allowedUsers.length === 0 ? (
-                          <div className="p-8 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs font-semibold">
-                            অনুমোদিত শিক্ষার্থীর কোনো তালিকা নেই। উপরের বক্সে যোগ করুন।
-                          </div>
-                        ) : (
-                          <div className="max-h-44 overflow-y-auto bg-slate-50 border border-slate-200 rounded-2xl divide-y divide-slate-100">
-                            {allowedUsers.map(user => (
-                              <div key={user} className="flex items-center justify-between px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-100 transition">
-                                <span className="font-mono font-bold truncate">{user}</span>
+                    <button
+                      type="button"
+                      onClick={handleApplyBulk}
+                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow-sm hover:shadow transition cursor-pointer"
+                    >
+                      Apply Bulk List
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <span className="text-xs font-extrabold text-slate-800 block">Add Individual Student</span>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Email or Phone Number</label>
+                        <input
+                          type="text"
+                          value={newUserInput}
+                          onChange={(e) => setNewUserInput(e.target.value)}
+                          placeholder="student@gmail.com or 01712345678"
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Access Expiration Date (Optional)</label>
+                        <input
+                          type="date"
+                          value={newStudentExpiry}
+                          onChange={(e) => setNewStudentExpiry(e.target.value)}
+                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddUser}
+                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow-sm hover:shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Student to Allowed List</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Always Show the List */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span>Allowed Student List ({allowedUsers.length})</span>
+                    </span>
+                    {allowedUsers.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Clear all students from the list?')) {
+                            setAllowedUsers([]);
+                            setAllowedUsersExpiry({});
+                          }
+                        }}
+                        className="text-[10px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 px-2 py-1 rounded transition"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+
+                  {allowedUsers.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-xs font-semibold">
+                      No students registered in the allowed list yet. Use the fields above to add students.
+                    </div>
+                  ) : (
+                    <div className="border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-150">
+                      {/* Header Row */}
+                      <div className="grid grid-cols-12 gap-2 bg-slate-50 px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <div className="col-span-5">Student Identifier</div>
+                        <div className="col-span-4">Access Expiry Date</div>
+                        <div className="col-span-2 text-center">Status</div>
+                        <div className="col-span-1 text-right">Action</div>
+                      </div>
+
+                      {/* Student List */}
+                      <div className="max-h-[300px] overflow-y-auto divide-y divide-slate-100">
+                        {allowedUsers.map(user => {
+                          const expiry = allowedUsersExpiry[user] || '';
+                          let isExpired = false;
+                          if (expiry) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const expDate = new Date(expiry);
+                            expDate.setHours(23, 59, 59, 999);
+                            if (today > expDate) {
+                              isExpired = true;
+                            }
+                          }
+
+                          return (
+                            <div key={user} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center text-xs text-slate-700 hover:bg-slate-50 transition">
+                              <div className="col-span-5 font-mono font-bold truncate" title={user}>
+                                {user}
+                              </div>
+                              <div className="col-span-4 pr-2">
+                                <input
+                                  type="date"
+                                  value={expiry}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setAllowedUsersExpiry(prev => ({
+                                      ...prev,
+                                      [user]: val
+                                    }));
+                                  }}
+                                  className="px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 transition w-full cursor-pointer"
+                                  title="Change expiration date anytime"
+                                />
+                              </div>
+                              <div className="col-span-2 text-center">
+                                {expiry ? (
+                                  isExpired ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-100 inline-block">
+                                      Expired
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-600 border border-emerald-100 inline-block">
+                                      Active
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-600 border border-indigo-100 inline-block">
+                                    Permanent
+                                  </span>
+                                )}
+                              </div>
+                              <div className="col-span-1 text-right">
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveUser(user)}
                                   className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                  title="Remove from allowed list"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
-                            ))}
-                          </div>
-                        )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -953,7 +1101,6 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 <div className="border-b border-slate-100 pb-3 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-sm">Word Directory & Individual Editing</h4>
-                    <p className="text-xs text-slate-450">কোর্সের বিদ্যমান শব্দগুলোর বিবরণী এবং প্রতিটি ডেটা ইন্ডিভিজুয়ালি এডিট বা সংশোধন</p>
                   </div>
 
                   {selectedWordIds.size > 0 && (
@@ -963,7 +1110,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-extrabold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer animate-fadeIn"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>নির্বাচিত {selectedWordIds.size} টি ডিলিট</span>
+                      <span>Delete Selected ({selectedWordIds.size})</span>
                     </button>
                   )}
                 </div>
@@ -976,7 +1123,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       type="text"
                       value={wordSearchQuery}
                       onChange={(e) => setWordSearchQuery(e.target.value)}
-                      placeholder="শব্দ বা অর্থ লিখে খুঁজুন..."
+                      placeholder="Search by word or meaning..."
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                     />
                   </div>
@@ -986,9 +1133,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     onChange={(e) => setWordGroupFilter(e.target.value)}
                     className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-black focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                   >
-                    <option value="all">সকল গ্রুপ (All Groups)</option>
+                    <option value="all">All Groups</option>
                     {uniqueLocalGroups.map(g => (
-                      <option key={g} value={String(g)}>গ্রুপ {g}</option>
+                      <option key={g} value={String(g)}>Group {g}</option>
                     ))}
                   </select>
                 </div>
@@ -1007,18 +1154,18 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                             />
                           </th>
-                          <th className="px-4 py-3">শব্দ (English)</th>
-                          <th className="px-4 py-3">বাংলা অর্থ (Bangla)</th>
-                          <th className="px-4 py-3 text-center">গ্রুপ</th>
-                          <th className="px-4 py-3 hidden sm:table-cell">সমার্থক / অতিরিক্ত শব্দার্থ</th>
-                          <th className="px-4 py-3 w-24 text-center">অ্যাকশন</th>
+                          <th className="px-4 py-3">Word (English)</th>
+                          <th className="px-4 py-3">Meaning (Bangla)</th>
+                          <th className="px-4 py-3 text-center">Group</th>
+                          <th className="px-4 py-3 hidden sm:table-cell">Synonyms / Derivatives</th>
+                          <th className="px-4 py-3 w-24 text-center">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                         {paginatedWords.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-semibold bg-white">
-                              কোনো শব্দ পাওয়া যায়নি। ফিল্টার পরিবর্তন করে বা নতুন শব্দ যোগ করে ট্রাই করুন।
+                              No words found. Try changing filters or adding some words.
                             </td>
                           </tr>
                         ) : (
@@ -1040,8 +1187,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                 <td className="px-4 py-2 text-slate-600 font-bold">{w.meaning}</td>
                                 <td className="px-4 py-2 text-center"><span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black text-[10px]">{w.group}</span></td>
                                 <td className="px-4 py-2 text-slate-400 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
-                                  {w.synonyms && <span className="block truncate">সমার্থক: {w.synonyms}</span>}
-                                  {w.extraWord && <span className="block truncate mt-0.5">অতিরিক্ত: {w.extraWord} ({w.extraMeaning})</span>}
+                                  {w.synonyms && <span className="block truncate">Synonyms: {w.synonyms}</span>}
+                                  {w.extraWord && <span className="block truncate mt-0.5">Derivative: {w.extraWord} ({w.extraMeaning})</span>}
                                 </td>
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
@@ -1049,7 +1196,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                       type="button"
                                       onClick={() => handleStartEditWord(w)}
                                       className="p-1.5 text-indigo-600 hover:text-indigo-800 rounded-lg hover:bg-indigo-50 transition cursor-pointer"
-                                      title="ইন্ডিভিজুয়াল এডিট"
+                                      title="Edit Word"
                                     >
                                       <Edit className="w-3.5 h-3.5" />
                                     </button>
@@ -1057,7 +1204,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                       type="button"
                                       onClick={() => handleDeleteWord(w.id)}
                                       className="p-1.5 text-slate-350 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition cursor-pointer"
-                                      title="ডিলিট"
+                                      title="Delete Word"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -1082,11 +1229,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       className="px-3 py-1.5 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent font-bold transition flex items-center gap-1 cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>পূর্ববর্তী</span>
+                      <span>Previous</span>
                     </button>
                     
                     <span className="font-extrabold text-slate-500">
-                      পৃষ্ঠা {currentWordPage} / {totalWordPages}
+                      Page {currentWordPage} of {totalWordPages}
                     </span>
 
                     <button
@@ -1095,7 +1242,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       onClick={() => setCurrentWordPage(prev => Math.min(totalWordPages, prev + 1))}
                       className="px-3 py-1.5 border border-slate-200 rounded-xl hover:bg-white disabled:opacity-50 disabled:hover:bg-transparent font-bold transition flex items-center gap-1 cursor-pointer"
                     >
-                      <span>পরবর্তী</span>
+                      <span>Next</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1108,7 +1255,6 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-6 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Add Words & Upload Excel Spreadsheets</h4>
-                  <p className="text-xs text-slate-450">একটি একটি করে নতুন শব্দ যোগ করুন অথবা এক্সেল শীট আপলোড দিয়ে বাল্ক ডেটা যোগ করুন</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -1117,7 +1263,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   <form onSubmit={handleAddSingleWordSubmit} className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                       <PlusCircle className="w-4.5 h-4.5 text-indigo-600" />
-                      <span className="text-xs font-black text-slate-800">১. একক নতুন শব্দ যোগ করুন (Individual Word)</span>
+                      <span className="text-xs font-black text-slate-800">1. Individual Word</span>
                     </div>
 
                     {addFormMessage && (
@@ -1130,7 +1276,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">মূল শব্দ (English) <span className="text-rose-500">*</span></label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Word (English) <span className="text-rose-500">*</span></label>
                         <input 
                           type="text" 
                           value={singleWord}
@@ -1140,12 +1286,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">বাংলা অর্থ (Bangla) <span className="text-rose-500">*</span></label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Bangla Meaning <span className="text-rose-500">*</span></label>
                         <input 
                           type="text" 
                           value={singleMeaning}
                           onChange={(e) => setSingleMeaning(e.target.value)}
-                          placeholder="e.g. হ্রাস পাওয়া" 
+                          placeholder="e.g. decrease / reduce (or Bangla equivalent)" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
                         />
                       </div>
@@ -1153,7 +1299,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">গ্রুপ/লেভেল (Group Name/No.) <span className="text-rose-500">*</span></label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Group/Level (Group Name/No.) <span className="text-rose-500">*</span></label>
                         <input 
                           type="text" 
                           value={singleGroup}
@@ -1163,7 +1309,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">সমার্থক শব্দ (Synonyms)</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Synonyms</label>
                         <input 
                           type="text" 
                           value={singleSynonyms}
@@ -1176,7 +1322,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">অতিরিক্ত শব্দ (Extra Word)</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Extra Word (Derivative)</label>
                         <input 
                           type="text" 
                           value={singleExtraWord}
@@ -1186,19 +1332,19 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">অতিরিক্ত শব্দার্থ (Extra Meaning)</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">Extra Meaning (Derivative Meaning)</label>
                         <input 
                           type="text" 
                           value={singleExtraMeaning}
                           onChange={(e) => setSingleExtraMeaning(e.target.value)}
-                          placeholder="e.g. উপশমিত" 
+                          placeholder="e.g. Bangla translation for derivative" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-extrabold text-slate-500 block">উদাহরণের বাক্য (Example Sentence)</label>
+                      <label className="text-[10px] font-extrabold text-slate-500 block">Example Sentence</label>
                       <input 
                         type="text" 
                         value={singleExample}
@@ -1213,7 +1359,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow-sm hover:shadow transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>সংরক্ষণ করুন</span>
+                      <span>Save Word</span>
                     </button>
                   </form>
 
@@ -1222,11 +1368,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div>
                       <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                         <FileSpreadsheet className="w-4.5 h-4.5 text-emerald-600" />
-                        <span className="text-xs font-black text-slate-800">২. এক্সেল স্প্রেডশীট আপলোড (Bulk Import Excel)</span>
+                        <span className="text-xs font-black text-slate-800">2. Bulk Import Excel</span>
                       </div>
 
                       <p className="text-[11px] text-slate-450 leading-relaxed mt-2 font-medium">
-                        আপনার স্প্রেডশীটে অবশ্যই <strong className="text-slate-700 font-extrabold">word</strong> (বা <strong className="text-slate-700 font-extrabold">main word</strong>) এবং <strong className="text-slate-700 font-extrabold">meaning</strong> (বা <strong className="text-slate-700 font-extrabold">bangla meaning</strong>) নামক কলাম থাকতে হবে। আপনি চাইলে <strong className="text-slate-700 font-extrabold">group, synonyms, extra word, extra meaning, example</strong> কলামগুলো যোগ করতে পারেন।
+                        Your spreadsheet must contain <strong className="text-slate-700 font-extrabold">word</strong> (or <strong className="text-slate-700 font-extrabold">main word</strong>) and <strong className="text-slate-700 font-extrabold">meaning</strong> (or <strong className="text-slate-700 font-extrabold">bangla meaning</strong>) columns. You can optionally include <strong className="text-slate-700 font-extrabold">group, synonyms, extra word, extra meaning, example</strong> columns.
                       </p>
 
                       {excelError && (
@@ -1257,7 +1403,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       <UploadCloud className="w-8 h-8 text-indigo-500" />
                       <div>
                         <label className="text-xs font-extrabold text-indigo-600 hover:text-indigo-800 transition cursor-pointer">
-                          এক্সেল ফাইলটি নির্বাচন করুন
+                          Select Excel File
                           <input 
                             type="file" 
                             accept=".xlsx, .xls" 
@@ -1265,7 +1411,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             className="hidden" 
                           />
                         </label>
-                        <span className="text-[10px] text-slate-400 block mt-1 font-medium">অথবা ড্র্যাগ করে এখানে এনে ছাড়ুন (xlsx, xls format)</span>
+                        <span className="text-[10px] text-slate-400 block mt-1 font-medium">or drag and drop here (xlsx, xls format)</span>
                       </div>
                     </div>
                   </div>
@@ -1284,7 +1430,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <span className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                   <Edit className="w-4 h-4 text-indigo-650" />
-                  <span>শব্দ ইন্ডিভিজুয়াল এডিটর</span>
+                  <span>Word Individual Editor</span>
                 </span>
                 <button onClick={() => setEditingWord(null)} className="p-1 hover:bg-slate-100 rounded text-slate-450 hover:text-slate-650 cursor-pointer">
                   <X className="w-4.5 h-4.5" />
@@ -1293,7 +1439,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">মূল শব্দ (English)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Word (English)</label>
                   <input 
                     type="text" 
                     value={editedWord}
@@ -1302,7 +1448,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">বাংলা অর্থ (Bangla Meaning)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Bangla Meaning</label>
                   <input 
                     type="text" 
                     value={editedMeaning}
@@ -1314,7 +1460,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">গ্রুপ / লেভেল</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Group / Level</label>
                   <input 
                     type="text" 
                     value={editedGroup}
@@ -1323,7 +1469,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">সমার্থক শব্দ (Synonyms)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Synonyms</label>
                   <input 
                     type="text" 
                     value={editedSynonyms}
@@ -1335,7 +1481,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">অতিরিক্ত শব্দ (Extra Word)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Derivative / Extra Word</label>
                   <input 
                     type="text" 
                     value={editedExtraWord}
@@ -1344,7 +1490,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">অতিরিক্ত অর্থ (Derivative Meaning)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Derivative Meaning</label>
                   <input 
                     type="text" 
                     value={editedExtraMeaning}
@@ -1355,7 +1501,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">উদাহরণ বাক্য (Example Sentence)</label>
+                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Example Sentence</label>
                 <textarea 
                   rows={2}
                   value={editedExample}
@@ -1398,7 +1544,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             {isSaving ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>সংরক্ষণ হচ্ছে...</span>
+                <span>Saving...</span>
               </>
             ) : (
               <>

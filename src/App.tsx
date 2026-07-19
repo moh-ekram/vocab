@@ -241,10 +241,33 @@ export default function App() {
     if (c.isRestricted) {
       if (!user?.email) return false;
       const userIdentifier = user.email.trim().toLowerCase();
-      return c.allowedUsers?.some(allowed => {
+      const isAllowed = c.allowedUsers?.some(allowed => {
         const allowedClean = allowed.trim().toLowerCase();
         return allowedClean === userIdentifier;
       });
+
+      if (!isAllowed) return false;
+
+      // Check expiry date
+      if (c.allowedUsersExpiry) {
+        // Find matching key case-insensitively
+        const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userIdentifier);
+        if (matchingKey) {
+          const expiryStr = c.allowedUsersExpiry[matchingKey];
+          if (expiryStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const expiryDate = new Date(expiryStr);
+            expiryDate.setHours(23, 59, 59, 999); // Allow access until end of day
+            
+            if (today > expiryDate) {
+              return false; // Access expired!
+            }
+          }
+        }
+      }
+      return true;
     }
 
     // Public courses (not restricted) are accessible to anyone
