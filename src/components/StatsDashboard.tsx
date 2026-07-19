@@ -72,6 +72,16 @@ export default function StatsDashboard({
     setCheckoutMessage(null);
 
     try {
+      const cleanPhone = (p: string) => p.replace(/\D/g, '').slice(-10); // match last 10 digits
+      const matchTrx = cleanTrx.toLowerCase().trim();
+      const matchPhone = cleanPhone(cleanSender);
+
+      const isAutoApproved = selectedBuyCourse.verifiedPayments && selectedBuyCourse.verifiedPayments.some(vp => {
+        const vpPhone = cleanPhone(vp.bkashNumber);
+        const vpTrx = vp.trxId.toLowerCase().trim();
+        return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
+      });
+
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const requestPayload = {
         id: requestId,
@@ -88,10 +98,19 @@ export default function StatsDashboard({
 
       await setDoc(doc(db, 'access_requests', requestId), requestPayload);
 
-      setCheckoutMessage({
-        type: 'success',
-        text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্সের এক্সেস এপ্রুভ করে দেবেন।'
-      });
+      if (isAutoApproved) {
+        // Automatically enroll the user immediately!
+        onImportCourse(selectedBuyCourse);
+        setCheckoutMessage({
+          type: 'success',
+          text: 'পেমেন্ট স্বয়ংক্রিয়ভাবে যাচাই করা হয়েছে! আপনাকে তাত্ক্ষণিকভাবে কোর্সে অ্যাক্সেস দেওয়া হয়েছে। পড়াশোনা শুরু করুন!'
+        });
+      } else {
+        setCheckoutMessage({
+          type: 'success',
+          text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্সের এক্সেস এপ্রুভ করে দেবেন।'
+        });
+      }
       setBkashSender('');
       setTrxId('');
       

@@ -25,9 +25,10 @@ import {
   HelpCircle,
   Eye,
   Volume2,
-  UserCheck
+  UserCheck,
+  ShieldCheck
 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { read, utils } from 'xlsx';
 
@@ -43,7 +44,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   onSaveSuccess,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification'>('general');
 
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(course.title);
@@ -59,6 +60,134 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [bulkInput, setBulkInput] = useState('');
   const [bulkExpiryDate, setBulkExpiryDate] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
+
+  // --- AUTO-VERIFICATION PAYMENT STATES ---
+  const [verifiedPayments, setVerifiedPayments] = useState<{ bkashNumber: string; trxId: string }[]>(course.verifiedPayments || []);
+  const [newVpNumber, setNewVpNumber] = useState('');
+  const [newVpTrxId, setNewVpTrxId] = useState('');
+  const [vpBulkInput, setVpBulkInput] = useState('');
+  const [dragActiveVp, setDragActiveVp] = useState(false);
+  const [vpExcelError, setVpExcelError] = useState<string | null>(null);
+  const [vpExcelSuccess, setVpExcelSuccess] = useState<string | null>(null);
+  const [vpSearchQuery, setVpSearchQuery] = useState('');
+
+  // --- ACCESS REQUESTS STATES & FUNCTIONS ---
+  const [courseRequests, setCourseRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  const fetchRequests = async () => {
+    setLoadingRequests(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'access_requests'));
+      const list: any[] = [];
+      qSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.courseId === course.id) {
+          list.push({ id: docSnap.id, ...data });
+        }
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setCourseRequests(list);
+    } catch (err) {
+      console.error('Error fetching access requests:', err);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  const runAutoApprovals = async (requestsToProcess: any[], currentAllowed: string[], currentVps: typeof verifiedPayments) => {
+    const cleanPhone = (p: string) => p.replace(/\D/g, '').slice(-10); // match last 10 digits
+    let updatedAllowed = [...currentAllowed];
+    let hasChanges = false;
+
+    for (const req of requestsToProcess) {
+      if (req.status !== 'pending') continue;
+
+      const matchTrx = req.trxId.toLowerCase().trim();
+      const matchPhone = cleanPhone(req.bkashNumber);
+
+      const isMatch = currentVps.some(vp => {
+        const vpPhone = cleanPhone(vp.bkashNumber);
+        const vpTrx = vp.trxId.toLowerCase().trim();
+        return (vpPhone === matchPhone || vp.bkashNumber.trim() === req.bkashNumber.trim()) && vpTrx === matchTrx;
+      });
+
+      if (isMatch) {
+        try {
+          const reqRef = doc(db, 'access_requests', req.id);
+          await updateDoc(reqRef, { status: 'approved' });
+          req.status = 'approved';
+
+          if (!updatedAllowed.includes(req.email.toLowerCase())) {
+            updatedAllowed.push(req.email.toLowerCase());
+            hasChanges = true;
+          }
+        } catch (e) {
+          console.error(`Failed to auto-approve request ${req.id}:`, e);
+        }
+      }
+    }
+
+    if (hasChanges) {
+      setAllowedUsers(updatedAllowed);
+      try {
+        const courseRef = doc(db, 'courses', course.id);
+        await updateDoc(courseRef, {
+          allowedUsers: updatedAllowed
+        });
+      } catch (e) {
+        console.error('Failed to update allowedUsers on course:', e);
+      }
+    }
+  };
+
+  const handleApproveRequest = async (req: any) => {
+    try {
+      const reqRef = doc(db, 'access_requests', req.id);
+      await updateDoc(reqRef, { status: 'approved' });
+      
+      setCourseRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
+
+      const emailLower = req.email.toLowerCase();
+      if (!allowedUsers.includes(emailLower)) {
+        const updatedAllowed = [...allowedUsers, emailLower];
+        setAllowedUsers(updatedAllowed);
+        
+        const courseRef = doc(db, 'courses', course.id);
+        await updateDoc(courseRef, {
+          allowedUsers: updatedAllowed
+        });
+      }
+    } catch (e) {
+      console.error('Failed to approve request:', e);
+      alert('Failed to approve request.');
+    }
+  };
+
+  const handleRejectRequest = async (reqId: string) => {
+    if (!window.confirm('Are you sure you want to reject this request?')) return;
+    try {
+      const reqRef = doc(db, 'access_requests', reqId);
+      await updateDoc(reqRef, { status: 'rejected' });
+      
+      setCourseRequests(prev => prev.map(r => r.id === reqId ? { ...r, status: 'rejected' } : r));
+    } catch (e) {
+      console.error('Failed to reject request:', e);
+      alert('Failed to reject request.');
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'verification') {
+      fetchRequests();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (courseRequests.length > 0 && verifiedPayments.length > 0) {
+      runAutoApprovals(courseRequests, allowedUsers, verifiedPayments);
+    }
+  }, [courseRequests, verifiedPayments]);
 
   // --- FEATURE & VARIABLE TOGGLES ---
   const [toggles, setToggles] = useState<Record<string, boolean>>({
@@ -124,6 +253,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
     setLocalWords(course.words || []);
+    setVerifiedPayments(course.verifiedPayments || []);
     setToggles({
       meaning: true,
       synonyms: true,
@@ -215,6 +345,156 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
     
     setIsBulkMode(false);
+    setError(null);
+  };
+
+  // --- AUTO-VERIFICATION PAYMENT HANDLERS ---
+  const handleAddVerifiedPayment = () => {
+    const num = newVpNumber.trim();
+    const trx = newVpTrxId.trim();
+    if (!num || !trx) {
+      setError('Mobile number and Transaction ID are required.');
+      return;
+    }
+
+    if (verifiedPayments.some(vp => vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase())) {
+      setError('This payment entry is already verified.');
+      return;
+    }
+
+    setVerifiedPayments(prev => [...prev, { bkashNumber: num, trxId: trx }]);
+    setNewVpNumber('');
+    setNewVpTrxId('');
+    setError(null);
+  };
+
+  const handleVpDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActiveVp(true);
+    } else if (e.type === "dragleave") {
+      setDragActiveVp(false);
+    }
+  };
+
+  const handleVpDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActiveVp(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processVpExcelFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleVpFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processVpExcelFile(e.target.files[0]);
+    }
+  };
+
+  const processVpExcelFile = (file: File) => {
+    setVpExcelError(null);
+    setVpExcelSuccess(null);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = utils.sheet_to_json(sheet) as any[];
+
+        if (rawRows.length === 0) {
+          setVpExcelError('Spreadsheet is empty.');
+          return;
+        }
+
+        const vpList: { bkashNumber: string; trxId: string }[] = [];
+
+        for (const row of rawRows) {
+          const rowKeys = Object.keys(row);
+          
+          const findKey = (candidates: string[]) => {
+            return rowKeys.find(k => {
+              const cleanK = k.toLowerCase().trim();
+              return candidates.some(c => cleanK === c);
+            });
+          };
+
+          const mobileKey = findKey(['mobile', 'bkashNumber', 'bkash', 'phone', 'number', 'মোবাইল', 'বিকাশ']);
+          const trxKey = findKey(['trxid', 'transaction', 'txid', 'transactionid', 'ট্রাঞ্জেকশন']);
+
+          const mobileVal = mobileKey ? String(row[mobileKey]).trim() : '';
+          const trxVal = trxKey ? String(row[trxKey]).trim() : '';
+
+          if (mobileVal && trxVal) {
+            vpList.push({
+              bkashNumber: mobileVal,
+              trxId: trxVal
+            });
+          }
+        }
+
+        if (vpList.length === 0) {
+          setVpExcelError('Columns did not match! Spreadsheet must contain "mobile" or "bKash" and "trxId" or "transaction" columns.');
+          return;
+        }
+
+        // Merge and avoid duplicates
+        setVerifiedPayments(prev => {
+          const merged = [...prev];
+          vpList.forEach(item => {
+            if (!merged.some(m => m.bkashNumber === item.bkashNumber && m.trxId.toLowerCase() === item.trxId.toLowerCase())) {
+              merged.push(item);
+            }
+          });
+          return merged;
+        });
+
+        setVpExcelSuccess(`Successfully added ${vpList.length} verified payment records from file!`);
+      } catch (err) {
+        console.error(err);
+        setVpExcelError('Failed to parse Excel spreadsheet.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleApplyVpBulk = () => {
+    if (!vpBulkInput.trim()) return;
+    const lines = vpBulkInput.split('\n');
+    const parsed: { bkashNumber: string; trxId: string }[] = [];
+    
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      // split by comma, tab, space or semicolon
+      const parts = line.split(/[,\t;]+/).map(p => p.trim());
+      if (parts.length >= 2) {
+        parsed.push({
+          bkashNumber: parts[0],
+          trxId: parts[1]
+        });
+      }
+    });
+
+    if (parsed.length === 0) {
+      setError('No valid comma/tab separated lines found.');
+      return;
+    }
+
+    setVerifiedPayments(prev => {
+      const merged = [...prev];
+      parsed.forEach(item => {
+        if (!merged.some(m => m.bkashNumber === item.bkashNumber && m.trxId.toLowerCase() === item.trxId.toLowerCase())) {
+          merged.push(item);
+        }
+      });
+      return merged;
+    });
+
+    setVpBulkInput('');
     setError(null);
   };
 
@@ -581,6 +861,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         totalGroups: uniqueGroupsSize || 1,
         price: Number(price) || 0,
         bkashNumber: bkashNumber.trim(),
+        verifiedPayments: verifiedPayments,
       };
 
       await setDoc(doc(db, 'courses', course.id), updatedCourse);
@@ -604,6 +885,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     { id: 'variables' as const, label: 'Features & Variables', icon: Settings },
     { id: 'access' as const, label: 'Student Access', icon: Users },
     { id: 'students' as const, label: 'Allowed Students', icon: UserCheck, badge: allowedUsers.length },
+    { id: 'verification' as const, label: 'Auto-Verification', icon: ShieldCheck, badge: verifiedPayments.length },
     { id: 'wordlist' as const, label: 'Word List & Editing', icon: BookOpen, badge: localWords.length },
     { id: 'addwords' as const, label: 'Add & Upload Words', icon: PlusCircle },
   ];
@@ -1121,6 +1403,305 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* --- SECTION: AUTO-VERIFICATION PAYMENTS --- */}
+            {activeTab === 'verification' && (
+              <div className="space-y-6 animate-fadeIn text-slate-700 flex-1 flex flex-col min-h-0">
+                <div className="border-b border-slate-100 pb-3 mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-sm">bKash Auto-Verification Gateway</h4>
+                  <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
+                    পেমেন্ট সম্পন্ন করা শিক্ষার্থীদের মোবাইল ও ট্রাঞ্জেকশন আইডি (TrxID) জমা রাখুন। রিক্যুয়েস্ট সাবমিট করার সাথে সাথেই সঠিক তথ্যের জন্য অটো-এপ্রুভাল সম্পন্ন হবে।
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-y-auto pb-4">
+                  {/* Left Column: Form & Import */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* Add Single Record */}
+                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-150 space-y-4">
+                      <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Plus className="w-4 h-4 text-indigo-600" />
+                        <span>ম্যানুয়ালি ডাটা যোগ করুন</span>
+                      </h5>
+
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">বিকাশ মোবাইল নাম্বার</label>
+                          <input
+                            type="text"
+                            value={newVpNumber}
+                            onChange={(e) => setNewVpNumber(e.target.value)}
+                            placeholder="যেমন: 01712345678"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold transition text-slate-800"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">ট্রাঞ্জেকশন আইডি (TrxID)</label>
+                          <input
+                            type="text"
+                            value={newVpTrxId}
+                            onChange={(e) => setNewVpTrxId(e.target.value)}
+                            placeholder="যেমন: K8B9H5J2D"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-mono font-bold transition text-slate-800 uppercase"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleAddVerifiedPayment}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>ডাটা যোগ করুন</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bulk Import Section */}
+                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-150 space-y-4">
+                      <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <UploadCloud className="w-4 h-4 text-indigo-600" />
+                        <span>বাল্ক ইম্পোর্ট করুন (Excel / Text)</span>
+                      </h5>
+
+                      {/* Spreadsheet Drag-n-Drop */}
+                      <div className="space-y-3">
+                        <div 
+                          onDragEnter={handleVpDrag}
+                          onDragLeave={handleVpDrag}
+                          onDragOver={handleVpDrag}
+                          onDrop={handleVpDrop}
+                          className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition relative ${
+                            dragActiveVp 
+                              ? 'border-indigo-500 bg-indigo-50/30' 
+                              : 'border-slate-200 hover:border-slate-350 bg-white'
+                          }`}
+                        >
+                          <input 
+                            type="file" 
+                            accept=".xlsx, .xls, .csv"
+                            onChange={handleVpFileInputChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                          <FileSpreadsheet className="w-7 h-7 text-slate-400 mx-auto mb-2" />
+                          <p className="text-xs font-bold text-slate-700">Excel / CSV ফাইল আপলোড করুন</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">টেনে আনুন অথবা ব্রাউজ করুন</p>
+                        </div>
+
+                        {vpExcelError && <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-2 rounded-xl">{vpExcelError}</p>}
+                        {vpExcelSuccess && <p className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl">{vpExcelSuccess}</p>}
+
+                        <div className="relative flex items-center my-3">
+                          <div className="flex-grow border-t border-slate-200"></div>
+                          <span className="flex-shrink mx-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">অথবা কপি-পেস্ট করুন</span>
+                          <div className="flex-grow border-t border-slate-200"></div>
+                        </div>
+
+                        {/* Paste area */}
+                        <div className="space-y-2">
+                          <textarea
+                            rows={3}
+                            value={vpBulkInput}
+                            onChange={(e) => setVpBulkInput(e.target.value)}
+                            placeholder="মোবাইল, ট্রাঞ্জেকশন আইডি (এক লাইনে একটি করে)&#13;যেমন:&#13;01712345678, K8B9H5J2D&#13;01822334455, J3L4K2M5N"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-semibold font-sans resize-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyVpBulk}
+                            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition cursor-pointer"
+                          >
+                            টেক্সট ডাটা যোগ করুন
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Pre-verified Entries List */}
+                  <div className="lg:col-span-7 flex flex-col h-full min-h-[300px]">
+                    <div className="border border-slate-150 rounded-2xl overflow-hidden bg-white flex flex-col h-full">
+                      {/* List Header */}
+                      <div className="p-4 border-b border-slate-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">ভেরিফাইড লিস্ট</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">
+                            {verifiedPayments.length} রেকর্ড
+                          </span>
+                        </div>
+                        {verifiedPayments.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm('সবগুলো রেকর্ড কি ডিলিট করতে চান?')) {
+                                setVerifiedPayments([]);
+                              }
+                            }}
+                            className="text-[10px] font-black text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                          >
+                            ক্লিয়ার অল
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Search Bar */}
+                      <div className="p-3 border-b border-slate-100">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={vpSearchQuery}
+                            onChange={(e) => setVpSearchQuery(e.target.value)}
+                            placeholder="মোবাইল বা TrxID দিয়ে সার্চ করুন..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Scrollable list */}
+                      <div className="flex-grow overflow-y-auto divide-y divide-slate-100 max-h-[350px]">
+                        {verifiedPayments.filter(vp => {
+                          const q = vpSearchQuery.toLowerCase().trim();
+                          return !q || vp.bkashNumber.toLowerCase().includes(q) || vp.trxId.toLowerCase().includes(q);
+                        }).length === 0 ? (
+                          <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center h-48">
+                            <ShieldCheck className="w-8 h-8 text-slate-300 mb-2" />
+                            <p>কোনো ভেরিফাইড পেমেন্ট ডাটা পাওয়া যায়নি।</p>
+                          </div>
+                        ) : (
+                          verifiedPayments
+                            .filter(vp => {
+                              const q = vpSearchQuery.toLowerCase().trim();
+                              return !q || vp.bkashNumber.toLowerCase().includes(q) || vp.trxId.toLowerCase().includes(q);
+                            })
+                            .map((vp, index) => (
+                              <div key={index} className="px-4 py-3 hover:bg-slate-50/50 transition flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                  <p className="text-xs font-black text-slate-800 font-mono">{vp.bkashNumber}</p>
+                                  <p className="text-[10px] text-indigo-600 font-bold font-mono">TrxID: <span className="uppercase">{vp.trxId}</span></p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setVerifiedPayments(prev => prev.filter((_, i) => i !== index))}
+                                  className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                  title="রেকর্ড ডিলিট করুন"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* student access requests subsection */}
+                <div className="border-t border-slate-200/60 pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <UserCheck className="w-4 h-4 text-indigo-600" />
+                        <span>শিক্ষার্থীদের এক্সেস রিক্যুয়েস্ট ও স্ট্যাটাস</span>
+                      </h5>
+                      <p className="text-[10px] text-slate-450 font-semibold mt-0.5">
+                        শিক্ষার্থীদের সাবমিট করা বিকাশ পেমেন্ট রিক্যুয়েস্ট এখানে দেখা যাবে। কোনো রিক্যুয়েস্ট পেন্ডিং থাকলে ম্যানুয়ালি বা অটো-ভেরিফিকেশনে এপ্রুভ করুন।
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={fetchRequests}
+                      disabled={loadingRequests}
+                      className="p-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-500 transition cursor-pointer"
+                      title="রিফ্রেশ করুন"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingRequests ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+
+                  <div className="border border-slate-150 rounded-2xl overflow-hidden bg-white">
+                    {loadingRequests ? (
+                      <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center">
+                        <RefreshCw className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+                        <p>রিক্যুয়েস্ট লোড হচ্ছে...</p>
+                      </div>
+                    ) : courseRequests.length === 0 ? (
+                      <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center">
+                        <Users className="w-8 h-8 text-slate-300 mb-2" />
+                        <p>এখনো কোনো রিক্যুয়েস্ট পাওয়া যায়নি।</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100 text-slate-450 text-[10px] font-bold uppercase tracking-wider">
+                              <th className="py-2.5 px-4">শিক্ষার্থীর ইমেইল</th>
+                              <th className="py-2.5 px-4">বিকাশ নাম্বার</th>
+                              <th className="py-2.5 px-4">ট্রাঞ্জেকশন আইডি</th>
+                              <th className="py-2.5 px-4">তারিখ</th>
+                              <th className="py-2.5 px-4 text-center">স্ট্যাটাস</th>
+                              <th className="py-2.5 px-4 text-right">অ্যাকশন</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-sans">
+                            {courseRequests.map((req) => {
+                              const isApproved = req.status === 'approved';
+                              const isRejected = req.status === 'rejected';
+                              return (
+                                <tr key={req.id} className="hover:bg-slate-50/50 transition">
+                                  <td className="py-2.5 px-4 font-semibold text-slate-800">{req.email}</td>
+                                  <td className="py-2.5 px-4 font-mono text-slate-600 font-bold">{req.bkashNumber}</td>
+                                  <td className="py-2.5 px-4 font-mono font-bold text-indigo-600 uppercase">{req.trxId}</td>
+                                  <td className="py-2.5 px-4 text-[10px] text-slate-400 font-bold">
+                                    {req.createdAt ? new Date(req.createdAt).toLocaleDateString('bn-BD') : 'N/A'}
+                                  </td>
+                                  <td className="py-2.5 px-4 text-center">
+                                    {isApproved ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                        Approved
+                                      </span>
+                                    ) : isRejected ? (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-100">
+                                        Rejected
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-100 animate-pulse">
+                                        Pending
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2.5 px-4 text-right">
+                                    {!isApproved && !isRejected && (
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleApproveRequest(req)}
+                                          className="px-2 py-1 bg-emerald-650 hover:bg-emerald-600 text-white font-extrabold text-[10px] rounded-lg transition cursor-pointer"
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRejectRequest(req.id)}
+                                          className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-150 font-extrabold text-[10px] rounded-lg transition cursor-pointer"
+                                        >
+                                          Reject
+                                        </button>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

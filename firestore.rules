@@ -53,7 +53,8 @@ service cloud.firestore {
         && (data.allowedUsers == null || data.allowedUsers is list)
         && (data.variableToggles == null || data.variableToggles is map)
         && (data.price == null || data.price is int || data.price is float)
-        && (data.bkashNumber == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64));
+        && (data.bkashNumber == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64))
+        && (data.verifiedPayments == null || data.verifiedPayments is list);
     }
 
     function isValidAccessRequest(data) {

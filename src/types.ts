@@ -80,6 +80,7 @@ export interface Course {
   createdBy: string;
   price?: number;
   bkashNumber?: string;
+  verifiedPayments?: { bkashNumber: string; trxId: string }[];
 }
 
 export interface AccessRequest {
