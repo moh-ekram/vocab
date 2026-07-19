@@ -50,6 +50,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [description, setDescription] = useState(course.description);
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
   const [isRestricted, setIsRestricted] = useState(!!course.isRestricted);
+  const [price, setPrice] = useState<number>(course.price || 0);
+  const [bkashNumber, setBkashNumber] = useState<string>(course.bkashNumber || '01700000000');
   const [allowedUsers, setAllowedUsers] = useState<string[]>(course.allowedUsers || []);
   const [allowedUsersExpiry, setAllowedUsersExpiry] = useState<Record<string, string>>(course.allowedUsersExpiry || {});
   const [newUserInput, setNewUserInput] = useState('');
@@ -116,6 +118,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setDescription(course.description);
     setIsDefault(!!course.isDefault);
     setIsRestricted(!!course.isRestricted);
+    setPrice(course.price || 0);
+    setBkashNumber(course.bkashNumber || '01700000000');
     setAllowedUsers(course.allowedUsers || []);
     setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
@@ -575,6 +579,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         words: localWords,
         variableToggles: finalToggles,
         totalGroups: uniqueGroupsSize || 1,
+        price: Number(price) || 0,
+        bkashNumber: bkashNumber.trim(),
       };
 
       await setDoc(doc(db, 'courses', course.id), updatedCourse);
@@ -739,6 +745,30 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-semibold transition resize-none text-slate-700 leading-relaxed"
                     placeholder="Enter course description..."
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-slate-600 block">কোর্সের মূল্য (টাকা) / Course Price (TK)</label>
+                    <input
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                      placeholder="e.g. 500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-slate-600 block">বিকাশ নাম্বার (সেন্ড মানি) / bKash Number</label>
+                    <input
+                      type="text"
+                      value={bkashNumber}
+                      onChange={(e) => setBkashNumber(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                      placeholder="e.g. 017XXXXXXXX"
+                    />
+                  </div>
                 </div>
 
                 <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-start gap-3.5">

@@ -1243,6 +1243,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <StatsDashboard
+              user={user}
               words={activeWords}
               progress={progress}
               goal={goal}

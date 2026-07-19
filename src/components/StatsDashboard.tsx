@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard } from 'lucide-react';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { motion } from 'motion/react';
 import { auth, db } from '../lib/firebase';
-import { collection, getDocs, limit, query, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, limit, query, doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface StatsDashboardProps {
+  user: any;
   words: VocabularyWord[];
   progress: Record<string, UserProgress>;
   goal: StudyGoal;
@@ -22,6 +23,7 @@ interface StatsDashboardProps {
 }
 
 export default function StatsDashboard({ 
+  user,
   words, 
   progress, 
   goal, 
@@ -37,6 +39,77 @@ export default function StatsDashboard({
 }: StatsDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
+
+  // --- bKash Checkout States ---
+  const [selectedBuyCourse, setSelectedBuyCourse] = useState<Course | null>(null);
+  const [bkashSender, setBkashSender] = useState('');
+  const [accessEmail, setAccessEmail] = useState(user?.email || '');
+  const [trxId, setTrxId] = useState('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Sync accessEmail when user changes
+  useEffect(() => {
+    if (user?.email) {
+      setAccessEmail(user.email);
+    }
+  }, [user]);
+
+  const handleRequestAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBuyCourse) return;
+
+    const cleanSender = bkashSender.trim();
+    const cleanEmail = accessEmail.trim();
+    const cleanTrx = trxId.trim();
+
+    if (!cleanSender || !cleanEmail || !cleanTrx) {
+      setCheckoutMessage({ type: 'error', text: 'অনুগ্রহ করে সবগুলো ঘর সঠিকভাবে পূরণ করুন।' });
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    setCheckoutMessage(null);
+
+    try {
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const requestPayload = {
+        id: requestId,
+        courseId: selectedBuyCourse.id,
+        courseTitle: selectedBuyCourse.title,
+        bkashNumber: cleanSender,
+        email: cleanEmail.toLowerCase(),
+        trxId: cleanTrx,
+        status: 'pending',
+        price: selectedBuyCourse.price || 0,
+        createdAt: new Date().toISOString(),
+        requestedBy: user?.email || 'anonymous'
+      };
+
+      await setDoc(doc(db, 'access_requests', requestId), requestPayload);
+
+      setCheckoutMessage({
+        type: 'success',
+        text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্সের এক্সেস এপ্রুভ করে দেবেন।'
+      });
+      setBkashSender('');
+      setTrxId('');
+      
+      // Auto-dismiss or reset after 4 seconds
+      setTimeout(() => {
+        setSelectedBuyCourse(null);
+        setCheckoutMessage(null);
+      }, 4000);
+    } catch (err) {
+      console.error('Error submitting access request:', err);
+      setCheckoutMessage({
+        type: 'error',
+        text: 'অনুরোধ পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।'
+      });
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
 
   // --- COURSE CODE IMPORT STATES & LOGIC ---
   const [inputCourseCode, setInputCourseCode] = useState('');
@@ -434,52 +507,50 @@ export default function StatsDashboard({
                       className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase transition border cursor-pointer ${
                         isActive
                           ? 'bg-emerald-600/40 border-white/30 text-emerald-100 hover:bg-emerald-600/70 hover:text-white'
-                          : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600'
+                          : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50/50 hover:text-rose-600 hover:border-rose-150'
                       }`}
-                      title="এনরোলমেন্ট বাতিল করুন"
                     >
-                      <XCircle className="w-2.5 h-2.5" /> বাতিল
+                      <Trash2 className="w-2.5 h-2.5" /> ডিলিট
                     </button>
                   </div>
                 </div>
 
-                {/* Right Side: Circular Border Progress matching overall learning distribution */}
-                <div className={`relative w-16 h-16 flex items-center justify-center flex-shrink-0 rounded-full p-1 border shadow-inner ${isActive ? 'bg-emerald-600/30 border-white/10' : 'bg-slate-50/50 border-slate-150/30'}`}>
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 50 50">
-                    {/* Base Background Circle */}
+                {/* Right Side: Circular Progress */}
+                <div className="relative w-12 h-12 flex-shrink-0">
+                  <svg className="w-full h-full -rotate-90">
+                    {/* Background Circle */}
                     <circle
-                      cx="25"
-                      cy="25"
+                      cx="24"
+                      cy="24"
                       r="20"
-                      className={isActive ? 'stroke-white/20' : 'stroke-slate-100'}
-                      strokeWidth="4.5"
+                      className={isActive ? 'text-emerald-600/40' : 'text-slate-100'}
+                      strokeWidth="5"
                       fill="transparent"
                     />
-                    
-                    {/* Progress Circle (Single completed arc matching overall distribution look) */}
+                    {/* Progress Circle */}
                     <motion.circle
-                      cx="25"
-                      cy="25"
+                      cx="24"
+                      cy="24"
                       r="20"
                       className={isActive ? 'text-white' : 'text-emerald-500'}
-                      strokeWidth="4.5"
+                      strokeWidth="5"
                       fill="transparent"
                       pathLength="100"
                       strokeDasharray="100"
                       initial={{ strokeDashoffset: 100 }}
                       animate={{ strokeDashoffset: 100 - coursePercent }}
-                      transition={{ duration: 1.2, ease: "easeOut" }}
+                      transition={{ type: "spring", stiffness: 70, damping: 14 }}
                       strokeLinecap="round"
                       stroke="currentColor"
                     />
                   </svg>
                   
                   {/* Centered progress percentage text and count */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className={`text-xs font-black font-mono leading-none ${isActive ? 'text-white' : 'text-slate-800'}`}>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none">
+                    <span className={`text-xs font-black font-mono leading-none tracking-tight ${isActive ? 'text-white' : 'text-slate-800'}`}>
                       {coursePercent}%
                     </span>
-                    <span className={`block text-[7px] font-extrabold uppercase leading-none mt-0.5 font-mono ${isActive ? 'text-emerald-100/90' : 'text-slate-400'}`}>
+                    <span className={`block text-[7px] font-black uppercase leading-none mt-0.5 font-mono ${isActive ? 'text-emerald-100/90' : 'text-slate-400'}`}>
                       {courseKnowCount}/{courseWords.length}
                     </span>
                   </div>
@@ -522,6 +593,13 @@ export default function StatsDashboard({
               ) : (
                 allCourses.filter(c => !enrolledCourseIds.includes(c.id)).map(c => {
                   const courseWords = c.words || [];
+                  const isUserAllowed = !c.isRestricted || (
+                    user?.email && (
+                      c.allowedUsers?.map(email => email.toLowerCase()).includes(user.email.toLowerCase()) ||
+                      user.email.toLowerCase() === 'mohammad.001ekram@gmail.com'
+                    )
+                  );
+
                   return (
                     <div key={c.id} className="p-4 border border-slate-150 hover:border-slate-200 rounded-2xl bg-white flex flex-col justify-between gap-4 transition hover:shadow-xs">
                       <div className="space-y-1">
@@ -533,19 +611,40 @@ export default function StatsDashboard({
                         <div className="text-[10px] text-slate-400 font-extrabold font-mono pt-1">
                           শব্দসংখ্যা: {courseWords.length} টি • গ্রুপসমূহ: {c.totalGroups} টি
                         </div>
+                        {c.isRestricted && (
+                          <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-bold mt-1.5 flex items-center gap-1">
+                            <span>🔒 রেস্ট্রিকটেড কোর্স (Restricted Course)</span>
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={() => {
-                          setEnrolledCourseIds(prev => [...prev, c.id]);
-                          // Automatically set the newly enrolled course as active
-                          setActiveCourseId(c.id);
-                          setShowEnrollModal(false);
-                        }}
-                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>এনরোল করুন ও পড়া শুরু করুন</span>
-                      </button>
+
+                      {isUserAllowed ? (
+                        <button
+                          onClick={() => {
+                            setEnrolledCourseIds(prev => [...prev, c.id]);
+                            // Automatically set the newly enrolled course as active
+                            setActiveCourseId(c.id);
+                            setShowEnrollModal(false);
+                          }}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm animate-fade-in"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>এনরোল করুন ও পড়া শুরু করুন</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedBuyCourse(c);
+                            setBkashSender('');
+                            setTrxId('');
+                            setCheckoutMessage(null);
+                          }}
+                          className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm animate-fade-in"
+                        >
+                          <CreditCard className="w-3.5 h-3.5" />
+                          <span>Buy Now - {c.price || 0} TK</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })
@@ -560,6 +659,127 @@ export default function StatsDashboard({
                 বন্ধ করুন
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* bKash Payment / Access Request Dialog */}
+      {selectedBuyCourse && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in animate-duration-200" id="bkash-payment-modal">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col font-sans">
+            <div className="p-5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                  <span className="p-1 bg-pink-500 rounded-lg text-white font-black text-xs font-mono px-1.5">bKash</span>
+                  কোর্স এক্সেস রিক্যুয়েস্ট
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedBuyCourse.title}</p>
+              </div>
+              <button 
+                onClick={() => setSelectedBuyCourse(null)}
+                className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRequestAccess} className="p-6 overflow-y-auto space-y-4 flex-1">
+              <div className="p-4 bg-pink-50 border border-pink-100 rounded-2xl space-y-2 text-xs">
+                <p className="font-black text-pink-700">বিকাশ সেন্ড মানি নির্দেশাবলী:</p>
+                <p className="font-semibold text-slate-700 leading-relaxed">
+                  নিচের বিকাশ নাম্বারে <strong className="text-pink-600 font-black text-sm">{selectedBuyCourse.price || 0} টাকা</strong> সেন্ড মানি (Send Money) করে নিচের ফরমটি ফিলাপ করুন।
+                </p>
+                <div className="flex items-center justify-between p-2.5 bg-white border border-pink-100 rounded-xl mt-1.5">
+                  <div>
+                    <p className="text-[9px] text-slate-400 font-bold">বিকাশ পার্সোনাল নাম্বার:</p>
+                    <p className="font-black text-slate-800 text-xs font-mono">{selectedBuyCourse.bkashNumber || '01700000000'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedBuyCourse.bkashNumber || '01700000000');
+                      alert('নাম্বারটি কপি করা হয়েছে!');
+                    }}
+                    className="p-1.5 hover:bg-slate-100 rounded-lg text-indigo-600 font-bold text-[10px] flex items-center gap-1 cursor-pointer border border-indigo-100"
+                  >
+                    <Copy className="w-3 h-3" /> কপি করুন
+                  </button>
+                </div>
+              </div>
+
+              {checkoutMessage && (
+                <div className={`p-4 rounded-2xl text-xs font-bold leading-relaxed flex items-start gap-2 ${
+                  checkoutMessage.type === 'success' 
+                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' 
+                    : 'bg-rose-50 border border-rose-100 text-rose-800'
+                }`}>
+                  {checkoutMessage.type === 'success' ? (
+                    <Check className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
+                  )}
+                  <span>{checkoutMessage.text}</span>
+                </div>
+              )}
+
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">১/ বিকাশ নাম্বার (যেটি দিয়ে {selectedBuyCourse.price || 0} টাকা সেন্ড মানি করেছেন) <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={bkashSender}
+                    onChange={(e) => setBkashSender(e.target.value)}
+                    placeholder="যেমন: 01712345678"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">২/ ইমেইল (যেখানে কোর্সের এক্সেস দেওয়া হবে) <span className="text-rose-500">*</span></label>
+                  <input
+                    type="email"
+                    required
+                    value={accessEmail}
+                    onChange={(e) => setAccessEmail(e.target.value)}
+                    placeholder="যেমন: student@gmail.com"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">৩/ বিকাশ ট্রাঞ্জেকশন নাম্বার (TrxID) <span className="text-rose-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={trxId}
+                    onChange={(e) => setTrxId(e.target.value)}
+                    placeholder="যেমন: K8B9H5J2D"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono font-bold transition text-slate-800 uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmittingRequest}
+                  className="w-full py-3 bg-pink-600 hover:bg-pink-500 disabled:bg-slate-200 text-white font-black text-xs rounded-2xl shadow-lg shadow-pink-600/10 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isSubmittingRequest ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>অনুরোধ পাঠানো হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>রিক্যুয়েস্ট এক্সেস (Request Access)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -585,111 +805,114 @@ export default function StatsDashboard({
             </div>
           </div>
 
-          {/* Large Beautiful English Numbers for Total Words & Unread */}
-          <div className="flex flex-row items-center gap-12 py-3">
-            <div className="flex flex-col">
-              <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">TOTAL WORDS</span>
-              <span className="text-4xl md:text-5xl font-black text-indigo-600 tracking-tight font-sans mt-1 leading-none">{totalWords}</span>
-            </div>
-            <div className="h-10 w-[1.5px] bg-slate-200" />
-            <div className="flex flex-col">
-              <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">NOT STUDIED</span>
-              <span className="text-4xl md:text-5xl font-black text-slate-500 tracking-tight font-sans mt-1 leading-none">{unratedCount}</span>
-            </div>
-          </div>
-
-          {/* Three large circular progress bars for status */}
-          <div className="flex flex-row gap-2 sm:gap-4 pt-4 w-full max-w-md">
-            {/* Know progress circle */}
-            <div className="flex flex-col items-center text-center transition group flex-1">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
-                  <motion.circle 
-                    cx="50" 
-                    cy="50" 
-                    r="38" 
-                    className="text-emerald-500" 
-                    strokeWidth="11" 
-                    strokeDasharray="238.76" 
-                    initial={{ strokeDashoffset: 238.76 }}
-                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100 }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                    strokeLinecap="round" 
-                    stroke="currentColor" 
-                    fill="transparent" 
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base sm:text-xl font-black text-emerald-600 font-sans leading-none">{knowCount}</span>
-                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
-                </div>
+          {/* Desktop Row, Mobile Centered Column container */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-8 w-full border-b border-slate-100 pb-6 md:pb-4">
+            {/* Large Beautiful English Numbers for Total Words & Unread */}
+            <div className="flex flex-row items-center justify-center md:justify-start gap-12 py-3">
+              <div className="flex flex-col items-center md:items-start">
+                <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">TOTAL WORDS</span>
+                <span className="text-4xl md:text-5xl font-black text-indigo-600 tracking-tight font-sans mt-1 leading-none">{totalWords}</span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-emerald-700 font-sans">
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>পারি</span>
+              <div className="h-10 w-[1.5px] bg-slate-200" />
+              <div className="flex flex-col items-center md:items-start">
+                <span className="text-[11px] font-black text-slate-400 tracking-widest uppercase font-sans">NOT STUDIED</span>
+                <span className="text-4xl md:text-5xl font-black text-slate-500 tracking-tight font-sans mt-1 leading-none">{unratedCount}</span>
               </div>
             </div>
 
-            {/* Confusion progress circle */}
-            <div className="flex flex-col items-center text-center transition group flex-1">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
-                  <motion.circle 
-                    cx="50" 
-                    cy="50" 
-                    r="38" 
-                    className="text-amber-500" 
-                    strokeWidth="11" 
-                    strokeDasharray="238.76" 
-                    initial={{ strokeDashoffset: 238.76 }}
-                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100 }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                    strokeLinecap="round" 
-                    stroke="currentColor" 
-                    fill="transparent" 
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base sm:text-xl font-black text-amber-600 font-sans leading-none">{confusionCount}</span>
-                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
+            {/* Three large circular progress bars for status */}
+            <div className="flex flex-row gap-2 sm:gap-4 pt-4 w-full max-w-md justify-center md:justify-end mx-auto md:mx-0">
+              {/* Know progress circle */}
+              <div className="flex flex-col items-center text-center transition group flex-1">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3 p-1 rounded-full bg-slate-50 border border-slate-100/50 shadow-inner">
+                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                    <circle cx="50" cy="50" r="38" className="stroke-slate-200/50" strokeWidth="10" fill="transparent" />
+                    <motion.circle 
+                      cx="50" 
+                      cy="50" 
+                      r="38" 
+                      className="text-emerald-500" 
+                      strokeWidth="11" 
+                      strokeDasharray="238.76" 
+                      initial={{ strokeDashoffset: 238.76 }}
+                      animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (knowCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ type: "spring", stiffness: 60, damping: 13 }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-base sm:text-xl font-black text-emerald-600 font-sans leading-none">{knowCount}</span>
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-emerald-700 font-sans">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>পারি</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-700 font-sans">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>কনফিউশন</span>
-              </div>
-            </div>
 
-            {/* Don't Know progress circle */}
-            <div className="flex flex-col items-center text-center transition group flex-1">
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3">
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  <circle cx="50" cy="50" r="38" className="stroke-slate-100" strokeWidth="10" fill="transparent" />
-                  <motion.circle 
-                    cx="50" 
-                    cy="50" 
-                    r="38" 
-                    className="text-rose-500" 
-                    strokeWidth="11" 
-                    strokeDasharray="238.76" 
-                    initial={{ strokeDashoffset: 238.76 }}
-                    animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100 }}
-                    transition={{ duration: 1.2, ease: "easeOut" }}
-                    strokeLinecap="round" 
-                    stroke="currentColor" 
-                    fill="transparent" 
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-base sm:text-xl font-black text-rose-600 font-sans leading-none">{dontKnowCount}</span>
-                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
+              {/* Confusion progress circle */}
+              <div className="flex flex-col items-center text-center transition group flex-1">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3 p-1 rounded-full bg-slate-50 border border-slate-100/50 shadow-inner">
+                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                    <circle cx="50" cy="50" r="38" className="stroke-slate-200/50" strokeWidth="10" fill="transparent" />
+                    <motion.circle 
+                      cx="50" 
+                      cy="50" 
+                      r="38" 
+                      className="text-amber-500" 
+                      strokeWidth="11" 
+                      strokeDasharray="238.76" 
+                      initial={{ strokeDashoffset: 238.76 }}
+                      animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (confusionCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ type: "spring", stiffness: 60, damping: 13 }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-base sm:text-xl font-black text-amber-600 font-sans leading-none">{confusionCount}</span>
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((confusionCount / totalWords) * 100) : 0}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-700 font-sans">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>কনফিউশন</span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-rose-700 font-sans">
-                <XCircle className="w-3.5 h-3.5" />
-                <span>পারি না</span>
+
+              {/* Don't Know progress circle */}
+              <div className="flex flex-col items-center text-center transition group flex-1">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3 p-1 rounded-full bg-slate-50 border border-slate-100/50 shadow-inner">
+                  <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                    <circle cx="50" cy="50" r="38" className="stroke-slate-200/50" strokeWidth="10" fill="transparent" />
+                    <motion.circle 
+                      cx="50" 
+                      cy="50" 
+                      r="38" 
+                      className="text-rose-500" 
+                      strokeWidth="11" 
+                      strokeDasharray="238.76" 
+                      initial={{ strokeDashoffset: 238.76 }}
+                      animate={{ strokeDashoffset: 238.76 - (238.76 * (totalWords > 0 ? (dontKnowCount / totalWords) * 100 : 0)) / 100 }}
+                      transition={{ type: "spring", stiffness: 60, damping: 13 }}
+                      strokeLinecap="round" 
+                      stroke="currentColor" 
+                      fill="transparent" 
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-base sm:text-xl font-black text-rose-600 font-sans leading-none">{dontKnowCount}</span>
+                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold font-sans mt-0.5 sm:mt-1">{totalWords > 0 ? Math.round((dontKnowCount / totalWords) * 100) : 0}%</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-rose-700 font-sans">
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>পারি না</span>
+                </div>
               </div>
             </div>
           </div>

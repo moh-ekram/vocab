@@ -51,7 +51,21 @@ service cloud.firestore {
         && (data.isDefault == null || data.isDefault is bool)
         && (data.isRestricted == null || data.isRestricted is bool)
         && (data.allowedUsers == null || data.allowedUsers is list)
-        && (data.variableToggles == null || data.variableToggles is map);
+        && (data.variableToggles == null || data.variableToggles is map)
+        && (data.price == null || data.price is int || data.price is float)
+        && (data.bkashNumber == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64));
+    }
+
+    function isValidAccessRequest(data) {
+      return data.courseId is string && data.courseId.size() <= 128
+        && (data.courseTitle == null || (data.courseTitle is string && data.courseTitle.size() <= 256))
+        && data.bkashNumber is string && data.bkashNumber.size() <= 64
+        && data.email is string && data.email.size() <= 256
+        && data.trxId is string && data.trxId.size() <= 128
+        && data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected')
+        && (data.price == null || data.price is int || data.price is float)
+        && (data.createdAt is string && data.createdAt.size() <= 128)
+        && (data.requestedBy == null || (data.requestedBy is string && data.requestedBy.size() <= 256));
     }
 
     // --- COLLECTION RULES ---
@@ -109,6 +123,22 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow create: if isSignedIn();
       allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 4. Access Requests Collection
+    match /access_requests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && (resource.data.email == request.auth.token.email || resource.data.requestedBy == request.auth.token.email));
+      
+      allow create: if isSignedIn()
+        && isValidId(requestId)
+        && isValidAccessRequest(request.resource.data)
+        && request.resource.data.status == 'pending';
+
+      allow update: if isAdmin()
+        && isValidId(requestId)
+        && isValidAccessRequest(request.resource.data);
+
       allow delete: if isAdmin();
     }
   }

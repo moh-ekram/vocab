@@ -78,5 +78,20 @@ export interface Course {
   variableToggles?: Record<string, boolean>;
   createdAt: string;
   createdBy: string;
+  price?: number;
+  bkashNumber?: string;
+}
+
+export interface AccessRequest {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  bkashNumber: string;
+  email: string;
+  trxId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  price?: number;
+  createdAt: string;
+  requestedBy?: string;
 }
 

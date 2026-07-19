@@ -39,12 +39,52 @@
         }
       },
       "required": ["email"]
+    },
+    "AccessRequest": {
+      "title": "Access Request",
+      "description": "Represents a purchase/access request for a restricted course via bKash payment.",
+      "type": "object",
+      "properties": {
+        "courseId": {
+          "type": "string"
+        },
+        "courseTitle": {
+          "type": "string"
+        },
+        "bkashNumber": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "trxId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "price": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "requestedBy": {
+          "type": "string"
+        }
+      },
+      "required": ["courseId", "bkashNumber", "email", "trxId", "status", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
       "description": "Primary storage of individual user profiles containing all synchronized study data."
+    },
+    "/access_requests/{requestId}": {
+      "schema": "AccessRequest",
+      "description": "Storage of course access/purchase requests submitted by students."
     }
   }
 }
