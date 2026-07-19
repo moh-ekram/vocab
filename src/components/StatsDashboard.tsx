@@ -458,7 +458,34 @@ export default function StatsDashboard({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allCourses.filter(c => enrolledCourseIds.includes(c.id)).map(c => {
+          {allCourses.filter(c => {
+            if (!enrolledCourseIds.includes(c.id)) return false;
+            
+            const userEmailLower = user?.email?.trim().toLowerCase();
+            const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
+            const isCreator = c.createdBy === user?.email;
+            
+            if (c.isRestricted && !isAdmin && !isCreator) {
+              if (!userEmailLower) return false;
+              const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+              if (!isEmailInAllowed) return false;
+              
+              if (c.allowedUsersExpiry) {
+                const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+                if (matchingKey) {
+                  const expiryStr = c.allowedUsersExpiry[matchingKey];
+                  if (expiryStr) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const expiryDate = new Date(expiryStr);
+                    expiryDate.setHours(23, 59, 59, 999);
+                    if (today > expiryDate) return false; // Expired!
+                  }
+                }
+              }
+            }
+            return true;
+          }).map(c => {
             const isActive = activeCourseId === c.id;
             const courseWords = c.words || [];
             const courseKnowCount = courseWords.filter(w => progress[w.id]?.status === 'know').length;
@@ -612,12 +639,39 @@ export default function StatsDashboard({
               ) : (
                 allCourses.filter(c => !enrolledCourseIds.includes(c.id)).map(c => {
                   const courseWords = c.words || [];
-                  const isUserAllowed = !c.isRestricted || (
-                    user?.email && (
-                      c.allowedUsers?.map(email => email.toLowerCase()).includes(user.email.toLowerCase()) ||
-                      user.email.toLowerCase() === 'mohammad.001ekram@gmail.com'
-                    )
-                  );
+                  const userEmailLower = user?.email?.trim().toLowerCase();
+                  const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
+                  const isCreator = c.createdBy === user?.email;
+                  
+                  let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
+                  if (c.isRestricted && !isAdmin && !isCreator) {
+                    if (userEmailLower) {
+                      const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+                      if (isEmailInAllowed) {
+                        isUserAllowed = true;
+                        // Check expiry
+                        if (c.allowedUsersExpiry) {
+                          const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+                          if (matchingKey) {
+                            const expiryStr = c.allowedUsersExpiry[matchingKey];
+                            if (expiryStr) {
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              const expiryDate = new Date(expiryStr);
+                              expiryDate.setHours(23, 59, 59, 999);
+                              if (today > expiryDate) {
+                                isUserAllowed = false; // Expired!
+                              }
+                            }
+                          }
+                        }
+                      } else {
+                        isUserAllowed = false;
+                      }
+                    } else {
+                      isUserAllowed = false;
+                    }
+                  }
 
                   return (
                     <div key={c.id} className="p-4 border border-slate-150 hover:border-slate-200 rounded-2xl bg-white flex flex-col justify-between gap-4 transition hover:shadow-xs">

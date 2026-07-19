@@ -785,6 +785,7 @@ export default function App() {
   };
 
   const allCourses: Course[] = [defaultGreCourse, ...filteredCustomCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const allAvailableCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
 
   const handleImportCourse = (course: Course) => {
     setImportedCourses(prev => {
@@ -1248,7 +1249,7 @@ export default function App() {
               progress={progress}
               goal={goal}
               setGoal={setGoal}
-              allCourses={allCourses}
+              allCourses={allAvailableCourses}
               enrolledCourseIds={enrolledCourseIds}
               activeCourseId={activeCourseId}
               setActiveCourseId={setActiveCourseId}
