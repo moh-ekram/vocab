@@ -784,7 +784,15 @@ export default function App() {
     createdBy: dbGreCourse?.createdBy || 'system'
   };
 
-  const allCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const rawAllCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const allCourses: Course[] = [];
+  const seenCourseIds = new Set<string>();
+  for (const c of rawAllCourses) {
+    if (!seenCourseIds.has(c.id)) {
+      seenCourseIds.add(c.id);
+      allCourses.push(c);
+    }
+  }
   const allAvailableCourses: Course[] = allCourses;
 
   const handleImportCourse = (course: Course) => {
