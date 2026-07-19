@@ -47,6 +47,13 @@ import {
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { Course } from './types';
 import AuthModal from './components/AuthModal';
+import { 
+  saveProgressToIndexedDB, 
+  getProgressFromIndexedDB, 
+  addUpdateToSyncQueue, 
+  getQueuedSyncItems, 
+  clearSyncQueue 
+} from './lib/offlineDb';
 
 const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
 const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
@@ -172,9 +179,107 @@ export default function App() {
   const isSyncingFromCloud = useRef(false);
   const [hasLoadedFromCloud, setHasLoadedFromCloud] = useState(false);
 
-  // Local Storage Save
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  // Load from IndexedDB on initial mount as a secure backup
+  useEffect(() => {
+    const loadIndexedDBCache = async () => {
+      try {
+        const cachedProgress = await getProgressFromIndexedDB();
+        if (cachedProgress && Object.keys(cachedProgress).length > 0) {
+          setProgress(prev => {
+            const merged = { ...prev };
+            Object.keys(cachedProgress).forEach(key => {
+              const prevItem = prev[key];
+              const cachedItem = cachedProgress[key];
+              if (!prevItem) {
+                merged[key] = cachedItem;
+              } else {
+                const prevTime = new Date(prevItem.updatedAt || 0).getTime();
+                const cachedTime = new Date(cachedItem.updatedAt || 0).getTime();
+                if (cachedTime > prevTime) {
+                  merged[key] = cachedItem;
+                }
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn('Could not read IndexedDB progress cache:', err);
+      }
+    };
+    loadIndexedDBCache();
+  }, []);
+
+  // Sync offline updates once connection is restored
+  const syncOfflineQueueToFirestore = async (currentProgress: Record<string, UserProgress> = progress) => {
+    if (!user || !hasLoadedFromCloud || !navigator.onLine) return;
+    try {
+      const queuedItems = await getQueuedSyncItems();
+      if (queuedItems.length === 0) return;
+
+      setSyncStatus('syncing');
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, {
+        progress: currentProgress,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await clearSyncQueue();
+      setPendingSyncCount(0);
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Error syncing offline queue to firestore:', err);
+      setSyncStatus('error');
+    }
+  };
+
+  // Sync network status & trigger automatic queue synchronization
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncOfflineQueueToFirestore();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check
+    const checkQueue = async () => {
+      try {
+        const items = await getQueuedSyncItems();
+        setPendingSyncCount(items.length);
+        if (items.length > 0 && navigator.onLine) {
+          syncOfflineQueueToFirestore();
+        }
+      } catch (e) {}
+    };
+    checkQueue();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [user, hasLoadedFromCloud]);
+
+  // Local Storage & IndexedDB Cache Save
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_PROGRESS_KEY, JSON.stringify(progress));
+    saveProgressToIndexedDB(progress);
+    
+    // Also update pending count on progress change
+    const updateCount = async () => {
+      try {
+        const items = await getQueuedSyncItems();
+        setPendingSyncCount(items.length);
+      } catch (e) {}
+    };
+    updateCount();
   }, [progress]);
 
   useEffect(() => {
@@ -309,9 +414,25 @@ export default function App() {
           if (docSnap.exists()) {
             const data = docSnap.data();
 
-            // Merge cloud progress with local progress
+            // Merge cloud progress with local progress safely (timestamp-based conflict resolution)
             if (data.progress) {
-              setProgress(prev => ({ ...prev, ...data.progress }));
+              setProgress(prev => {
+                const merged = { ...data.progress };
+                Object.keys(prev).forEach(key => {
+                  const localItem = prev[key];
+                  const cloudItem = data.progress[key];
+                  if (!cloudItem) {
+                    merged[key] = localItem;
+                  } else {
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
+                    if (localTime > cloudTime) {
+                      merged[key] = localItem;
+                    }
+                  }
+                });
+                return merged;
+              });
             }
             if (data.folders && Array.isArray(data.folders)) {
               setFolders(data.folders);
@@ -325,7 +446,23 @@ export default function App() {
               }));
             }
             if (data.synonymProgress) {
-              setSynonymProgress(prev => ({ ...prev, ...data.synonymProgress }));
+              setSynonymProgress(prev => {
+                const merged = { ...data.synonymProgress };
+                Object.keys(prev).forEach(key => {
+                  const localItem = prev[key];
+                  const cloudItem = data.synonymProgress[key];
+                  if (!cloudItem) {
+                    merged[key] = localItem;
+                  } else {
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
+                    if (localTime > cloudTime) {
+                      merged[key] = localItem;
+                    }
+                  }
+                });
+                return merged;
+              });
             }
             if (data.settings) {
               setSettings(prev => ({ ...prev, ...data.settings }));
@@ -573,6 +710,7 @@ export default function App() {
   // Rate/Tag word ('pari', 'pari na', 'confusion')
   const handleRateWord = (wordId: string, status: WordStatus) => {
     const oldStatus = progress[wordId]?.status || 'unrated';
+    const timestamp = new Date().toISOString();
 
     setProgress(prev => {
       const prevWord = prev[wordId] || { id: wordId, status: 'unrated', notes: '', bookmarks: [] };
@@ -580,10 +718,28 @@ export default function App() {
         ...prev,
         [wordId]: {
           ...prevWord,
-          status
+          status,
+          updatedAt: timestamp
         }
       };
     });
+
+    // Handle offline queueing
+    if (!navigator.onLine) {
+      addUpdateToSyncQueue({
+        wordId,
+        status,
+        progressData: {
+          status,
+          updatedAt: timestamp,
+          notes: progress[wordId]?.notes || '',
+          bookmarks: progress[wordId]?.bookmarks || []
+        },
+        timestamp
+      }).then(() => {
+        getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+      });
+    }
 
     // Increment Today's Study counter if marked as "know" or completed
     if (status !== 'unrated' && oldStatus !== status) {
@@ -610,20 +766,39 @@ export default function App() {
 
   // Update personal Notes
   const handleUpdateNotes = (wordId: string, notes: string) => {
+    const timestamp = new Date().toISOString();
     setProgress(prev => {
       const prevWord = prev[wordId] || { id: wordId, status: 'unrated', notes: '', bookmarks: [] };
       return {
         ...prev,
         [wordId]: {
           ...prevWord,
-          notes
+          notes,
+          updatedAt: timestamp
         }
       };
     });
+
+    if (!navigator.onLine) {
+      addUpdateToSyncQueue({
+        wordId,
+        status: progress[wordId]?.status || 'unrated',
+        progressData: {
+          status: progress[wordId]?.status || 'unrated',
+          updatedAt: timestamp,
+          notes,
+          bookmarks: progress[wordId]?.bookmarks || []
+        },
+        timestamp
+      }).then(() => {
+        getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+      });
+    }
   };
 
   // Toggle Bookmark inside custom lists
   const handleToggleBookmark = (wordId: string, folderId: string) => {
+    const timestamp = new Date().toISOString();
     setProgress(prev => {
       const prevWord = prev[wordId] || { id: wordId, status: 'unrated', notes: '', bookmarks: [] };
       const currentBookmarks = prevWord.bookmarks || [];
@@ -631,12 +806,26 @@ export default function App() {
         ? currentBookmarks.filter(id => id !== folderId)
         : [...currentBookmarks, folderId];
 
+      const updatedProgressData = {
+        ...prevWord,
+        bookmarks: updatedBookmarks,
+        updatedAt: timestamp
+      };
+
+      if (!navigator.onLine) {
+        addUpdateToSyncQueue({
+          wordId,
+          status: prevWord.status,
+          progressData: updatedProgressData,
+          timestamp
+        }).then(() => {
+          getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+        });
+      }
+
       return {
         ...prev,
-        [wordId]: {
-          ...prevWord,
-          bookmarks: updatedBookmarks
-        }
+        [wordId]: updatedProgressData
       };
     });
   };
@@ -723,6 +912,15 @@ export default function App() {
 
         {/* User Stats & Auth (Unified Header UI) */}
         <div className="flex items-center gap-2 md:gap-3.5">
+          {/* Connection Status Badge (Visible for both logged in and anonymous users) */}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-bold">
+            <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
+            <span className={isOnline ? 'text-emerald-300' : 'text-amber-300'}>
+              {isOnline ? 'অনলাইন' : 'অফলাইন'}
+              {!isOnline && pendingSyncCount > 0 && ` (${pendingSyncCount}টি পেন্ডিং)`}
+            </span>
+          </div>
+
           {user ? (
             <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
               <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/15 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
@@ -756,7 +954,7 @@ export default function App() {
               <button
                 onClick={forceSyncToCloud}
                 className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md transition"
-                disabled={syncStatus === 'syncing'}
+                disabled={syncStatus === 'syncing' || !isOnline}
                 title="Force Sync"
               >
                 {syncStatus === 'syncing' ? '...' : 'Sync'}
