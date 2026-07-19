@@ -50,7 +50,8 @@ service cloud.firestore {
         && (data.createdBy == null || (data.createdBy is string && data.createdBy.size() <= 256))
         && (data.isDefault == null || data.isDefault is bool)
         && (data.isRestricted == null || data.isRestricted is bool)
-        && (data.allowedUsers == null || data.allowedUsers is list);
+        && (data.allowedUsers == null || data.allowedUsers is list)
+        && (data.variableToggles == null || data.variableToggles is map);
     }
 
     // --- COLLECTION RULES ---
@@ -100,6 +101,14 @@ service cloud.firestore {
         && isValidId(courseId)
         && isValidCourse(request.resource.data);
 
+      allow delete: if isAdmin();
+    }
+
+    // 3. Reports Collection
+    match /reports/{reportId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
   }

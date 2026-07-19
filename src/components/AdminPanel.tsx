@@ -133,6 +133,41 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   // Editing course states
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
+  // Word issue reports states
+  const [reports, setReports] = useState<any[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+
+  const fetchReports = async () => {
+    setReportsLoading(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'reports'));
+      const list: any[] = [];
+      qSnap.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      list.sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime());
+      setReports(list);
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+    } finally {
+      setReportsLoading(false);
+    }
+  };
+
+  const handleResolveReport = async (reportId: string) => {
+    if (!window.confirm('Are you sure you want to mark this report as resolved? It will be deleted.')) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'reports', reportId));
+      setReports(prev => prev.filter(r => r.id !== reportId));
+      alert('Report marked as resolved!');
+    } catch (err) {
+      console.error('Error resolving report:', err);
+      alert('Failed to resolve report.');
+    }
+  };
+
   // Fetch custom courses
   const fetchCustomCourses = async () => {
     setCoursesLoading(true);
@@ -154,6 +189,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
   useEffect(() => {
     fetchCustomCourses();
+    fetchReports();
   }, []);
 
   // Sync slug from title
@@ -709,10 +745,24 @@ export default function AdminPanel({ words }: AdminPanelProps) {
           <FileSpreadsheet className="w-4 h-4" />
           <span>Course Upload & Creation</span>
         </button>
+        <button
+          onClick={() => {
+            setActiveAdminTab('reports');
+            fetchReports();
+          }}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'reports'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          <span>Reported Errors ({reports.length})</span>
+        </button>
       </div>
 
       {/* Main Grid: Directory */}
-      {activeAdminTab === 'users' ? (
+      {activeAdminTab === 'users' && (
         <div className="grid grid-cols-1 gap-6">
           {/* User Directory Table Container */}
           <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col">
@@ -854,7 +904,9 @@ export default function AdminPanel({ words }: AdminPanelProps) {
             )}
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeAdminTab === 'courses' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Course Management Left Panel */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6 lg:col-span-2">
@@ -1246,6 +1298,92 @@ export default function AdminPanel({ words }: AdminPanelProps) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {activeAdminTab === 'reports' && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
+          <div>
+            <h3 className="font-extrabold text-slate-800 text-base">User Word Issue Reports</h3>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">
+              Review and manage spelling, meaning, or explanation errors reported by students during flashcard study sessions.
+            </p>
+          </div>
+
+          {reportsLoading ? (
+            <div className="flex items-center justify-center py-12 text-slate-400">
+              <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+              <span className="text-xs font-bold font-mono">Loading active issue logs...</span>
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-2xl space-y-2">
+              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-700">All Clear!</p>
+                <p className="text-[10px] text-slate-400 font-semibold">No issues or incorrect vocabulary translations have been reported yet.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 font-mono uppercase h-10">
+                    <th className="px-4 py-2">Word Details</th>
+                    <th className="px-4 py-2">Issue Category</th>
+                    <th className="px-4 py-2">Report Description</th>
+                    <th className="px-4 py-2">Reported By</th>
+                    <th className="px-4 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 font-sans text-xs">
+                  {reports.map((rep) => (
+                    <tr key={rep.id} className="hover:bg-slate-50/50 transition">
+                      <td className="px-4 py-3">
+                        <div className="font-extrabold text-slate-800 text-sm">{rep.word}</div>
+                        <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
+                          Course ID: {rep.courseId || 'unknown'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-700 font-black rounded-full text-[10px] uppercase font-mono tracking-wider border border-amber-200/50">
+                          {rep.issueType?.replace('_', ' ') || 'Other Error'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-650 font-medium max-w-xs truncate" title={rep.description}>
+                        {rep.description || <span className="text-slate-350 italic">No description provided</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-bold text-slate-700 text-[11px]">{rep.reportedBy?.split('@')[0]}</div>
+                        <div className="text-[9px] text-slate-450 font-mono font-semibold mt-0.5">
+                          {rep.reportedAt ? new Date(rep.reportedAt).toLocaleString() : 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              // If they want to inspect the details
+                              alert(`Word: ${rep.word}\nIssue: ${rep.issueType}\n\nDescription:\n${rep.description || 'No description'}\n\nReported By: ${rep.reportedBy}\nAt: ${rep.reportedAt}`);
+                            }}
+                            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition"
+                            title="Inspect Details"
+                          >
+                            <Info className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleResolveReport(rep.id)}
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-extrabold rounded-lg text-[10px] transition cursor-pointer"
+                          >
+                            Resolve
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

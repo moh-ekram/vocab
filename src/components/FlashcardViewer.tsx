@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, CustomFolder, AppSettings } from '../types';
 import sentencesDataRaw from '../data/sentences.json';
 const sentencesData = sentencesDataRaw as Record<string, string[]>;
+import { auth, db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 import { 
   ChevronLeft, 
@@ -112,6 +114,66 @@ export default function FlashcardViewer({
 
   // Hotkey helper tooltip
   const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
+
+  // Word reporting states
+  const [reportingWord, setReportingWord] = useState<VocabularyWord | null>(null);
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportType, setReportType] = useState('wrong_meaning');
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [reportMessage, setReportMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const handleOpenReportModal = (word: VocabularyWord) => {
+    setReportingWord(word);
+    setReportDescription('');
+    setReportType('wrong_meaning');
+    setIsSubmittingReport(false);
+    setReportMessage(null);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!reportingWord) return;
+    setIsSubmittingReport(true);
+    setReportMessage(null);
+    try {
+      const email = auth.currentUser?.email || 'anonymous@vocab.com';
+      const uid = auth.currentUser?.uid || 'anonymous';
+      const reportId = `rep_${Date.now()}_${uid}`;
+
+      let courseId = 'gre';
+      if (reportingWord.id.includes('_g')) {
+        courseId = reportingWord.id.split('_g')[0];
+      }
+
+      await setDoc(doc(db, 'reports', reportId), {
+        wordId: reportingWord.id,
+        word: reportingWord.word,
+        meaning: reportingWord.meaning,
+        group: reportingWord.group,
+        issueType: reportType,
+        description: reportDescription.trim(),
+        reportedBy: email,
+        reportedAt: new Date().toISOString(),
+        courseId: courseId,
+        status: 'pending'
+      });
+
+      setReportMessage({
+        type: 'success',
+        text: 'আপনার রিপোর্টটি সফলভাবে অ্যাডমিনের কাছে পাঠানো হয়েছে। সংশোধন করার জন্য ধন্যবাদ!'
+      });
+      setTimeout(() => {
+        setReportingWord(null);
+      }, 1500);
+    } catch (err) {
+      console.error('Error submitting report:', err);
+      setReportMessage({
+        type: 'error',
+        text: 'রিপোর্ট সাবমিট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।'
+      });
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
 
   // Filtered List generator
   const [baseFilteredWords, setBaseFilteredWords] = useState<VocabularyWord[]>([]);
@@ -813,13 +875,24 @@ export default function FlashcardViewer({
           </div>
           <div>
             <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬆</kbd> / <kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Enter</kbd></p>
-            <button
+            <p className="text-xs text-amber-800 font-sans mt-0.5">কনফিউশন চিহ্নিত করে পরবর্তী</p>
+          </div>
+        </div>
+      )}
+
+      {filteredWords.length === 0 ? (
+        <div className="text-center py-20 bg-amber-50/40 border border-dashed border-amber-200 rounded-3xl space-y-4 max-w-xl mx-auto" id="no-filtered-words">
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-slate-800 text-base font-sans">কোনো শব্দ পাওয়া যায়নি!</h3>
+            <p className="text-xs text-slate-500 font-medium font-sans">আপনার নির্বাচিত ফিল্টার বা বুকমার্ক লিস্টের অধীনে কোনো শব্দ নেই।</p>
+          </div>
+          <button
             onClick={() => {
               setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1));
-              setSelectedStatuses(['dont_know']);
+              setSelectedStatuses(['dont_know', 'know', 'confusion', 'unrated']);
               setSelectedFolder('all');
             }}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans"
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans cursor-pointer shadow-md"
           >
             ফিল্টার রিসেট করুন
           </button>
@@ -873,28 +946,18 @@ export default function FlashcardViewer({
                           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
                         </svg>
                       </a>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenReportModal(currentActiveWord);
+                        }}
+                        className="p-2.5 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 rounded-xl transition shadow-xs flex items-center justify-center cursor-pointer"
+                        title="ভুল রিপোর্ট করুন (Report Error)"
+                      >
+                        <AlertTriangle className="w-5 h-5 text-rose-500" />
+                      </button>
                     </div>
                     {currentActiveWord.extraWord && variableToggles?.extraWord !== false && (
-                      <div className="text-sm sm:text-base font-extrabold text-[#009966] font-[Verdana] select-none tracking-wide flex items-center justify-center gap-1.5 pt-1">
-                        <span>{currentActiveWord.extraWord}</span>
-                        <span className="text-[#009966] font-black">:</span>
-                        <span className="font-bold text-[#009966]">{currentActiveWord.extraMeaning}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hints at footer */}
-                  <div className="flex justify-end items-center text-xs text-slate-400 font-sans border-t border-slate-100 pt-4">
-                    <span className="flex items-center gap-1 font-mono text-[11px] text-slate-300">
-                      ID: {currentActiveWord.id}
-                    </span>
-                  </div>
-                </div>5" />
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                        </svg>
-                      </a>
-                    </div>
-                    {currentActiveWord.extraWord && (
                       <div className="text-sm sm:text-base font-extrabold text-[#009966] font-[Verdana] select-none tracking-wide flex items-center justify-center gap-1.5 pt-1">
                         <span>{currentActiveWord.extraWord}</span>
                         <span className="text-[#009966] font-black">:</span>
@@ -933,46 +996,67 @@ export default function FlashcardViewer({
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
                           </svg>
                         </a>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenReportModal(currentActiveWord);
+                          }}
+                          className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer"
+                          title="ভুল রিপোর্ট করুন (Report Error)"
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Bengali Meaning */}
-                    <div className="text-center py-0.5">
-                      <p className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-emerald-600 leading-normal">{currentActiveWord.meaning}</p>
-                    </div>
+                    {/* Bengali Meaning & Synonyms layout with auto-centering */}
+                    {(!currentActiveWord.synonyms || variableToggles?.synonyms === false) ? (
+                      <div className="text-center py-12 md:py-20 flex flex-col items-center justify-center min-h-[160px]">
+                        <p className="text-3xl md:text-4xl lg:text-5xl font-black text-emerald-600 leading-relaxed font-sans">{currentActiveWord.meaning}</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Bengali Meaning */}
+                        <div className="text-center py-1">
+                          <p className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-emerald-600 leading-normal font-sans">{currentActiveWord.meaning}</p>
+                        </div>
 
-                    {/* Synonyms */}
-                    <div className="space-y-0 text-center py-1.5 border-t border-slate-100/30 w-full max-w-full overflow-hidden px-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Synonyms</p>
-                      <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words`}>{currentActiveWord.synonyms || 'N/A'}</p>
-                    </div>
+                        {/* Synonyms */}
+                        <div className="space-y-0 text-center py-2.5 border-t border-slate-100/40 w-full max-w-full overflow-hidden px-1">
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">Synonyms</p>
+                          <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words font-sans`}>{currentActiveWord.synonyms || 'N/A'}</p>
+                        </div>
+                      </>
+                    )}
 
                     {/* Example Sentences */}
-                    <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
-                      {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
-                        <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1">
-                          {currentActiveWord.example ? (
-                            <div className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
-                              <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
-                              <p className="flex-1">
-                                {renderSentence(currentActiveWord.example)}
-                              </p>
-                            </div>
-                          ) : (
-                            sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
-                              <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
+                    {variableToggles?.example !== false && (
+                      <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
+                        {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
+                          <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1 font-sans">
+                            {currentActiveWord.example ? (
+                              <div className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
                                 <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
                                 <p className="flex-1">
-                                  {renderSentence(sent)}
+                                  {renderSentence(currentActiveWord.example)}
                                 </p>
                               </div>
-                            ))
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-450 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
-                      )}
-                    </div>
+                            ) : (
+                              sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
+                                <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
+                                  <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
+                                  <p className="flex-1">
+                                    {renderSentence(sent)}
+                                  </p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-450 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1251,6 +1335,129 @@ export default function FlashcardViewer({
                   বাতিল
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Word Issue Report Modal */}
+      {reportingWord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+            onClick={() => !isSubmittingReport && setReportingWord(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center border border-rose-100">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-950 font-sans">ভুল রিপোর্ট করুন</h3>
+                  <p className="text-xs text-slate-500 font-sans">
+                    শব্দ: <span className="font-extrabold text-slate-800">{reportingWord.word}</span> (গ্রুপ: {reportingWord.group})
+                  </p>
+                </div>
+              </div>
+
+              {reportMessage ? (
+                <div className={`p-4 rounded-xl text-center text-sm font-sans font-medium ${
+                  reportMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' : 'bg-rose-50 text-rose-800 border border-rose-100'
+                }`}>
+                  {reportMessage.text}
+                </div>
+              ) : (
+                <div className="space-y-4 pt-1">
+                  {/* Issue Type */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 font-sans">ভুলের ধরণ:</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReportType('wrong_meaning')}
+                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
+                          reportType === 'wrong_meaning' 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                        }`}
+                      >
+                        ভুল অর্থ (Meaning)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportType('wrong_synonym')}
+                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
+                          reportType === 'wrong_synonym' 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                        }`}
+                      >
+                        ভুল সমার্থক শব্দ (Synonyms)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportType('wrong_example')}
+                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
+                          reportType === 'wrong_example' 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                        }`}
+                      >
+                        ভুল উদাহরণ বাক্য
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReportType('other')}
+                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
+                          reportType === 'other' 
+                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                        }`}
+                      >
+                        অন্যান্য সমস্যা
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 font-sans">সধীক তথ্য বা বর্ণনা দিন:</label>
+                    <textarea
+                      value={reportDescription}
+                      onChange={(e) => setReportDescription(e.target.value)}
+                      rows={3}
+                      placeholder="এখানে সঠিক তথ্যটি লিখুন (যেমন: সঠিক অর্থ, বানান বা উদাহরণ বাক্য)"
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500 font-sans leading-relaxed resize-none"
+                    />
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      disabled={isSubmittingReport || !reportDescription.trim()}
+                      onClick={handleSubmitReport}
+                      className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      {isSubmittingReport && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      রিপোর্ট পাঠান
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingReport}
+                      onClick={() => setReportingWord(null)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
+                    >
+                      বাতিল
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
