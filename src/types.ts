@@ -74,6 +74,7 @@ export interface Course {
   isDefault?: boolean;
   isRestricted?: boolean;
   allowedUsers?: string[];
+  variableToggles?: Record<string, boolean>;
   createdAt: string;
   createdBy: string;
 }
