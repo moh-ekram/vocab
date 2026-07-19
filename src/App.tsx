@@ -3,12 +3,8 @@ import { vocabulary } from './data/vocabulary';
 import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
-import SynonymCheck from './components/SynonymCheck';
-import PracticeQuiz from './components/PracticeQuiz';
-import WordMatchGame from './components/WordMatchGame';
-import CustomLists from './components/CustomLists';
-import SearchDictionary from './components/SearchDictionary';
-import DailyPlanner from './components/DailyPlanner';
+import PracticeCenter from './components/PracticeCenter';
+import StudyToolsCenter from './components/StudyToolsCenter';
 import AppSettingsView from './components/AppSettingsView';
 import AdminPanel from './components/AdminPanel';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
@@ -416,6 +412,9 @@ export default function App() {
 
   // Filter custom courses based on user permissions
   const filteredCustomCourses = customCourses.filter(c => {
+    // If the user is already enrolled in this course, bypass restriction checks entirely
+    if (enrolledCourseIds.includes(c.id)) return true;
+
     // Admin user email bypasses all restrictions
     const isAdmin = user?.email === 'mohammad.001ekram@gmail.com';
     if (isAdmin) return true;
@@ -1171,75 +1170,27 @@ export default function App() {
         </button>
 
         <button
-          onClick={() => setActiveTab('synonym')}
+          onClick={() => setActiveTab('practice')}
           className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'synonym'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-          }`}
-        >
-          <Sparkle className="w-4 h-4 text-amber-500" />
-          <span className="hidden md:inline">Synonym Check</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('quiz')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'quiz'
+            ['practice', 'synonym', 'quiz', 'match'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <GraduationCap className="w-4 h-4" />
-          <span className="hidden md:inline">Practice & Quiz</span>
+          <span className="hidden md:inline">Practice & Games</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('match')}
+          onClick={() => setActiveTab('study_tools')}
           className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'match'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span className="hidden md:inline">Word Match</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('dictionary')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'dictionary'
+            ['study_tools', 'dictionary', 'lists', 'planner'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span className="hidden md:inline">Dictionary</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('lists')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'lists'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-          }`}
-        >
-          <BookMarked className="w-4 h-4" />
-          <span className="hidden md:inline">Bookmark</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('planner')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
-            activeTab === 'planner'
-              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
-              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-          }`}
-        >
-          <CalendarCheck2 className="w-4 h-4" />
-          <span className="hidden md:inline">Planner</span>
+          <span className="hidden md:inline">Study Tools</span>
         </button>
 
         <button
@@ -1317,26 +1268,16 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'synonym' && (
-            <SynonymCheck
+          {['practice', 'synonym', 'quiz', 'match'].includes(activeTab) && (
+            <PracticeCenter
               words={activeWords}
-              synonymProgress={synonymProgress}
-              onUpdateSynonymProgress={handleUpdateSynonymProgress}
-              activeGroup={selectedGroupFromDash}
               progress={progress}
-              folders={folders}
               onRateWord={handleRateWord}
               onUpdateNotes={handleUpdateNotes}
               onToggleBookmark={handleToggleBookmark}
-              settings={settings}
-            />
-          )}
-
-          {activeTab === 'quiz' && (
-            <PracticeQuiz
-              words={activeWords}
-              progress={progress}
-              onRateWord={handleRateWord}
+              folders={folders}
+              synonymProgress={synonymProgress}
+              onUpdateSynonymProgress={handleUpdateSynonymProgress}
               activeGroup={selectedGroupFromDash}
               settings={settings}
               onQuizComplete={(score, totalQuestions) => {
@@ -1346,47 +1287,25 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'match' && (
-            <WordMatchGame
-              words={activeWords}
-              activeGroup={selectedGroupFromDash}
-              settings={settings}
-            />
-          )}
-
-          {activeTab === 'dictionary' && (
-            <SearchDictionary
+          {['study_tools', 'dictionary', 'lists', 'planner'].includes(activeTab) && (
+            <StudyToolsCenter
               words={activeWords}
               progress={progress}
               folders={folders}
               onRateWord={handleRateWord}
               onUpdateNotes={handleUpdateNotes}
               onToggleBookmark={handleToggleBookmark}
-            />
-          )}
-
-          {activeTab === 'lists' && (
-            <CustomLists
-              folders={folders}
-              words={activeWords}
-              progress={progress}
               onCreateFolder={handleCreateFolder}
               onDeleteFolder={handleDeleteFolder}
               onRemoveFromFolder={handleRemoveFromFolder}
               onLaunchFolderStudy={handleLaunchFolderStudy}
-            />
-          )}
-
-          {activeTab === 'planner' && (
-            <DailyPlanner
-              words={activeWords}
-              progress={progress}
               goal={goal}
               setGoal={setGoal}
               onLaunchPractice={() => {
                 setSelectedGroupFromDash(null);
                 setActiveTab('flashcard');
               }}
+              initialSubTab={activeTab === 'study_tools' ? 'hub' : activeTab}
             />
           )}
 
