@@ -784,8 +784,8 @@ export default function App() {
     createdBy: dbGreCourse?.createdBy || 'system'
   };
 
-  const allCourses: Course[] = [defaultGreCourse, ...filteredCustomCourses.filter(c => c.id !== 'gre'), ...importedCourses];
-  const allAvailableCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const allCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const allAvailableCourses: Course[] = allCourses;
 
   const handleImportCourse = (course: Course) => {
     setImportedCourses(prev => {
@@ -807,7 +807,36 @@ export default function App() {
     setActiveCourseId(course.id);
   };
 
-  const activeCourse = allCourses.find(c => c.id === activeCourseId) || defaultGreCourse;
+  const activeCourse = (() => {
+    const course = allCourses.find(c => c.id === activeCourseId);
+    if (!course) return defaultGreCourse;
+
+    // Check access permissions
+    const userEmailLower = user?.email?.trim().toLowerCase();
+    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
+    const isCreator = course.createdBy === user?.email;
+
+    if (course.isRestricted && !isAdmin && !isCreator) {
+      if (!userEmailLower) return defaultGreCourse;
+      const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+      if (!isEmailInAllowed) return defaultGreCourse;
+
+      if (course.allowedUsersExpiry) {
+        const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+        if (matchingKey) {
+          const expiryStr = course.allowedUsersExpiry[matchingKey];
+          if (expiryStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const expiryDate = new Date(expiryStr);
+            expiryDate.setHours(23, 59, 59, 999);
+            if (today > expiryDate) return defaultGreCourse; // Expired!
+          }
+        }
+      }
+    }
+    return course;
+  })() || defaultGreCourse;
   const activeWords = activeCourse.words || [];
 
   // --- DATABASE STATE HANDLERS ---

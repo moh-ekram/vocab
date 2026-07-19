@@ -40,6 +40,48 @@ export default function StatsDashboard({
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
 
+  // Filter courses shown in the Enroll New Course modal
+  const modalCourses = allCourses.filter(c => {
+    const userEmailLower = user?.email?.trim().toLowerCase();
+    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
+    const isCreator = c.createdBy === user?.email;
+    
+    let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
+    if (c.isRestricted && !isAdmin && !isCreator) {
+      if (userEmailLower) {
+        const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+        if (isEmailInAllowed) {
+          isUserAllowed = true;
+          // Check expiry
+          if (c.allowedUsersExpiry) {
+            const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+            if (matchingKey) {
+              const expiryStr = c.allowedUsersExpiry[matchingKey];
+              if (expiryStr) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const expiryDate = new Date(expiryStr);
+                expiryDate.setHours(23, 59, 59, 999);
+                if (today > expiryDate) {
+                  isUserAllowed = false; // Expired!
+                }
+              }
+            }
+          }
+        } else {
+          isUserAllowed = false;
+        }
+      } else {
+        isUserAllowed = false;
+      }
+    }
+
+    // Show in modal if either:
+    // 1. Not enrolled in it
+    // 2. Or is restricted and the user has NO allowed access (expired or not in allowed list), so they can click "Buy Now"
+    return !enrolledCourseIds.includes(c.id) || (c.isRestricted && !isUserAllowed);
+  });
+
   // --- bKash Checkout States ---
   const [selectedBuyCourse, setSelectedBuyCourse] = useState<Course | null>(null);
   const [bkashSender, setBkashSender] = useState('');
@@ -628,7 +670,7 @@ export default function StatsDashboard({
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {allCourses.filter(c => !enrolledCourseIds.includes(c.id)).length === 0 ? (
+              {modalCourses.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 font-bold border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2">
                   <Check className="w-8 h-8 text-emerald-500 bg-emerald-50 p-1.5 rounded-full" />
                   <div>
@@ -637,7 +679,7 @@ export default function StatsDashboard({
                   </div>
                 </div>
               ) : (
-                allCourses.filter(c => !enrolledCourseIds.includes(c.id)).map(c => {
+                modalCourses.map(c => {
                   const courseWords = c.words || [];
                   const userEmailLower = user?.email?.trim().toLowerCase();
                   const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
