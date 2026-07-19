@@ -693,8 +693,8 @@ export default function App() {
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div>
-            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans">ভোকাবুলারি মেমোরি</h1>
-            <p className="text-[9px] md:text-xs text-indigo-200 font-bold uppercase tracking-wider font-sans">৩৭ গ্রুপ লার্নিং ড্যাশবোর্ড</p>
+            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans">Vocabulary Memorizer</h1>
+            <p className="text-[9px] md:text-xs text-indigo-200 font-bold uppercase tracking-wider font-sans">37 Groups Learning Dashboard</p>
           </div>
         </div>
 
@@ -722,10 +722,10 @@ export default function App() {
                   syncStatus === 'error' ? 'bg-rose-400' : 'bg-slate-400'
                 }`} />
                 <span className="text-indigo-200 font-semibold">
-                  {syncStatus === 'synced' && 'ব্যাকআপ সচল'}
-                  {syncStatus === 'syncing' && 'সিঙ্ক হচ্ছে...'}
-                  {syncStatus === 'error' && 'সিঙ্ক ত্রুটি!'}
-                  {syncStatus === 'idle' && 'অপেক্ষমাণ'}
+                  {syncStatus === 'synced' && 'Synced'}
+                  {syncStatus === 'syncing' && 'Syncing...'}
+                  {syncStatus === 'error' && 'Sync Error'}
+                  {syncStatus === 'idle' && 'Idle'}
                 </span>
               </div>
 
@@ -734,15 +734,15 @@ export default function App() {
                 onClick={forceSyncToCloud}
                 className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md transition"
                 disabled={syncStatus === 'syncing'}
-                title="ম্যানুয়াল সিঙ্ক করুন"
+                title="Force Sync"
               >
-                {syncStatus === 'syncing' ? '...' : 'সিঙ্ক'}
+                {syncStatus === 'syncing' ? '...' : 'Sync'}
               </button>
 
               <button
                 onClick={handleLogOut}
                 className="p-1 text-indigo-200 hover:text-rose-400 rounded-lg transition cursor-pointer"
-                title="লগআউট"
+                title="Logout"
               >
                 <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </button>
@@ -752,7 +752,7 @@ export default function App() {
               onClick={() => setIsAuthModalOpen(true)}
               className="text-[10px] md:text-xs font-extrabold px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20"
             >
-              ক্লাউড ব্যাকআপ (লগইন)
+              Cloud Backup (Login)
             </button>
           )}
         </div>
@@ -772,7 +772,7 @@ export default function App() {
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
-          <span className="hidden md:inline">ড্যাশবোর্ড</span>
+          <span className="hidden md:inline">Dashboard</span>
         </button>
 
         <button
@@ -784,7 +784,7 @@ export default function App() {
           }`}
         >
           <CreditCard className="w-4 h-4 animate-icon-flip" />
-          <span className="hidden md:inline">ফ্ল্যাশ কার্ড</span>
+          <span className="hidden md:inline">Flashcard</span>
         </button>
 
         <button
@@ -796,7 +796,7 @@ export default function App() {
           }`}
         >
           <Trophy className="w-4 h-4 text-amber-500" />
-          <span className="hidden md:inline">লিডারবোর্ড</span>
+          <span className="hidden md:inline">Leaderboard</span>
         </button>
 
         <button
@@ -808,7 +808,7 @@ export default function App() {
           }`}
         >
           <Sparkle className="w-4 h-4 text-amber-500" />
-          <span className="hidden md:inline">সিনোনিম চেক</span>
+          <span className="hidden md:inline">Synonym Check</span>
         </button>
 
         <button
@@ -820,7 +820,7 @@ export default function App() {
           }`}
         >
           <GraduationCap className="w-4 h-4" />
-          <span className="hidden md:inline">পরীক্ষা ও কুইজ</span>
+          <span className="hidden md:inline">Practice & Quiz</span>
         </button>
 
         <button
@@ -832,7 +832,7 @@ export default function App() {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span className="hidden md:inline">শব্দমিল</span>
+          <span className="hidden md:inline">Word Match</span>
         </button>
 
         <button
@@ -844,7 +844,7 @@ export default function App() {
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span className="hidden md:inline">শব্দ ভান্ডার</span>
+          <span className="hidden md:inline">Dictionary</span>
         </button>
 
         <button
@@ -856,7 +856,7 @@ export default function App() {
           }`}
         >
           <BookMarked className="w-4 h-4" />
-          <span className="hidden md:inline">বুকমার্ক</span>
+          <span className="hidden md:inline">Bookmark</span>
         </button>
 
         <button
@@ -868,7 +868,7 @@ export default function App() {
           }`}
         >
           <CalendarCheck2 className="w-4 h-4" />
-          <span className="hidden md:inline">প্ল্যানার</span>
+          <span className="hidden md:inline">Planner</span>
         </button>
 
         <button
@@ -880,7 +880,7 @@ export default function App() {
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span className="hidden md:inline">সেটিংস</span>
+          <span className="hidden md:inline">Settings</span>
         </button>
 
         {user && user.email === 'mohammad.001ekram@gmail.com' && (
@@ -893,22 +893,9 @@ export default function App() {
             }`}
           >
             <FolderLock className="w-4 h-4" />
-            <span className="hidden md:inline">এডমিন প্যানেল</span>
+            <span className="hidden md:inline">Admin Panel</span>
           </button>
         )}
-
-        {/* Separator / Spacer */}
-        <div className="h-4 w-px bg-slate-200 flex-shrink-0 mx-1 hidden md:block" />
-
-        {/* Clear/Reset progress button directly in header flow */}
-        <button
-          onClick={handleClearAllProgress}
-          className="flex items-center justify-center gap-1.5 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold text-rose-500 hover:bg-rose-50 border border-dashed border-rose-100"
-          title="প্রগ্রেস রিসেট করুন"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">রিসেট করুন</span>
-        </button>
 
         {/* App Meta Info */}
         <div className="hidden lg:flex items-center gap-1 text-[10px] text-slate-400 font-mono ml-auto pl-4 flex-shrink-0">

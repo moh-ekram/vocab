@@ -209,7 +209,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const handleSaveWordEdit = () => {
     if (!editingWord) return;
     if (!editedWord.trim() || !editedMeaning.trim()) {
-      alert('শব্দ এবং অর্থ ফিল্ড দুটি অবশ্যই পূরণ করতে হবে।');
+      alert('Word and meaning fields are required.');
       return;
     }
 
@@ -244,7 +244,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setAddFormMessage(null);
 
     if (!singleWord.trim() || !singleMeaning.trim()) {
-      setAddFormMessage({ type: 'error', text: 'শব্দ এবং অর্থ ফিল্ড দুটি অবশ্যই পূরণ করতে হবে।' });
+      setAddFormMessage({ type: 'error', text: 'Word and meaning fields are required.' });
       return;
     }
 
@@ -278,7 +278,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
     setAddFormMessage({ 
       type: 'success', 
-      text: `"${newWordItem.word}" শব্দটি সফলভাবে স্থানীয় তালিকায় যোগ করা হয়েছে! এটি চূড়ান্তভাবে সংরক্ষণ করতে নিচে "Update Settings" বাটনে চাপুন।` 
+      text: `"${newWordItem.word}" has been successfully added to the local list! Click "Update Settings" below to save changes permanently.` 
     });
   };
 
@@ -322,7 +322,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         const rawRows = utils.sheet_to_json(sheet) as any[];
 
         if (rawRows.length === 0) {
-          setExcelError('স্প্রেডশীটে কোনো শব্দ পাওয়া যায়নি।');
+          setExcelError('No words found in the spreadsheet.');
           return;
         }
 
@@ -398,15 +398,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         }
 
         if (wordsList.length === 0) {
-          setExcelError('কলাম মিলেনি! অন্তত "main word" এবং "bangla meaning" কলাম থাকতে হবে।');
+          setExcelError('Columns did not match! The spreadsheet must contain at least "main word" and "bangla meaning" columns.');
           return;
         }
 
         setLocalWords(prev => [...prev, ...wordsList]);
-        setExcelSuccess(`এক্সেল ফাইল থেকে সফলভাবে ${wordsList.length} টি নতুন শব্দ যোগ করা হয়েছে! চূড়ান্ত সংরক্ষণ করতে নিচে "Update Settings" এ চাপুন।`);
+        setExcelSuccess(`Successfully added ${wordsList.length} new words from the Excel file! Click "Update Settings" below to save permanently.`);
       } catch (err) {
         console.error(err);
-        setExcelError('ফাইল প্রসেস করতে ব্যর্থ হয়েছে। অনুগ্রহ করে একটি বৈধ স্প্রেডশীট ফাইল ব্যবহার করুন।');
+        setExcelError('Failed to process spreadsheet file. Please verify it is a valid format.');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -414,7 +414,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   // --- DELETION ACTIONS ---
   const handleDeleteWord = (id: string) => {
-    if (window.confirm('আপনি কি নিশ্চিতভাবে এই শব্দটি কোর্স থেকে ডিলিট করতে চান?')) {
+    if (window.confirm('Are you sure you want to delete this word from the course?')) {
       setLocalWords(prev => prev.filter(w => w.id !== id));
       setSelectedWordIds(prev => {
         const next = new Set(prev);
@@ -426,7 +426,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   const handleDeleteSelectedWords = () => {
     if (selectedWordIds.size === 0) return;
-    if (window.confirm(`আপনি কি নিশ্চিতভাবে নির্বাচিত ${selectedWordIds.size} টি শব্দ কোর্স থেকে মুছে ফেলতে চান?`)) {
+    if (window.confirm(`Are you sure you want to delete the selected ${selectedWordIds.size} words from the course?`)) {
       setLocalWords(prev => prev.filter(w => !selectedWordIds.has(w.id)));
       setSelectedWordIds(new Set());
       setCurrentWordPage(1);
@@ -508,7 +508,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       return;
     }
 
-    if (!window.confirm('আপনি কি নিশ্চিতভাবে এই কোর্সের সমস্ত পরিবর্তন ক্লাউড ডেটাবেজে সংরক্ষণ করতে চান?')) {
+    if (!window.confirm('Are you sure you want to save all changes for this course to the cloud database?')) {
       return;
     }
 
@@ -559,7 +559,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       }, 1000);
     } catch (err) {
       console.error('Error updating course in Firestore:', err);
-      setError('ক্লাউডে ডেটা সেভ করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
+      setError('Failed to save data to the cloud. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -567,11 +567,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   // Navigation Items with Icons and Count Badges
   const menuItems = [
-    { id: 'general' as const, label: 'কোর্স পরিচিতি', desc: 'Basic title, description', icon: Sliders },
-    { id: 'variables' as const, label: 'ফিচার ও ভ্যারিয়েবল', desc: 'Manage variable switches', icon: Settings },
-    { id: 'access' as const, label: 'শিক্ষার্থী এক্সেস', desc: 'Privacy & student emails', icon: Users },
-    { id: 'wordlist' as const, label: 'শব্দ তালিকা ও সম্পাদন', desc: 'Search, edit and delete', icon: BookOpen, badge: localWords.length },
-    { id: 'addwords' as const, label: 'শব্দ যোগ ও আপলোড', desc: 'Add individual or excel', icon: PlusCircle },
+    { id: 'general' as const, label: 'Course Identity', desc: 'Basic title, description', icon: Sliders },
+    { id: 'variables' as const, label: 'Features & Variables', desc: 'Manage variable switches', icon: Settings },
+    { id: 'access' as const, label: 'Student Access', desc: 'Privacy & student emails', icon: Users },
+    { id: 'wordlist' as const, label: 'Word List & Editing', desc: 'Search, edit and delete', icon: BookOpen, badge: localWords.length },
+    { id: 'addwords' as const, label: 'Add & Upload Words', desc: 'Add individual or excel', icon: PlusCircle },
   ];
 
   return (
@@ -585,16 +585,16 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-base">{course.title} — কোর্স সেটিংস প্যানেল</h3>
+              <h3 className="font-extrabold text-slate-900 text-base">{course.title} — Course Settings Panel</h3>
               <p className="text-xs text-slate-400 font-semibold mt-0.5 font-sans flex items-center gap-2">
-                <span>কোড: {course.id}</span>
+                <span>Code: {course.id}</span>
                 <button 
                   onClick={handleCopyCode} 
                   className="p-1 hover:bg-indigo-100/50 rounded text-indigo-500 hover:text-indigo-700 transition cursor-pointer flex items-center gap-1"
                   title="Copy share code"
                 >
                   {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span className="text-[10px] font-bold">কপি কোড</span>
+                  <span className="text-[10px] font-bold">Copy Code</span>
                 </button>
               </p>
             </div>
@@ -612,7 +612,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           
           {/* Left Sidebar */}
           <aside className="w-64 border-r border-slate-100 bg-slate-50/50 hidden md:flex flex-col p-4 space-y-2 overflow-y-auto">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 mb-2 block">কোর্স কন্ট্রোল সেকশন</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider px-3 mb-2 block">Course Control Section</span>
             {menuItems.map(item => {
               const isActive = activeTab === item.id;
               const Icon = item.icon;
@@ -680,7 +680,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             {success && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-600 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
                 <CheckCircle className="w-4.5 h-4.5 flex-shrink-0" />
-                <span>কোর্সের সমস্ত পরিবর্তন ক্লাউডে সফলভাবে সংরক্ষিত হয়েছে!</span>
+                <span>All course changes have been successfully saved to the cloud!</span>
               </div>
             )}
 
@@ -689,11 +689,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Course Identity & Basic Information</h4>
-                  <p className="text-xs text-slate-450">কোর্সের নাম ও বিবরণ পরিবর্তন এবং পরিচিতি সেটিংস</p>
+                  <p className="text-xs text-slate-400">Modify course title, description, and metadata identity</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-slate-600 block">কোর্সের নাম (Course Title) <span className="text-rose-500">*</span></label>
+                  <label className="text-xs font-extrabold text-slate-600 block">Course Title <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     required
@@ -705,7 +705,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-slate-600 block">কোর্সের বিবরণ (Course Description)</label>
+                  <label className="text-xs font-extrabold text-slate-600 block">Course Description</label>
                   <textarea
                     rows={4}
                     value={description}
@@ -718,9 +718,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-start gap-3.5">
                   <HelpCircle className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
                   <div className="text-xs leading-relaxed text-indigo-950 font-medium">
-                    <p className="font-black text-indigo-900 text-xs">শেয়ারিং গাইডলাইন</p>
+                    <p className="font-black text-indigo-900 text-xs">Sharing Guidelines</p>
                     <p className="mt-1">
-                      উপরে দেওয়া শেয়ার কোডটি ব্যবহার করে যেকোনো শিক্ষার্থী তাদের হোম ড্যাশবোর্ডে গিয়ে এই কোর্সটি যুক্ত (Enroll) করতে পারবে। কোর্সটি সম্পূর্ণ ফ্রি এবং কাস্টমাইজেবল।
+                      Students can use the unique share code above to search and enroll in this custom course from their home dashboard.
                     </p>
                   </div>
                 </div>
@@ -732,15 +732,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Feature & Variable Controller</h4>
-                  <p className="text-xs text-slate-450">শব্দ তালিকার বিভিন্ন ভ্যারিয়েবল ও ফিচার শিক্ষার্থীর ফ্ল্যাশকার্ড ও স্টাডিতে অন/অফ করুন</p>
+                  <p className="text-xs text-slate-400">Toggle individual vocabulary fields and features for student study sessions</p>
                 </div>
 
                 <div className="bg-amber-50 border border-amber-100 text-amber-900 p-4 rounded-2xl text-xs flex items-start gap-2.5 leading-relaxed">
                   <AlertCircle className="w-4.5 h-4.5 text-amber-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <span className="font-black text-amber-950 block">ভ্যারিয়েবল অটো-সমন্বয় পলিসি</span>
+                    <span className="font-black text-amber-950 block">Variable Auto-Alignment Policy</span>
                     <p className="mt-0.5">
-                      যেসব ভ্যারিয়েবলের কোনো ডেটা এই কোর্সের শব্দ তালিকায় আপলোড করা হয়নি, সেগুলোর অন/অফ সুইচ স্বয়ংক্রিয়ভাবে <strong className="text-amber-950 font-extrabold">ব্লার ও ডিজেবল</strong> থাকবে। এবং যেসব ভ্যারিয়েবল সুইচ অফ থাকবে (যেমন সিনোনিম), সেগুলোর জায়গায় অন্য কন্টেন্ট মানানসইভাবে সমন্বয় করা হবে।
+                      Switches for variables with no data in your word list are automatically disabled. Content is seamlessly adapted if features (such as synonyms) are disabled.
                     </p>
                   </div>
                 </div>
@@ -775,7 +775,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               {item.label}
                               {!hasData && (
                                 <span className="text-[9px] bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.2 rounded font-black">
-                                  কোনো ডেটা নেই (No Data)
+                                  No Data
                                 </span>
                               )}
                             </span>
@@ -815,7 +815,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">Student Access & Enroll Security</h4>
-                  <p className="text-xs text-slate-450">কারা এই কোর্সটি পড়তে পারবে এবং নতুন শিক্ষার্থীর তালিকা নিয়ন্ত্রণ করুন</p>
+                  <p className="text-xs text-slate-450">Control who can access this course and manage student enrollment lists</p>
                 </div>
 
                 {/* Switch list */}
@@ -823,8 +823,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   {/* Default Course */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <span className="text-xs font-extrabold text-slate-800 block">সকলের জন্য ডিফল্ট কোর্স হিসেবে সেট করুন</span>
-                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">সচল থাকলে সমস্ত ইউজার তাদের ড্যাশবোর্ডে কোর্সটি স্বয়ংক্রিয়ভাবে তালিকাভুক্ত পাবে।</span>
+                      <span className="text-xs font-extrabold text-slate-800 block">Set as Default Course for All Users</span>
+                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, all registered users will see this course automatically on their dashboard.</span>
                     </div>
                     <button
                       type="button"
@@ -842,8 +842,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   {/* Restricted access */}
                   <div className="border-t border-slate-200/50 pt-3.5 flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <span className="text-xs font-extrabold text-slate-800 block">সীমিত অ্যাক্সেস (Restricted Course)</span>
-                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">সচল থাকলে শুধুমাত্র নিচে অনুমোদিত তালিকার ইমেল/ফোন নম্বরধারী শিক্ষার্থীরাই এই কোর্সটি যুক্ত করতে পারবে।</span>
+                      <span className="text-xs font-extrabold text-slate-800 block">Restricted Access (Restricted Course)</span>
+                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, only registered students in the allowed list below can access and enroll in this course.</span>
                     </div>
                     <button
                       type="button"
@@ -865,7 +865,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                       <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
                         <Users className="w-4 h-4 text-slate-500" />
-                        <span>অনুমোদিত ইউজার তালিকা ({allowedUsers.length})</span>
+                        <span>Allowed Student List ({allowedUsers.length})</span>
                       </span>
                       <button
                         type="button"
@@ -873,7 +873,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1 cursor-pointer bg-indigo-50 px-2.5 py-1 rounded-lg"
                       >
                         <Edit className="w-3.5 h-3.5" />
-                        <span>{isBulkMode ? 'তালিকায় ফেরত' : 'বাল্ক ইম্পোর্ট'}</span>
+                        <span>{isBulkMode ? 'Back to List' : 'Bulk Import'}</span>
                       </button>
                     </div>
 
