@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
-import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2 } from 'lucide-react';
+import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2, Lock } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { motion } from 'motion/react';
 import { auth, db } from '../lib/firebase';
@@ -41,46 +41,8 @@ export default function StatsDashboard({
   const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   // Filter courses shown in the Enroll New Course modal
-  const modalCourses = allCourses.filter(c => {
-    const userEmailLower = user?.email?.trim().toLowerCase();
-    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-    const isCreator = c.createdBy === user?.email;
-    
-    let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
-    if (c.isRestricted && !isAdmin && !isCreator) {
-      if (userEmailLower) {
-        const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-        if (isEmailInAllowed) {
-          isUserAllowed = true;
-          // Check expiry
-          if (c.allowedUsersExpiry) {
-            const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-            if (matchingKey) {
-              const expiryStr = c.allowedUsersExpiry[matchingKey];
-              if (expiryStr) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const expiryDate = new Date(expiryStr);
-                expiryDate.setHours(23, 59, 59, 999);
-                if (today > expiryDate) {
-                  isUserAllowed = false; // Expired!
-                }
-              }
-            }
-          }
-        } else {
-          isUserAllowed = false;
-        }
-      } else {
-        isUserAllowed = false;
-      }
-    }
-
-    // Show in modal if either:
-    // 1. Not enrolled in it
-    // 2. Or is restricted and the user has NO allowed access (expired or not in allowed list), so they can click "Buy Now"
-    return !enrolledCourseIds.includes(c.id) || (c.isRestricted && !isUserAllowed);
-  });
+  // Strictly only show courses that are NOT yet enrolled! If a user has enrolled, they must not see it here.
+  const modalCourses = allCourses.filter(c => !enrolledCourseIds.includes(c.id));
 
   // --- bKash Checkout States ---
   const [selectedBuyCourse, setSelectedBuyCourse] = useState<Course | null>(null);
@@ -500,42 +462,105 @@ export default function StatsDashboard({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allCourses.filter(c => {
-            if (!enrolledCourseIds.includes(c.id)) return false;
-            
+          {allCourses.filter(c => enrolledCourseIds.includes(c.id)).map(c => {
             const userEmailLower = user?.email?.trim().toLowerCase();
             const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
             const isCreator = c.createdBy === user?.email;
             
+            let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
+            let isExpired = false;
+            
             if (c.isRestricted && !isAdmin && !isCreator) {
-              if (!userEmailLower) return false;
-              const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-              if (!isEmailInAllowed) return false;
-              
-              if (c.allowedUsersExpiry) {
-                const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-                if (matchingKey) {
-                  const expiryStr = c.allowedUsersExpiry[matchingKey];
-                  if (expiryStr) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const expiryDate = new Date(expiryStr);
-                    expiryDate.setHours(23, 59, 59, 999);
-                    if (today > expiryDate) return false; // Expired!
+              if (userEmailLower) {
+                const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+                if (isEmailInAllowed) {
+                  isUserAllowed = true;
+                  if (c.allowedUsersExpiry) {
+                    const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+                    if (matchingKey) {
+                      const expiryStr = c.allowedUsersExpiry[matchingKey];
+                      if (expiryStr) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const expiryDate = new Date(expiryStr);
+                        expiryDate.setHours(23, 59, 59, 999);
+                        if (today > expiryDate) {
+                          isUserAllowed = false;
+                          isExpired = true; // Expired!
+                        }
+                      }
+                    }
                   }
+                } else {
+                  isUserAllowed = false;
                 }
+              } else {
+                isUserAllowed = false;
               }
             }
-            return true;
-          }).map(c => {
+
             const isActive = activeCourseId === c.id;
             const courseWords = c.words || [];
             const courseKnowCount = courseWords.filter(w => progress[w.id]?.status === 'know').length;
             const courseDontKnowCount = courseWords.filter(w => progress[w.id]?.status === 'dont_know').length;
             const courseConfusionCount = courseWords.filter(w => progress[w.id]?.status === 'confusion').length;
-            const courseUnratedCount = courseWords.length - courseKnowCount - courseDontKnowCount - courseConfusionCount;
-
             const coursePercent = courseWords.length > 0 ? Math.round((courseKnowCount / courseWords.length) * 100) : 0;
+
+            if (!isUserAllowed) {
+              return (
+                <motion.div
+                  key={c.id}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  onClick={() => {
+                    setSelectedBuyCourse(c);
+                    setBkashSender('');
+                    setTrxId('');
+                    setCheckoutMessage(null);
+                  }}
+                  className="p-4 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-4 min-h-[112px] h-auto py-4 bg-slate-50 border-slate-200 hover:border-amber-350 hover:bg-amber-50/10"
+                >
+                  {/* Left Side: Title and Locked Tag */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
+                    <h4 className="font-extrabold tracking-tight leading-snug line-clamp-2 text-base md:text-lg text-slate-550" title={c.title}>
+                      {c.title}
+                    </h4>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
+                      {isExpired ? (
+                        <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 text-rose-600 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-rose-100">
+                          <Lock className="w-2.5 h-2.5" /> মেয়াদ উত্তীর্ণ (Expired)
+                        </span>
+                      ) : (
+                        <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-amber-100">
+                          <Lock className="w-2.5 h-2.5" /> পেমেন্ট পেন্ডিং (Locked)
+                        </span>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`আপনি কি "${c.title}" কোর্সটির এনরোলমেন্ট বাতিল করতে চান?`)) {
+                            setEnrolledCourseIds(prev => prev.filter(id => id !== c.id));
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase transition border cursor-pointer bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50/50 hover:text-rose-600 hover:border-rose-150"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" /> ডিলিট
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Lock Status */}
+                  <div className="flex-shrink-0 flex flex-col items-center gap-1 select-none">
+                    <div className="p-2.5 bg-amber-100 text-amber-600 rounded-full">
+                      <Lock className="w-5 h-5 animate-pulse" />
+                    </div>
+                    <span className="text-[10px] text-amber-700 font-extrabold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-150/50">
+                      {c.price || 0} TK
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            }
 
             return (
               <motion.div
