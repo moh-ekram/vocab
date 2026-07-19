@@ -5,8 +5,8 @@ import {
   doc,
   setDoc
 } from '../lib/firebase';
-import { collection, getDocs, deleteDoc } from 'firebase/firestore';
-import { VocabularyWord, UserProgress, Course } from '../types';
+import { collection, getDocs, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { VocabularyWord, UserProgress, Course, AccessRequest } from '../types';
 import { read, utils } from 'xlsx';
 import { CourseSettings } from './CourseSettings';
 import { 
@@ -108,7 +108,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses'>('users');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests'>('users');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -132,6 +132,86 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
   // Editing course states
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+
+  // Access requests states
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  const [accessRequestsLoading, setAccessRequestsLoading] = useState(false);
+
+  const fetchAccessRequests = async () => {
+    setAccessRequestsLoading(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'access_requests'));
+      const list: AccessRequest[] = [];
+      qSnap.forEach(docSnap => {
+        list.push({ id: docSnap.id, ...docSnap.data() } as AccessRequest);
+      });
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setAccessRequests(list);
+    } catch (err) {
+      console.error('Error fetching access requests:', err);
+    } finally {
+      setAccessRequestsLoading(false);
+    }
+  };
+
+  const handleApproveAccessRequest = async (req: AccessRequest) => {
+    try {
+      // 1. Update request status to 'approved'
+      const reqRef = doc(db, 'access_requests', req.id);
+      await updateDoc(reqRef, { status: 'approved' });
+
+      // 2. Add email to the course's allowed users list
+      const courseId = req.courseId;
+      const userEmail = req.email.toLowerCase().trim();
+
+      // Let's get the course from customCourses if it exists, or fetch it
+      let courseObj = customCourses.find(c => c.id === courseId);
+      let currentAllowed: string[] = [];
+      
+      if (courseObj) {
+        currentAllowed = courseObj.allowedUsers || [];
+      } else {
+        // Fetch course document from Firestore to be safe
+        const courseDoc = await getDoc(doc(db, 'courses', courseId));
+        if (courseDoc.exists()) {
+          const courseData = courseDoc.data() as Course;
+          currentAllowed = courseData.allowedUsers || [];
+        }
+      }
+
+      if (!currentAllowed.includes(userEmail)) {
+        const updatedAllowed = [...currentAllowed, userEmail];
+        
+        // Update the course in Firestore
+        const courseRef = doc(db, 'courses', courseId);
+        await setDoc(courseRef, { allowedUsers: updatedAllowed }, { merge: true });
+        
+        // Update local state so it reflects immediately
+        setCustomCourses(prev => prev.map(c => c.id === courseId ? { ...c, allowedUsers: updatedAllowed } : c));
+      }
+
+      // Update local requests state
+      setAccessRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
+      alert('Access request approved successfully! User added to the course allowed list.');
+    } catch (err) {
+      console.error('Error approving request:', err);
+      alert('Failed to approve request: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleRejectAccessRequest = async (reqId: string) => {
+    if (!window.confirm('Are you sure you want to reject this request?')) return;
+    try {
+      const reqRef = doc(db, 'access_requests', reqId);
+      await updateDoc(reqRef, { status: 'rejected' });
+      
+      setAccessRequests(prev => prev.map(r => r.id === reqId ? { ...r, status: 'rejected' } : r));
+      alert('Access request rejected.');
+    } catch (err) {
+      console.error('Error rejecting request:', err);
+      alert('Failed to reject request: ' + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
   // Word issue reports states
   const [reports, setReports] = useState<any[]>([]);
@@ -190,6 +270,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   useEffect(() => {
     fetchCustomCourses();
     fetchReports();
+    fetchAccessRequests();
   }, []);
 
   // Sync slug from title
@@ -758,6 +839,20 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         >
           <AlertTriangle className="w-4 h-4" />
           <span>Reported Errors ({reports.length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveAdminTab('access-requests');
+            fetchAccessRequests();
+          }}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'access-requests'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>Pending Requests ({accessRequests.filter(r => r.status === 'pending').length})</span>
         </button>
       </div>
 
@@ -1370,6 +1465,134 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                           >
                             Resolve
                           </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeAdminTab === 'access-requests' && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-base">Course Access Requests</h3>
+              <p className="text-xs text-slate-400 font-medium">Verify bKash transactions and approve access to restricted/paid courses.</p>
+            </div>
+            <button
+              onClick={fetchAccessRequests}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer self-start sm:self-center"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${accessRequestsLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          {accessRequestsLoading ? (
+            <div className="flex items-center justify-center py-12 text-slate-400">
+              <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+              <span className="text-xs font-bold font-mono">Loading access requests...</span>
+            </div>
+          ) : accessRequests.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-2xl space-y-2">
+              <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-700">No requests found</p>
+                <p className="text-[10px] text-slate-400 font-semibold">No students have requested access yet.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 font-mono uppercase h-10">
+                    <th className="px-4 py-2">Course Details</th>
+                    <th className="px-4 py-2">Student Email</th>
+                    <th className="px-4 py-2">bKash Number</th>
+                    <th className="px-4 py-2">Transaction ID</th>
+                    <th className="px-4 py-2">Requested At</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 font-sans text-xs">
+                  {accessRequests.map((req) => (
+                    <tr key={req.id} className="hover:bg-slate-50/50 transition">
+                      <td className="px-4 py-3">
+                        <div className="font-extrabold text-slate-800 text-sm">{req.courseTitle}</div>
+                        <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
+                          Course ID: {req.courseId}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-700">
+                        {req.email}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-pink-50 text-pink-700 font-bold rounded-full text-[10px] font-mono tracking-wider border border-pink-200/50">
+                          {req.bkashNumber}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono bg-slate-50 border border-slate-200 text-slate-650 px-2 py-0.5 rounded text-xs select-all">
+                            {req.trxId}
+                          </span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(req.trxId);
+                              alert('Copied Transaction ID: ' + req.trxId);
+                            }}
+                            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition"
+                            title="Copy transaction ID"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-slate-450 font-mono font-semibold">
+                        {req.createdAt ? new Date(req.createdAt).toLocaleString() : 'N/A'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {req.status === 'approved' ? (
+                          <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black rounded-full text-[10px] uppercase font-mono tracking-wider border border-emerald-200/50">
+                            Approved
+                          </span>
+                        ) : req.status === 'rejected' ? (
+                          <span className="inline-block px-2 py-0.5 bg-rose-50 text-rose-700 font-black rounded-full text-[10px] uppercase font-mono tracking-wider border border-rose-200/50">
+                            Rejected
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 font-black rounded-full text-[10px] uppercase font-mono tracking-wider border border-amber-200/50">
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {req.status === 'pending' ? (
+                            <>
+                              <button
+                                onClick={() => handleApproveAccessRequest(req)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-lg text-[10px] transition cursor-pointer flex items-center gap-1"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => handleRejectAccessRequest(req.id)}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold rounded-lg text-[10px] transition cursor-pointer flex items-center gap-1"
+                              >
+                                <XCircle className="w-3.5 h-3.5" />
+                                Reject
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-slate-350 italic font-bold text-[10px]">Processed</span>
+                          )}
                         </div>
                       </td>
                     </tr>
