@@ -47,12 +47,15 @@ import {
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { Course } from './types';
 import AuthModal from './components/AuthModal';
+import firebaseConfigJson from '../firebase-applet-config.json';
 import { 
   saveProgressToIndexedDB, 
   getProgressFromIndexedDB, 
   addUpdateToSyncQueue, 
   getQueuedSyncItems, 
-  clearSyncQueue 
+  clearSyncQueue,
+  saveMetaValue,
+  getMetaValue
 } from './lib/offlineDb';
 
 const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
@@ -213,6 +216,82 @@ export default function App() {
     loadIndexedDBCache();
   }, []);
 
+  // Service Worker Registration and Background Sync Listener
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const registerSW = async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registered successfully:', registration);
+
+          // Listen for messages from SW (e.g. SYNC_COMPLETE)
+          const handleSWMessage = (event: MessageEvent) => {
+            if (event.data && event.data.type === 'SYNC_COMPLETE') {
+              console.log('[App] Received SYNC_COMPLETE message from SW:', event.data);
+              if (event.data.progress) {
+                setProgress(prev => {
+                  const merged = { ...prev };
+                  Object.keys(event.data.progress).forEach(key => {
+                    const prevItem = prev[key];
+                    const incomingItem = event.data.progress[key];
+                    if (!prevItem) {
+                      merged[key] = incomingItem;
+                    } else {
+                      const prevTime = new Date(prevItem.updatedAt || 0).getTime();
+                      const incomingTime = new Date(incomingItem.updatedAt || 0).getTime();
+                      if (incomingTime > prevTime) {
+                        merged[key] = incomingItem;
+                      }
+                    }
+                  });
+                  return merged;
+                });
+                setSyncStatus('synced');
+                setPendingSyncCount(0);
+              }
+            }
+          };
+
+          navigator.serviceWorker.addEventListener('message', handleSWMessage);
+
+          return () => {
+            navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+          };
+        } catch (error) {
+          console.error('Service Worker registration failed:', error);
+        }
+      };
+
+      registerSW();
+    }
+  }, []);
+
+  // Utility to register a background sync or fall back to manual postMessage triggering
+  const triggerBackgroundSync = async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        if ('sync' in registration) {
+          await (registration as any).sync.register('sync-progress');
+          console.log('[App] Registered sync-progress background sync');
+        } else {
+          // Fallback if background sync is not supported: post a message to trigger immediate sync in SW
+          if (registration.active) {
+            registration.active.postMessage({ type: 'TRIGGER_SYNC' });
+          }
+        }
+      } catch (err) {
+        console.warn('Background sync registration failed, falling back:', err);
+        try {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && reg.active) {
+            reg.active.postMessage({ type: 'TRIGGER_SYNC' });
+          }
+        } catch (e) {}
+      }
+    }
+  };
+
   // Sync offline updates once connection is restored
   const syncOfflineQueueToFirestore = async (currentProgress: Record<string, UserProgress> = progress) => {
     if (!user || !hasLoadedFromCloud || !navigator.onLine) return;
@@ -241,6 +320,7 @@ export default function App() {
     const handleOnline = () => {
       setIsOnline(true);
       syncOfflineQueueToFirestore();
+      triggerBackgroundSync();
     };
     const handleOffline = () => {
       setIsOnline(false);
@@ -256,6 +336,7 @@ export default function App() {
         setPendingSyncCount(items.length);
         if (items.length > 0 && navigator.onLine) {
           syncOfflineQueueToFirestore();
+          triggerBackgroundSync();
         }
       } catch (e) {}
     };
@@ -404,6 +485,24 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        // Save user UID and Firebase Config to meta store for Service Worker use
+        try {
+          await saveMetaValue('uid', currentUser.uid);
+          const env = (import.meta as any).env || {};
+          const config = {
+            apiKey: env.VITE_FIREBASE_API_KEY || firebaseConfigJson.apiKey || "AIzaSyCYIkpASqZD6R2bOOi9F3hvQMl_iTLsjBI",
+            authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigJson.authDomain || "myvocab-13ebc.firebaseapp.com",
+            projectId: env.VITE_FIREBASE_PROJECT_ID || firebaseConfigJson.projectId || "myvocab-13ebc",
+            storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigJson.storageBucket || "myvocab-13ebc.firebasestorage.app",
+            messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigJson.messagingSenderId || "531149838847",
+            appId: env.VITE_FIREBASE_APP_ID || firebaseConfigJson.appId || "1:531149838847:web:a4577c60628b9c4c6b2fca",
+            firestoreDatabaseId: firebaseConfigJson.firestoreDatabaseId || "(default)"
+          };
+          await saveMetaValue('firebaseConfig', config);
+        } catch (e) {
+          console.warn('Error saving meta values to IDB:', e);
+        }
+
         setSyncStatus('syncing');
         setHasLoadedFromCloud(false);
         isSyncingFromCloud.current = true;
@@ -509,6 +608,11 @@ export default function App() {
           }, 500);
         }
       } else {
+        // Logged out
+        try {
+          await saveMetaValue('uid', null);
+          await saveMetaValue('firebaseConfig', null);
+        } catch (e) {}
         isSyncingFromCloud.current = false;
         setHasLoadedFromCloud(false);
         setSyncStatus('idle');
@@ -737,7 +841,10 @@ export default function App() {
         },
         timestamp
       }).then(() => {
-        getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+        getQueuedSyncItems().then(items => {
+          setPendingSyncCount(items.length);
+          triggerBackgroundSync();
+        });
       });
     }
 
@@ -791,7 +898,10 @@ export default function App() {
         },
         timestamp
       }).then(() => {
-        getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+        getQueuedSyncItems().then(items => {
+          setPendingSyncCount(items.length);
+          triggerBackgroundSync();
+        });
       });
     }
   };
@@ -819,7 +929,10 @@ export default function App() {
           progressData: updatedProgressData,
           timestamp
         }).then(() => {
-          getQueuedSyncItems().then(items => setPendingSyncCount(items.length));
+          getQueuedSyncItems().then(items => {
+            setPendingSyncCount(items.length);
+            triggerBackgroundSync();
+          });
         });
       }
 
@@ -906,7 +1019,6 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm md:text-lg font-black tracking-tight font-sans">Vocabulary Memorizer</h1>
-            <p className="text-[9px] md:text-xs text-indigo-200 font-bold uppercase tracking-wider font-sans">37 Groups Learning Dashboard</p>
           </div>
         </div>
 

@@ -129,3 +129,39 @@ export async function clearSyncQueue(): Promise<void> {
     console.error('IndexedDB clearSyncQueue error:', error);
   }
 }
+
+export async function saveMetaValue(key: string, value: any): Promise<void> {
+  try {
+    const db = await initIndexedDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['meta'], 'readwrite');
+      const store = transaction.objectStore('meta');
+      const request = store.put({ key, value });
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error('IndexedDB saveMetaValue error:', error);
+  }
+}
+
+export async function getMetaValue(key: string): Promise<any> {
+  try {
+    const db = await initIndexedDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['meta'], 'readonly');
+      const store = transaction.objectStore('meta');
+      const request = store.get(key);
+      
+      request.onsuccess = () => {
+        resolve(request.result ? request.result.value : null);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (error) {
+    console.error('IndexedDB getMetaValue error:', error);
+    return null;
+  }
+}
+
