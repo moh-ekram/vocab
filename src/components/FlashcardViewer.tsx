@@ -87,9 +87,67 @@ export default function FlashcardViewer({
   }, [words, initialGroup, uniqueGroups]);
 
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
+  const [userHasManuallyChangedStatuses, setUserHasManuallyChangedStatuses] = useState(false);
+
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
+    if (words && words.length > 0) {
+      let hasUnrated = false;
+      let hasStrugglingOrConfusion = false;
+
+      words.forEach(w => {
+        const status = progress[w.id]?.status || 'unrated';
+        if (status === 'unrated') {
+          hasUnrated = true;
+        } else if (status === 'dont_know' || status === 'confusion') {
+          hasStrugglingOrConfusion = true;
+        }
+      });
+
+      if (hasUnrated) {
+        return ['unrated'];
+      } else if (hasStrugglingOrConfusion) {
+        return ['dont_know', 'confusion'];
+      } else {
+        return ['know'];
+      }
+    }
     return settings?.defaultFlashcardTags || ['know', 'confusion', 'dont_know', 'unrated'];
   });
+
+  // Automatically adapt selectedStatuses to progress changes if user has not manually modified it
+  useEffect(() => {
+    if (userHasManuallyChangedStatuses) return;
+    if (!words || words.length === 0) return;
+
+    let hasUnrated = false;
+    let hasStrugglingOrConfusion = false;
+
+    words.forEach(w => {
+      const status = progress[w.id]?.status || 'unrated';
+      if (status === 'unrated') {
+        hasUnrated = true;
+      } else if (status === 'dont_know' || status === 'confusion') {
+        hasStrugglingOrConfusion = true;
+      }
+    });
+
+    let targetStatuses: string[];
+    if (hasUnrated) {
+      targetStatuses = ['unrated'];
+    } else if (hasStrugglingOrConfusion) {
+      targetStatuses = ['dont_know', 'confusion'];
+    } else {
+      targetStatuses = ['know'];
+    }
+
+    // Only update if different to prevent infinite re-renders
+    const currentSorted = [...selectedStatuses].sort().join(',');
+    const targetSorted = [...targetStatuses].sort().join(',');
+    if (currentSorted !== targetSorted) {
+      setSelectedStatuses(targetStatuses);
+    }
+  }, [words, progress, userHasManuallyChangedStatuses, selectedStatuses]);
+
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   
@@ -708,7 +766,10 @@ export default function FlashcardViewer({
                     <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
-                        onClick={() => setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated'])}
+                        onClick={() => {
+                          setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
+                          setUserHasManuallyChangedStatuses(true);
+                        }}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
                         সব সিলেক্ট
@@ -716,7 +777,10 @@ export default function FlashcardViewer({
                       <span className="text-slate-200">|</span>
                       <button
                         type="button"
-                        onClick={() => setSelectedStatuses([])}
+                        onClick={() => {
+                          setSelectedStatuses([]);
+                          setUserHasManuallyChangedStatuses(true);
+                        }}
                         className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                       >
                         সব মুছুন
@@ -742,6 +806,7 @@ export default function FlashcardViewer({
                                 ? prev.filter(x => x !== st.key)
                                 : [...prev, st.key]
                             );
+                            setUserHasManuallyChangedStatuses(true);
                           }}
                           className={`w-full text-left px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
                             isSelected ? 'bg-indigo-50 text-indigo-900' : 'hover:bg-slate-50 text-slate-600'
@@ -890,6 +955,7 @@ export default function FlashcardViewer({
             onClick={() => {
               setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1));
               setSelectedStatuses(['dont_know', 'know', 'confusion', 'unrated']);
+              setUserHasManuallyChangedStatuses(true);
               setSelectedFolder('all');
             }}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans cursor-pointer shadow-md"
