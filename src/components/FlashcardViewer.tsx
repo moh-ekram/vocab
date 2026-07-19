@@ -576,7 +576,7 @@ export default function FlashcardViewer({
     <div className="space-y-6" id="flashcard-viewer-container">
       {/* Top Filter and Customization Bar */}
       <div className="bg-white p-3.5 md:p-5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between" id="flashcard-filters">
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-none flex-nowrap md:flex-wrap w-full md:w-auto">
+        <div className="flex items-center gap-3 overflow-x-auto md:overflow-x-visible md:overflow-visible pb-2 md:pb-0 scrollbar-none flex-nowrap md:flex-wrap w-full md:w-auto">
           
           {/* Select Group (Multi-select) */}
           <div className="space-y-1 relative flex-shrink-0" id="group-multi-selector">
