@@ -85,7 +85,7 @@ export default function GlobalLeaderboard() {
         list.push({
           id: doc.id,
           email: data.email || 'Anonymous',
-          displayName: data.displayName || data.email?.split('@')[0] || 'শিক্ষার্থী',
+          displayName: data.displayName || data.email?.split('@')[0] || 'Student',
           streak,
           knowCount,
           quizScore,
@@ -147,10 +147,10 @@ export default function GlobalLeaderboard() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Crown className="w-8 h-8 text-amber-400 animate-bounce" />
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">গ্লোবাল মেমোরি লিডারবোর্ড</h1>
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Global Memory Leaderboard</h1>
           </div>
           <p className="text-indigo-200 text-sm font-sans font-medium leading-relaxed max-w-xl">
-            অন্যান্য সকল বাস্তব শিক্ষার্থীর সাথে আপনার মেমোরি রিটেনশন এবং কুইজ পারফরম্যান্সের পয়েন্ট রিয়েল-টাইমে তুলনা করুন।
+            Compare your memory retention and quiz performance in real-time with other real-world students.
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export default function GlobalLeaderboard() {
           className="px-4 py-2.5 bg-indigo-700/50 hover:bg-indigo-600/60 border border-indigo-650/80 rounded-xl transition-all font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>রিফ্রেশ করুন</span>
+          <span>Refresh</span>
         </button>
       </div>
 
@@ -170,23 +170,23 @@ export default function GlobalLeaderboard() {
         <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/60 p-6 shadow-xs space-y-4">
           <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
             <Star className="w-5 h-5 text-indigo-600 fill-indigo-100" />
-            <span>পয়েন্ট হিসেব করার নিয়মাবলী</span>
+            <span>How Points are Calculated</span>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">শব্দ জানা</span>
-              <p className="text-lg font-black text-indigo-600 font-mono">+১০ পয়েন্ট</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">প্রতিটি 'পারি' (Learned) শব্দের জন্য</p>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Words Learned</span>
+              <p className="text-lg font-black text-indigo-600 font-mono">+10 XP</p>
+              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each 'Known' word</p>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">কুইজ পারফরম্যান্স</span>
-              <p className="text-lg font-black text-emerald-600 font-mono">+১৫ পয়েন্ট</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">কুইজে প্রতিটি সঠিক উত্তরের জন্য</p>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Quiz Performance</span>
+              <p className="text-lg font-black text-emerald-600 font-mono">+15 XP</p>
+              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each correct quiz answer</p>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">ধারাবাহিকতা বোনাস</span>
-              <p className="text-lg font-black text-amber-600 font-mono">+২৫ পয়েন্ট</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">প্রতিদিনের মেমোরি স্ট্রাইক (Streak)-এর জন্য</p>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Streak Bonus</span>
+              <p className="text-lg font-black text-amber-600 font-mono">+25 XP</p>
+              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">Per day of active study streak</p>
             </div>
           </div>
         </div>
@@ -194,25 +194,25 @@ export default function GlobalLeaderboard() {
         {/* Current User Rank Summary Card */}
         <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/30 border border-indigo-200/60 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
           <div className="space-y-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-indigo-500 font-sans">আমার বর্তমান র‍্যাঙ্কিং</h3>
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-indigo-500 font-sans">My Current Rank</h3>
             {currentUserRank !== null && currentUserData ? (
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black text-indigo-950 font-mono">#{currentUserRank}</span>
-                <span className="text-xs font-semibold text-slate-500">তম স্থানে</span>
+                <span className="text-xs font-semibold text-slate-500">Place</span>
               </div>
             ) : (
-              <p className="text-xs font-bold text-slate-500">লগইন করুন অথবা পয়েন্ট অর্জন করে নিজেকে তালিকায় যোগ করুন!</p>
+              <p className="text-xs font-bold text-slate-500">Sign in or earn points to see your ranking!</p>
             )}
           </div>
 
           {currentUserData && (
             <div className="flex justify-between items-center pt-4 border-t border-indigo-150/50 text-xs font-sans font-semibold text-slate-600">
               <div className="space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">আমার মোট পয়েন্ট</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider">My Total Points</p>
                 <p className="text-base font-black text-indigo-600 font-mono">{currentUserData.points} XP</p>
               </div>
               <div className="text-right space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">জানা শব্দ</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider">Words Known</p>
                 <p className="text-sm font-black text-slate-700 font-mono">{currentUserData.knowCount}</p>
               </div>
             </div>
@@ -225,7 +225,7 @@ export default function GlobalLeaderboard() {
         <div className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-xs space-y-6">
           <h2 className="text-base font-black text-slate-800 text-center flex items-center justify-center gap-2">
             <Trophy className="w-5 h-5 text-amber-500 fill-amber-100" />
-            <span>শীর্ষ মেমোরি চ্যাম্পিয়নদের পোডিয়াম</span>
+            <span>Top Memory Champions Podium</span>
           </h2>
 
           <div className="flex flex-col sm:flex-row justify-center items-end gap-6 sm:gap-4 max-w-2xl mx-auto pt-6 pb-2 min-h-[220px]">
@@ -298,14 +298,14 @@ export default function GlobalLeaderboard() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h2 className="text-base font-black text-slate-800 flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-600" />
-            <span>শীর্ষ ১০ শিক্ষার্থী তালিকা</span>
+            <span>Top 10 Students List</span>
           </h2>
           
           <div className="relative max-w-sm w-full font-sans">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 transform -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="শিক্ষার্থীর নাম দিয়ে খুঁজুন..." 
+              placeholder="Search student by name..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-xs font-bold bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl outline-hidden transition"
@@ -317,11 +317,11 @@ export default function GlobalLeaderboard() {
         {loading ? (
           <div className="py-24 text-center flex flex-col items-center justify-center gap-3">
             <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-            <p className="text-xs font-bold text-slate-400">মেমোরি লিডারবোর্ড লোড হচ্ছে...</p>
+            <p className="text-xs font-bold text-slate-400">Loading memory leaderboard...</p>
           </div>
         ) : filteredLeaderboard.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-slate-200 rounded-2xl">
-            <p className="text-sm font-bold text-slate-400 font-sans">কোন শিক্ষার্থী পাওয়া যায়নি।</p>
+            <p className="text-sm font-bold text-slate-400 font-sans">No students found.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -380,25 +380,25 @@ export default function GlobalLeaderboard() {
                     <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-initial">
                       {/* Known words */}
                       <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
-                        <span className="text-slate-400 font-bold text-[9px] uppercase">জানা শব্দ:</span>
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">Known Words:</span>
                         <span className="font-mono font-black text-slate-700">{player.knowCount}</span>
                       </div>
 
                       {/* Quiz Count */}
                       <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
-                        <span className="text-slate-400 font-bold text-[9px] uppercase">কুইজ:</span>
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">Quizzes:</span>
                         <span className="font-mono font-black text-slate-700">{player.quizTaken}</span>
                       </div>
 
                       {/* Quiz Score */}
                       <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
-                        <span className="text-slate-400 font-bold text-[9px] uppercase">স্কোর:</span>
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">Score:</span>
                         <span className="font-mono font-black text-slate-700">{player.quizScore}</span>
                       </div>
 
                       {/* Streak */}
                       <div className="px-2.5 py-1 bg-white border border-slate-150 rounded-xl flex items-center gap-1 text-[11px] text-slate-500 font-semibold">
-                        <span className="text-slate-400 font-bold text-[9px] uppercase">স্ট্রাইক:</span>
+                        <span className="text-slate-400 font-bold text-[9px] uppercase">Streak:</span>
                         {player.streak > 0 ? (
                           <div className="flex items-center gap-0.5">
                             <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -412,7 +412,7 @@ export default function GlobalLeaderboard() {
 
                     {/* Total points */}
                     <div className="text-right flex items-center gap-2 sm:flex-col sm:items-end justify-between w-full sm:w-auto bg-indigo-50/30 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-xl mt-1 sm:mt-0 min-w-[70px]">
-                      <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider sm:hidden md:block">পয়েন্ট</span>
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block tracking-wider sm:hidden md:block">Points</span>
                       <span className="text-xs font-black text-indigo-600 font-mono block">
                         {player.points} XP
                       </span>
@@ -426,8 +426,8 @@ export default function GlobalLeaderboard() {
         )}
 
         <div className="pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] text-slate-400 font-sans font-semibold">
-          <span>মোট শিক্ষার্থী: {filteredLeaderboard.length} জন</span>
-          <span>শুধুমাত্র টপ ১০ মেম্বারদের প্রদর্শন করা হচ্ছে</span>
+          <span>Total Students: {filteredLeaderboard.length}</span>
+          <span>Displaying Top 10 Members Only</span>
         </div>
       </div>
     </div>

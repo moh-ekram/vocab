@@ -32,7 +32,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
     try {
       if (isSignUp) {
         if (password.length < 6) {
-          throw new Error('পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে।');
+          throw new Error('Password must be at least 6 characters long.');
         }
         await createUserWithEmailAndPassword(auth, email, password);
       } else {
@@ -42,17 +42,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
       onClose();
     } catch (err: any) {
       console.error(err);
-      let errMsg = 'একটি ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন।';
+      let errMsg = 'An error occurred. Please try again.';
       if (err.code === 'auth/wrong-password') {
-        errMsg = 'ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।';
+        errMsg = 'Incorrect password. Please try again.';
       } else if (err.code === 'auth/user-not-found') {
-        errMsg = 'এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট পাওয়া যায়নি।';
+        errMsg = 'No account found with this email.';
       } else if (err.code === 'auth/email-already-in-use') {
-        errMsg = 'এই ইমেইলটি ইতিমধ্যে আরেকটি অ্যাকাউন্টে ব্যবহার করা হচ্ছে।';
+        errMsg = 'This email is already in use by another account.';
       } else if (err.code === 'auth/invalid-email') {
-        errMsg = 'অনুগ্রহ করে একটি সঠিক ইমেইল আইডি লিখুন।';
+        errMsg = 'Please enter a valid email address.';
       } else if (err.code === 'auth/operation-not-allowed') {
-        errMsg = 'ফায়ারবেস কনসোলে ইমেইল/পাসওয়ার্ড সাইন-ইন মেথডটি সচল (Enable) করা নেই। নিচে থাকা "গুগল দিয়ে লগইন" বাটনটি ব্যবহার করুন (এটি ইতিমধ্যেই সচল রয়েছে!)।';
+        errMsg = 'Email/password sign-in is not enabled in Firebase Console. Please use the Google Sign-In button below.';
       } else if (err.message) {
         errMsg = err.message;
       }
@@ -77,10 +77,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         return;
       }
       
-      let errMsg = 'গুগল দিয়ে লগইন করতে সমস্যা হয়েছে।';
+      let errMsg = 'Failed to sign in with Google.';
       if (err.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
-        errMsg = `এই ডোমেইনটি (${currentDomain}) ফায়ারবেস অথেনটিকেশনে অনুমোদিত (Authorized Domain) হিসেবে যুক্ত করা নেই। ফায়ারবেস কনসোলের Authentication > Settings > Authorized domains ট্যাবে গিয়ে এই ডোমেইনটি যুক্ত করুন।`;
+        errMsg = `This domain (${currentDomain}) is not authorized in Firebase Authentication. Please add it to the Authorized Domains tab under Authentication > Settings.`;
       } else if (err.code) {
         errMsg = `${errMsg} (${err.code})`;
       } else if (err.message) {
@@ -119,13 +119,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           <div className="flex justify-between items-start">
             <div className="space-y-1">
               <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider">
-                ক্লাউড সিঙ্ক ও সেভ
+                Cloud Sync & Save
               </span>
               <h3 className="text-xl font-black text-slate-900">
-                {isSignUp ? 'নতুন অ্যাকাউন্ট তৈরি করুন' : 'অ্যাকাউন্টে লগইন করুন'}
+                {isSignUp ? 'Create a New Account' : 'Log In to Account'}
               </h3>
               <p className="text-xs text-slate-500">
-                যাতে আপনার শব্দ তালিকা এবং পড়ার প্রগ্রেস আজীবন সুরক্ষিত থাকে।
+                Keep your vocabulary list and study progress secured forever.
               </p>
             </div>
             <button 
@@ -146,7 +146,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">ইমেইল ঠিকানা</label>
+              <label className="text-xs font-bold text-slate-500">Email Address</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -161,7 +161,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500">পাসওয়ার্ড</label>
+              <label className="text-xs font-bold text-slate-500">Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
@@ -181,7 +181,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-indigo-600/10 cursor-pointer"
             >
               {isSignUp ? <UserPlus className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
-              {loading ? 'অপেক্ষা করুন...' : isSignUp ? 'নিবন্ধন সম্পন্ন করুন' : 'লগইন করুন'}
+              {loading ? 'Please wait...' : isSignUp ? 'Complete Registration' : 'Log In'}
             </button>
           </form>
 
@@ -191,7 +191,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               <div className="w-full border-t border-slate-100"></div>
             </div>
             <span className="relative px-3 bg-white text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              অথবা
+              OR
             </span>
           </div>
 
@@ -204,10 +204,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
                 fill="#EA4335"
-                d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.28 1.845 15.538 1 12.24 1 5.922 1 1 5.922 1 12.24s4.922 11.24 11.24 11.24c6.6 0 11.01-4.636 11.01-11.24 0-.756-.08-1.333-.18-1.955H12.24z"
+                d="M12.24 10.285V14.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l3.227-3.11C18.28 1.845 15.538 1 12.24 1 5.922 1 12.24s4.922 11.24 11.24 11.24c6.6 0 11.01-4.636 11.01-11.24 0-.756-.08-1.333-.18-1.955H12.24z"
               />
             </svg>
-            গুগল দিয়ে লগইন
+            Sign In with Google
           </button>
 
           {/* Toggle account mode */}
@@ -219,14 +219,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
               }}
               className="text-xs text-indigo-600 hover:text-indigo-700 font-bold transition hover:underline"
             >
-              {isSignUp ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন' : 'নতুন অ্যাকাউন্ট তৈরি করতে চান? সাইন-আপ করুন'}
+              {isSignUp ? 'Already have an account? Log In' : 'New here? Create an Account'}
             </button>
           </div>
 
           {/* Informational footer */}
           <div className="pt-2 border-t border-slate-50 flex items-center justify-center gap-1.5 text-[10px] text-slate-400 font-sans">
             <Sparkles className="w-3.5 h-3.5 text-indigo-500 fill-current" />
-            <span>স্পার্ক প্ল্যানের আওতায় ১০০% আজীবন ফ্রি সুবিধা</span>
+            <span>100% Free Lifetime Benefits under Spark Plan</span>
           </div>
         </motion.div>
       </div>

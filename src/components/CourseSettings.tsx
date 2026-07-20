@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Course, VocabularyWord, BlankQuestion } from '../types';
+import { Course, VocabularyWord, BlankQuestion, OddOneOutQuestion, WordAnalogyQuestion } from '../types';
 import { 
   X, 
   CheckCircle, 
@@ -29,7 +29,8 @@ import {
   ShieldCheck,
   Gamepad2,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  Shuffle
 } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -39,7 +40,7 @@ interface CourseSettingsProps {
   course: Course;
   onClose: () => void;
   onSaveSuccess: () => void;
-  initialTab?: 'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'practice-games';
+  initialTab?: 'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'ooo-questions' | 'analogy-questions' | 'practice-games';
   initialEditWordName?: string;
 }
 
@@ -51,7 +52,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   initialEditWordName,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'practice-games'>(initialTab || 'general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'ooo-questions' | 'analogy-questions' | 'practice-games'>(initialTab || 'general');
 
   // --- BLANK QUESTIONS STATES ---
   const [courseBlankQuestions, setCourseBlankQuestions] = useState<BlankQuestion[]>([]);
@@ -66,6 +67,27 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [excelQuestionsPreview, setExcelQuestionsPreview] = useState<BlankQuestion[]>([]);
   const [excelUploadError, setExcelUploadError] = useState<string | null>(null);
   const [excelSaveStatus, setExcelSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // --- OOO QUESTIONS STATES ---
+  const [courseOooQuestions, setCourseOooQuestions] = useState<OddOneOutQuestion[]>([]);
+  const [oooQuestionsLoading, setOooQuestionsLoading] = useState(false);
+  const [newOooWords, setNewOooWords] = useState<string[]>(['', '', '', '']);
+  const [newOooCorrectIndex, setNewOooCorrectIndex] = useState<number>(0);
+  const [newOooReason, setNewOooReason] = useState('');
+  const [excelOooPreview, setExcelOooPreview] = useState<OddOneOutQuestion[]>([]);
+  const [excelOooUploadError, setExcelOooUploadError] = useState<string | null>(null);
+  const [excelOooSaveStatus, setExcelOooSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // --- ANALOGY QUESTIONS STATES ---
+  const [courseAnalogyQuestions, setCourseAnalogyQuestions] = useState<WordAnalogyQuestion[]>([]);
+  const [analogyQuestionsLoading, setAnalogyQuestionsLoading] = useState(false);
+  const [newAnalogy, setNewAnalogy] = useState('');
+  const [newAnalogyOpts, setNewAnalogyOpts] = useState<string[]>(['', '', '', '']);
+  const [newAnalogyCorrectIndex, setNewAnalogyCorrectIndex] = useState<number>(0);
+  const [newAnalogyExplanation, setNewAnalogyExplanation] = useState('');
+  const [excelAnalogyPreview, setExcelAnalogyPreview] = useState<WordAnalogyQuestion[]>([]);
+  const [excelAnalogyUploadError, setExcelAnalogyUploadError] = useState<string | null>(null);
+  const [excelAnalogySaveStatus, setExcelAnalogySaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(course.title);
@@ -229,9 +251,51 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
   };
 
+  const fetchOooQuestions = async () => {
+    setOooQuestionsLoading(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'odd_one_out_questions'));
+      const list: OddOneOutQuestion[] = [];
+      qSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.courseId === course.id) {
+          list.push({ id: docSnap.id, ...data } as OddOneOutQuestion);
+        }
+      });
+      setCourseOooQuestions(list);
+    } catch (err) {
+      console.error('Error fetching course OOO questions:', err);
+    } finally {
+      setOooQuestionsLoading(false);
+    }
+  };
+
+  const fetchAnalogyQuestions = async () => {
+    setAnalogyQuestionsLoading(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'word_analogy_questions'));
+      const list: WordAnalogyQuestion[] = [];
+      qSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.courseId === course.id) {
+          list.push({ id: docSnap.id, ...data } as WordAnalogyQuestion);
+        }
+      });
+      setCourseAnalogyQuestions(list);
+    } catch (err) {
+      console.error('Error fetching course analogy questions:', err);
+    } finally {
+      setAnalogyQuestionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'blank-questions') {
       fetchBlankQuestions();
+    } else if (activeTab === 'ooo-questions') {
+      fetchOooQuestions();
+    } else if (activeTab === 'analogy-questions') {
+      fetchAnalogyQuestions();
     }
   }, [activeTab, course.id]);
 
@@ -372,6 +436,282 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       setCourseBlankQuestions(prev => prev.filter(q => q.id !== id));
     } catch (err) {
       console.error('Error deleting blank question:', err);
+      alert('Failed to delete question.');
+    }
+  };
+
+  // --- OOO QUESTIONS EXCEL & MANUAL HANDLERS ---
+  const handleUploadOooExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExcelOooUploadError(null);
+    setExcelOooPreview([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+        if (rawRows.length === 0) {
+          setExcelOooUploadError('No data found in the selected Excel sheet.');
+          return;
+        }
+
+        const questionsList: OddOneOutQuestion[] = [];
+
+        for (let idx = 0; idx < rawRows.length; idx++) {
+          const row = rawRows[idx];
+          if (!row || row.length < 4) continue;
+
+          if (idx === 0) {
+            const hasHash = row.slice(0, 4).some(cell => cell && String(cell).includes('#'));
+            if (!hasHash) continue;
+          }
+
+          const wordsOpts: string[] = [];
+          let answer = '';
+
+          for (let col = 0; col < 4; col++) {
+            const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
+            if (val) {
+              if (val.includes('#')) {
+                const cleanVal = val.replace('#', '').trim();
+                wordsOpts.push(cleanVal);
+                answer = cleanVal;
+              } else {
+                wordsOpts.push(val);
+              }
+            }
+          }
+
+          const reason = row[4] ? String(row[4]).trim() : '';
+
+          if (wordsOpts.length === 4 && answer) {
+            questionsList.push({
+              id: `ooo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              words: wordsOpts,
+              answer,
+              reason,
+              courseId: course.id,
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+
+        if (questionsList.length === 0) {
+          setExcelOooUploadError('No valid questions found. Ensure one of the 4 words contains a "#" to mark the odd one out.');
+        } else {
+          setExcelOooPreview(questionsList);
+        }
+      } catch (err) {
+        console.error('Error parsing OOO excel:', err);
+        setExcelOooUploadError('Failed to parse Excel file.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleSaveOooExcelQuestions = async () => {
+    if (excelOooPreview.length === 0) return;
+    setExcelOooSaveStatus('saving');
+    try {
+      for (const q of excelOooPreview) {
+        const updatedQ = { ...q, courseId: course.id };
+        await setDoc(doc(db, 'odd_one_out_questions', q.id), updatedQ);
+      }
+      setExcelOooSaveStatus('saved');
+      setExcelOooPreview([]);
+      fetchOooQuestions();
+      setTimeout(() => setExcelOooSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Error saving OOO questions:', err);
+      setExcelOooSaveStatus('error');
+    }
+  };
+
+  const handleManualAddOooQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOooWords.some(w => !w.trim())) {
+      alert('Please fill out all 4 words.');
+      return;
+    }
+    const rawWords = newOooWords.map(w => w.trim());
+    const answer = rawWords[newOooCorrectIndex];
+    const newQ: OddOneOutQuestion = {
+      id: `ooo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      words: rawWords,
+      answer,
+      reason: newOooReason.trim(),
+      courseId: course.id,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'odd_one_out_questions', newQ.id), newQ);
+      setNewOooWords(['', '', '', '']);
+      setNewOooCorrectIndex(0);
+      setNewOooReason('');
+      fetchOooQuestions();
+      alert('Question added successfully!');
+    } catch (err) {
+      console.error('Error adding OOO question manually:', err);
+      alert('Failed to add question.');
+    }
+  };
+
+  const handleDeleteOooQuestion = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      await deleteDoc(doc(db, 'odd_one_out_questions', id));
+      setCourseOooQuestions(prev => prev.filter(q => q.id !== id));
+    } catch (err) {
+      console.error('Error deleting OOO question:', err);
+      alert('Failed to delete question.');
+    }
+  };
+
+  // --- ANALOGY QUESTIONS EXCEL & MANUAL HANDLERS ---
+  const handleUploadAnalogyExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExcelAnalogyUploadError(null);
+    setExcelAnalogyPreview([]);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+        if (rawRows.length === 0) {
+          setExcelAnalogyUploadError('No data found in the selected Excel sheet.');
+          return;
+        }
+
+        const questionsList: WordAnalogyQuestion[] = [];
+
+        for (let idx = 0; idx < rawRows.length; idx++) {
+          const row = rawRows[idx];
+          if (!row || row.length < 5) continue;
+
+          if (idx === 0) {
+            const hasHash = row.slice(1, 5).some(cell => cell && String(cell).includes('#'));
+            if (!hasHash) continue;
+          }
+
+          const analogy = row[0] ? String(row[0]).trim() : '';
+          if (!analogy) continue;
+
+          const opts: string[] = [];
+          let answer = '';
+
+          for (let col = 1; col <= 4; col++) {
+            const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
+            if (val) {
+              if (val.includes('#')) {
+                const cleanVal = val.replace('#', '').trim();
+                opts.push(cleanVal);
+                answer = cleanVal;
+              } else {
+                opts.push(val);
+              }
+            }
+          }
+
+          const explanation = row[5] ? String(row[5]).trim() : '';
+
+          if (analogy && opts.length === 4 && answer) {
+            questionsList.push({
+              id: `ana-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              analogy,
+              options: opts,
+              answer,
+              explanation,
+              courseId: course.id,
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+
+        if (questionsList.length === 0) {
+          setExcelAnalogyUploadError('No valid questions found. Ensure one of the option columns (1 to 4) contains a "#" to mark the correct analogy option.');
+        } else {
+          setExcelAnalogyPreview(questionsList);
+        }
+      } catch (err) {
+        console.error('Error parsing analogy excel:', err);
+        setExcelAnalogyUploadError('Failed to parse Excel file.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleSaveAnalogyExcelQuestions = async () => {
+    if (excelAnalogyPreview.length === 0) return;
+    setExcelAnalogySaveStatus('saving');
+    try {
+      for (const q of excelAnalogyPreview) {
+        const updatedQ = { ...q, courseId: course.id };
+        await setDoc(doc(db, 'word_analogy_questions', q.id), updatedQ);
+      }
+      setExcelAnalogySaveStatus('saved');
+      setExcelAnalogyPreview([]);
+      fetchAnalogyQuestions();
+      setTimeout(() => setExcelAnalogySaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Error saving analogy questions:', err);
+      setExcelAnalogySaveStatus('error');
+    }
+  };
+
+  const handleManualAddAnalogyQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAnalogy.trim() || newAnalogyOpts.some(o => !o.trim())) {
+      alert('Please fill out the base analogy and all 4 options.');
+      return;
+    }
+    const rawOpts = newAnalogyOpts.map(o => o.trim());
+    const answer = rawOpts[newAnalogyCorrectIndex];
+    const newQ: WordAnalogyQuestion = {
+      id: `ana-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      analogy: newAnalogy.trim(),
+      options: rawOpts,
+      answer,
+      explanation: newAnalogyExplanation.trim(),
+      courseId: course.id,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'word_analogy_questions', newQ.id), newQ);
+      setNewAnalogy('');
+      setNewAnalogyOpts(['', '', '', '']);
+      setNewAnalogyCorrectIndex(0);
+      setNewAnalogyExplanation('');
+      fetchAnalogyQuestions();
+      alert('Question added successfully!');
+    } catch (err) {
+      console.error('Error adding analogy question manually:', err);
+      alert('Failed to add question.');
+    }
+  };
+
+  const handleDeleteAnalogyQuestion = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      await deleteDoc(doc(db, 'word_analogy_questions', id));
+      setCourseAnalogyQuestions(prev => prev.filter(q => q.id !== id));
+    } catch (err) {
+      console.error('Error deleting analogy question:', err);
       alert('Failed to delete question.');
     }
   };
@@ -1100,6 +1440,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     { id: 'wordlist' as const, label: 'Word List & Editing', icon: BookOpen, badge: localWords.length },
     { id: 'addwords' as const, label: 'Add & Upload Words', icon: PlusCircle },
     { id: 'blank-questions' as const, label: 'Blank Questions', icon: FileSpreadsheet, badge: courseBlankQuestions.length },
+    { id: 'ooo-questions' as const, label: 'Odd One Out', icon: HelpCircle, badge: courseOooQuestions.length },
+    { id: 'analogy-questions' as const, label: 'Word Analogy', icon: Shuffle, badge: courseAnalogyQuestions.length },
   ];
 
   return (
@@ -1369,19 +1711,21 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 <div className="bg-indigo-50 border border-indigo-100 text-indigo-900 p-4 rounded-2xl text-xs flex items-start gap-2.5 leading-relaxed">
                   <Gamepad2 className="w-4.5 h-4.5 text-indigo-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <span className="font-black text-indigo-950 block">গেম নিয়ন্ত্রণ পলিসি (Games Control Policy)</span>
+                    <span className="font-black text-indigo-950 block">Games Control Policy</span>
                     <p className="mt-0.5">
-                      যেসব গেম বা প্র্যাকটিস অপশন অফ (Off) করে রাখা হবে, শিক্ষার্থীরা এই কোর্সের Practice & Games হাব-এ সেগুলো দেখতে পাবে না। সবগুলো চালু রাখতে চাইলে অন (On) করে দিন।
+                      Practice and game options that are turned off will not be visible to students in the Practice & Games Hub. Toggle them on to make them available.
                     </p>
                   </div>
                 </div>
 
                 <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white divide-y divide-slate-100">
                   {[
-                    { key: 'quiz', label: 'Practice & Quiz', desc: 'একাধিক নির্বাচনি প্রশ্ন (MCQ) এবং টাইপিং বানান অনুশীলনের গেম। (Multiple choice questions and spelling practice games)', icon: GraduationCap },
-                    { key: 'match', label: 'Word Match Game', desc: 'কার্ড ড্র্যাগ-ম্যাচ করার মাধ্যমে দ্রুত শব্দের অর্থ মুখস্থ করার খেলা। (Card matching memory training game)', icon: Gamepad2 },
-                    { key: 'synonym', label: 'Synonym Check', desc: 'সমার্থক শব্দ বা Synonym মিলিয়ে ভোকাবুলারি যাচাই করার খেলা। (Synonym matching and verification game)', icon: Sparkles },
-                    { key: 'blank', label: 'Blank Filling Practice', desc: 'বাক্যের সঠিক স্থানে উপযুক্ত শব্দ বসিয়ে শূন্যস্থান পূরণ করার প্র্যাকটিস। (Sentence fill-in-the-blanks practice)', icon: BookOpen }
+                    { key: 'quiz', label: 'Practice & Quiz', desc: 'Multiple choice questions and spelling practice games.', icon: GraduationCap },
+                    { key: 'match', label: 'Word Match Game', desc: 'Card matching memory training game.', icon: Gamepad2 },
+                    { key: 'synonym', label: 'Synonym Check', desc: 'Synonym matching and verification game.', icon: Sparkles },
+                    { key: 'blank', label: 'Blank Filling Practice', desc: 'Sentence fill-in-the-blanks practice.', icon: BookOpen },
+                    { key: 'odd_one_out', label: 'Odd One Out', desc: 'Synonyms word selection challenge.', icon: HelpCircle },
+                    { key: 'analogy', label: 'Word Analogy', desc: 'Word pairs analogy logic challenge.', icon: Shuffle }
                   ].map(item => {
                     const isEnabled = enabledGames[item.key] !== false;
                     
@@ -2538,6 +2882,441 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               <td className="px-4 py-2.5 text-right">
                                 <button
                                   onClick={() => handleDeleteBlankQuestion(q.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition cursor-pointer"
+                                  title="Delete question"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'ooo-questions' && (
+              <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2 animate-fadeIn">
+                <div className="border-b border-slate-100 pb-3 mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-sm">Course Odd One Out Practice</h4>
+                  <p className="text-xs text-slate-400 mt-1 font-medium">
+                    Manage Odd One Out questions specifically for this course. Upload an Excel spreadsheet or add questions manually.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Excel Upload Card */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <FileSpreadsheet className="w-4.5 h-4.5 text-sky-650" />
+                      <span className="text-xs font-black text-slate-800">Upload via Excel</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      <strong>Format:</strong> Column 1 to 4: 4 Words (synonyms). Mark the odd-one-out word with a trailing "#" (e.g. "harmful#"). Column 5 (optional): Reason / explanation.
+                    </p>
+
+                    {/* Drag & Drop Zone */}
+                    <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-6 text-center transition cursor-pointer relative bg-white">
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv" 
+                        onChange={handleUploadOooExcel}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-sans"
+                      />
+                      <UploadCloud className="w-8 h-8 text-slate-450 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Click or drag Excel/CSV file here</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Supports .xlsx, .xls, .csv</p>
+                    </div>
+
+                    {excelOooUploadError && (
+                      <div className="p-3 bg-rose-50 text-rose-700 rounded-xl flex items-start gap-2 border border-rose-100 text-xs font-semibold">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{excelOooUploadError}</span>
+                      </div>
+                    )}
+
+                    {excelOooPreview.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-lg">
+                            {excelOooPreview.length} questions parsed
+                          </span>
+                          <button
+                            onClick={handleSaveOooExcelQuestions}
+                            disabled={excelOooSaveStatus === 'saving'}
+                            className="px-4 py-2 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-400 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
+                          >
+                            {excelOooSaveStatus === 'saving' ? 'Saving...' : 'Save to Cloud'}
+                          </button>
+                        </div>
+
+                        {/* Excel Preview Panel */}
+                        <div className="max-h-[180px] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 bg-white text-xs">
+                          {excelOooPreview.map((q, idx) => (
+                            <div key={idx} className="p-3">
+                              <p className="font-bold text-slate-800"><span className="text-slate-400 mr-1">#{idx + 1}</span> {q.words.join(' | ')}</p>
+                              <p className="text-[10px] text-slate-400 mt-1 font-semibold">Correct: <span className="text-sky-600 font-extrabold">{q.answer}</span></p>
+                              {q.reason && <p className="text-[10px] text-slate-400 mt-0.5">Reason: {q.reason}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {excelOooSaveStatus === 'saved' && (
+                      <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl flex items-center gap-2 border border-emerald-100 text-xs font-semibold">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Questions imported successfully!</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Question Form */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <PlusCircle className="w-4.5 h-4.5 text-indigo-600" />
+                      <span className="text-xs font-black text-slate-800">Add Manually</span>
+                    </div>
+
+                    <form onSubmit={handleManualAddOooQuestion} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        {newOooWords.map((word, wIdx) => (
+                          <div className="space-y-1" key={wIdx}>
+                            <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Word {wIdx + 1}</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder={`Word ${wIdx + 1}`}
+                              value={word}
+                              onChange={(e) => {
+                                const next = [...newOooWords];
+                                next[wIdx] = e.target.value;
+                                setNewOooWords(next);
+                              }}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Select Odd One Out (Correct Answer)</label>
+                        <select
+                          value={newOooCorrectIndex}
+                          onChange={(e) => setNewOooCorrectIndex(Number(e.target.value))}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        >
+                          <option value={0}>Word 1: {newOooWords[0] || '(empty)'}</option>
+                          <option value={1}>Word 2: {newOooWords[1] || '(empty)'}</option>
+                          <option value={2}>Word 3: {newOooWords[2] || '(empty)'}</option>
+                          <option value={3}>Word 4: {newOooWords[3] || '(empty)'}</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Reason / Explanation (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. This word has a negative connotation, whereas others are positive."
+                          value={newOooReason}
+                          onChange={(e) => setNewOooReason(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow transition cursor-pointer"
+                      >
+                        Add Question
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Existing Questions list */}
+                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-xs">Existing Odd One Out Questions ({courseOooQuestions.length})</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
+                    </div>
+                    <button
+                      onClick={fetchOooQuestions}
+                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${oooQuestionsLoading ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {oooQuestionsLoading ? (
+                    <div className="flex items-center justify-center py-8 text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-xs font-bold font-mono">Loading questions...</span>
+                    </div>
+                  ) : courseOooQuestions.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl bg-white text-xs text-slate-400">
+                      No questions found. Add questions manually or upload an Excel sheet to get started!
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-[10px] font-extrabold text-slate-450 uppercase tracking-wider border-b border-slate-150">
+                            <th className="px-4 py-2.5">Words Set</th>
+                            <th className="px-4 py-2.5">Odd One Out (Answer)</th>
+                            <th className="px-4 py-2.5">Reason / Explanation</th>
+                            <th className="px-4 py-2.5 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                          {courseOooQuestions.map((q) => (
+                            <tr key={q.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-2.5 font-medium max-w-xs truncate" title={q.words.join(', ')}>
+                                {q.words.join(', ')}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-block px-2 py-0.5 bg-sky-50 text-sky-750 font-extrabold rounded text-[10px]">
+                                  {q.answer}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-slate-500 italic max-w-xs truncate" title={q.reason}>
+                                {q.reason || 'None'}
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <button
+                                  onClick={() => handleDeleteOooQuestion(q.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition cursor-pointer"
+                                  title="Delete question"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'analogy-questions' && (
+              <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2 animate-fadeIn">
+                <div className="border-b border-slate-100 pb-3 mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-sm">Course Word Analogy Practice</h4>
+                  <p className="text-xs text-slate-400 mt-1 font-medium">
+                    Manage Word Analogy questions specifically for this course. Upload an Excel spreadsheet or add questions manually.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Excel Upload Card */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <FileSpreadsheet className="w-4.5 h-4.5 text-purple-650" />
+                      <span className="text-xs font-black text-slate-800">Upload via Excel</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      <strong>Format:</strong> Column 1: Base analogy (e.g. "hot : cold"). Cols 2-5: Pairs options. Mark the correct answer option pair with a trailing "#" (e.g. "up : down#"). Column 6 (optional): Explanation.
+                    </p>
+
+                    {/* Drag & Drop Zone */}
+                    <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-6 text-center transition cursor-pointer relative bg-white">
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv" 
+                        onChange={handleUploadAnalogyExcel}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-sans"
+                      />
+                      <UploadCloud className="w-8 h-8 text-slate-450 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Click or drag Excel/CSV file here</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Supports .xlsx, .xls, .csv</p>
+                    </div>
+
+                    {excelAnalogyUploadError && (
+                      <div className="p-3 bg-rose-50 text-rose-700 rounded-xl flex items-start gap-2 border border-rose-100 text-xs font-semibold">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{excelAnalogyUploadError}</span>
+                      </div>
+                    )}
+
+                    {excelAnalogyPreview.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
+                            {excelAnalogyPreview.length} questions parsed
+                          </span>
+                          <button
+                            onClick={handleSaveAnalogyExcelQuestions}
+                            disabled={excelAnalogySaveStatus === 'saving'}
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-slate-400 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
+                          >
+                            {excelAnalogySaveStatus === 'saving' ? 'Saving...' : 'Save to Cloud'}
+                          </button>
+                        </div>
+
+                        {/* Excel Preview Panel */}
+                        <div className="max-h-[180px] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 bg-white text-xs">
+                          {excelAnalogyPreview.map((q, idx) => (
+                            <div key={idx} className="p-3">
+                              <p className="font-bold text-slate-800"><span className="text-slate-400 mr-1">#{idx + 1}</span> {q.analogy}</p>
+                              <div className="grid grid-cols-2 gap-1.5 mt-1.5 font-mono text-[11px] text-slate-500">
+                                {q.options.map((opt, oIdx) => (
+                                  <span key={oIdx} className={opt === q.answer ? 'text-purple-600 font-extrabold bg-purple-50 px-1 rounded' : ''}>
+                                    {opt} {opt === q.answer ? '✓' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {excelAnalogySaveStatus === 'saved' && (
+                      <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl flex items-center gap-2 border border-emerald-100 text-xs font-semibold">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Questions imported successfully!</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Question Form */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <PlusCircle className="w-4.5 h-4.5 text-indigo-600" />
+                      <span className="text-xs font-black text-slate-800">Add Manually</span>
+                    </div>
+
+                    <form onSubmit={handleManualAddAnalogyQuestion} className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Base Analogy</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. cold : hot"
+                          value={newAnalogy}
+                          onChange={(e) => setNewAnalogy(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {newAnalogyOpts.map((opt, oIdx) => (
+                          <div className="space-y-1" key={oIdx}>
+                            <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Option {oIdx + 1}</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder={`Option ${oIdx + 1}`}
+                              value={opt}
+                              onChange={(e) => {
+                                const next = [...newAnalogyOpts];
+                                next[oIdx] = e.target.value;
+                                setNewAnalogyOpts(next);
+                              }}
+                              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Correct Answer Option</label>
+                        <select
+                          value={newAnalogyCorrectIndex}
+                          onChange={(e) => setNewAnalogyCorrectIndex(Number(e.target.value))}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        >
+                          <option value={0}>Option 1: {newAnalogyOpts[0] || '(empty)'}</option>
+                          <option value={1}>Option 2: {newAnalogyOpts[1] || '(empty)'}</option>
+                          <option value={2}>Option 3: {newAnalogyOpts[2] || '(empty)'}</option>
+                          <option value={3}>Option 4: {newAnalogyOpts[3] || '(empty)'}</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Explanation (Optional)</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Cold and hot are opposites, just like up and down."
+                          value={newAnalogyExplanation}
+                          onChange={(e) => setNewAnalogyExplanation(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow transition cursor-pointer"
+                      >
+                        Add Question
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Existing Questions list */}
+                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-xs">Existing Word Analogy Questions ({courseAnalogyQuestions.length})</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
+                    </div>
+                    <button
+                      onClick={fetchAnalogyQuestions}
+                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${analogyQuestionsLoading ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {analogyQuestionsLoading ? (
+                    <div className="flex items-center justify-center py-8 text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-xs font-bold font-mono">Loading questions...</span>
+                    </div>
+                  ) : courseAnalogyQuestions.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl bg-white text-xs text-slate-400">
+                      No questions found. Add questions manually or upload an Excel sheet to get started!
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-[10px] font-extrabold text-slate-450 uppercase tracking-wider border-b border-slate-150">
+                            <th className="px-4 py-2.5">Base Analogy</th>
+                            <th className="px-4 py-2.5">Options</th>
+                            <th className="px-4 py-2.5">Answer</th>
+                            <th className="px-4 py-2.5 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                          {courseAnalogyQuestions.map((q) => (
+                            <tr key={q.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-2.5 font-medium max-w-xs truncate" title={q.analogy}>
+                                {q.analogy}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono text-[10px] text-slate-500 max-w-xs truncate" title={q.options.join(', ')}>
+                                {q.options.join(', ')}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-block px-2 py-0.5 bg-purple-50 text-purple-755 font-extrabold rounded text-[10px]">
+                                  {q.answer}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <button
+                                  onClick={() => handleDeleteAnalogyQuestion(q.id)}
                                   className="p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition cursor-pointer"
                                   title="Delete question"
                                 >

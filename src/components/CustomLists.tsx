@@ -60,15 +60,15 @@ export default function CustomLists({
         <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs">
           <h3 className="font-extrabold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
             <FolderPlus className="w-5 h-5 text-indigo-600" />
-            নতুন লিস্ট তৈরি করুন
+            Create New List
           </h3>
 
           <form onSubmit={handleCreate} className="space-y-4 font-sans">
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">লিস্টের নাম</label>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">List Name</label>
               <input
                 type="text"
-                placeholder="উদা: GRE High Priority..."
+                placeholder="e.g. GRE High Priority..."
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 maxLength={25}
@@ -77,7 +77,7 @@ export default function CustomLists({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">রঙের ট্যাগ নির্বাচন</label>
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select Tag Color</label>
               <div className="flex gap-2.5">
                 {PRESET_COLORS.map(c => (
                   <button
@@ -99,7 +99,7 @@ export default function CustomLists({
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
             >
               <Plus className="w-4 h-4" />
-              তৈরি করুন
+              Create List
             </button>
           </form>
         </div>
@@ -108,12 +108,12 @@ export default function CustomLists({
         <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs">
           <h3 className="font-extrabold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-4">
             <Tag className="w-5 h-5 text-indigo-600" />
-            আপনার ফোল্ডারসমূহ
+            Your Lists
           </h3>
 
           <div className="space-y-2 font-sans">
             {folders.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-6">কোনো কাস্টম লিস্ট তৈরি করা নেই।</p>
+              <p className="text-xs text-slate-400 text-center py-6">No custom lists created yet.</p>
             ) : (
               folders.map(f => {
                 const count = words.filter(w => (progress[w.id]?.bookmarks || []).includes(f.id)).length;
@@ -136,7 +136,7 @@ export default function CustomLists({
 
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 bg-slate-100 text-slate-500 font-bold text-[10px] rounded-md">
-                        {count} শব্দ
+                        {count} Words
                       </span>
                       <button
                         onClick={(e) => {
@@ -145,7 +145,7 @@ export default function CustomLists({
                           if (activeFolderId === f.id) setActiveFolderId(folders[0]?.id || null);
                         }}
                         className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 rounded-md hover:bg-rose-50 transition"
-                        title="লিস্ট ডিলিট করুন"
+                        title="Delete List"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -169,7 +169,7 @@ export default function CustomLists({
                   <div className="w-5 h-5 rounded-full shadow-inner" style={{ backgroundColor: activeFolder.color }}></div>
                   <div>
                     <h2 className="text-xl font-bold text-slate-800">{activeFolder.name}</h2>
-                    <p className="text-xs text-slate-400 font-sans mt-0.5">এই ফোল্ডারে মোট {folderWords.length}টি শব্দ সংরক্ষিত আছে।</p>
+                    <p className="text-xs text-slate-400 font-sans mt-0.5">A total of {folderWords.length} words are saved in this list.</p>
                   </div>
                 </div>
 
@@ -179,7 +179,7 @@ export default function CustomLists({
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/10 font-sans"
                   >
                     <BookOpen className="w-4 h-4" />
-                    লিস্টটি প্র্যাকটিস করুন
+                    Practice this List
                   </button>
                 )}
               </div>
@@ -191,8 +191,8 @@ export default function CustomLists({
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-bold text-slate-700 text-sm">লিস্টটি খালি!</p>
-                    <p className="text-xs text-slate-400">ফ্ল্যাশ কার্ডে গিয়ে পছন্দমতো শব্দ এই ফোল্ডারে যুক্ত করুন।</p>
+                    <p className="font-bold text-slate-700 text-sm">The list is empty!</p>
+                    <p className="text-xs text-slate-400">Go to flashcards and add words to this list.</p>
                   </div>
                 </div>
               ) : (
@@ -206,7 +206,7 @@ export default function CustomLists({
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-800 text-sm">{w.word}</span>
                           <span className="text-[10px] bg-indigo-50 text-indigo-800 font-bold px-1.5 py-0.5 rounded-md font-sans">
-                            গ্রুপ {w.group}
+                            Group {w.group}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 font-sans">{w.meaning}</p>
@@ -215,7 +215,7 @@ export default function CustomLists({
                       <button
                         onClick={() => onRemoveFromFolder(w.id, activeFolder.id)}
                         className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
-                        title="লিস্ট থেকে রিমুভ করুন"
+                        title="Remove from list"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -226,12 +226,12 @@ export default function CustomLists({
             </div>
 
             <div className="border-t border-slate-100 pt-4 mt-6 text-xs text-slate-400 font-sans">
-              টিপস: আপনি একসাথে একাধিক ফোল্ডার তৈরি করে পড়া গুছিয়ে নিতে পারেন।
+              Tip: You can create multiple lists to organize your studies.
             </div>
           </div>
         ) : (
           <div className="bg-white p-12 rounded-2xl border border-slate-200/60 shadow-xs text-center flex flex-col justify-center items-center h-[400px]">
-            <p className="text-slate-400 font-sans">অনুগ্রহ করে কোনো ফোল্ডার নির্বাচন করুন বা বাম দিকে নতুন ফোল্ডার তৈরি করুন।</p>
+            <p className="text-slate-400 font-sans">Please select a list or create a new list on the left.</p>
           </div>
         )}
       </div>

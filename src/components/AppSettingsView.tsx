@@ -702,11 +702,11 @@ export default function AppSettingsView({
             <div className="bg-rose-50/40 border border-rose-200 rounded-xl p-5 sm:p-6 space-y-4">
               <div className="flex items-center gap-2 text-rose-800">
                 <Trash2 className="w-4 h-4 text-rose-600" />
-                <h2 className="text-xs font-bold tracking-wider uppercase">Danger Zone / ডেঞ্জার জোন</h2>
+                <h2 className="text-xs font-bold tracking-wider uppercase">Danger Zone</h2>
               </div>
               
               <p className="text-xs text-rose-600/90 leading-relaxed font-semibold">
-                আপনার পড়াশোনার সমস্ত প্রগ্রেস, স্ট্রিক এবং কাস্টম লিস্ট চিরতরে মুছে ফেলতে এখানে ক্লিক করুন। এটি পুনরায় ফিরিয়ে আনা সম্ভব নয়।
+                Click here to permanently delete all your study progress, streaks, and custom lists. This action cannot be undone.
               </p>
 
               <button
@@ -714,7 +714,7 @@ export default function AppSettingsView({
                 className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-rose-500/10 hover:shadow-md"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>রিসেট করুন (Reset All Progress)</span>
+                <span>Reset All Progress</span>
               </button>
             </div>
 

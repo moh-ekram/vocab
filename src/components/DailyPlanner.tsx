@@ -58,25 +58,25 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
           <div className="flex justify-between items-center border-b border-slate-100 pb-3">
             <h3 className="font-extrabold text-slate-800 flex items-center gap-2">
               <CheckSquare className="w-5 h-5 text-indigo-600" />
-              আজকের পড়াশোনার চেকলিস্ট
+              Today's Study Checklist
             </h3>
-            <span className="text-xs text-slate-400 font-sans">তাত্ক্ষণিক কর্মপরিকল্পনা</span>
+            <span className="text-xs text-slate-400 font-sans">Daily Action Plan</span>
           </div>
 
           <div className="space-y-4 font-sans">
             {/* Task 1 */}
             <div className="flex gap-4 p-4 bg-indigo-50/20 border border-indigo-100/50 rounded-xl">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
-                ১
+                1
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-slate-800 text-sm">প্রতিদিনের লক্ষ্য পূরণ করুন</p>
-                <p className="text-xs text-slate-500">আজকের জন্য আরও {Math.max(0, goal.dailyTarget - wordsStudiedToday)}টি শব্দ পড়তে হবে।</p>
+                <p className="font-bold text-slate-800 text-sm">Complete Daily Target</p>
+                <p className="text-xs text-slate-500">You need to study {Math.max(0, goal.dailyTarget - wordsStudiedToday)} more words today.</p>
                 <div className="flex items-center gap-2 pt-1">
                   <div className="w-32 bg-indigo-100 h-1.5 rounded-full overflow-hidden">
                     <div className="bg-indigo-600 h-full" style={{ width: `${progressPercent}%` }}></div>
                   </div>
-                  <span className="text-[10px] font-bold text-indigo-600">{progressPercent}% সম্পন্ন</span>
+                  <span className="text-[10px] font-bold text-indigo-600">{progressPercent}% Completed</span>
                 </div>
               </div>
             </div>
@@ -84,17 +84,17 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
             {/* Task 2 */}
             <div className="flex gap-4 p-4 bg-amber-50/20 border border-amber-100/50 rounded-xl">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
-                ২
+                2
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-slate-800 text-sm">দুর্বল শব্দসমূহ রিভিউ করুন</p>
-                <p className="text-xs text-slate-500">আপনার ভুল হওয়া বা কনফিউশন থাকা মোট <span className="font-bold text-amber-600">{weakWords.length}টি শব্দ</span> রিভিউ করা প্রয়োজন।</p>
+                <p className="font-bold text-slate-800 text-sm">Review Weak Words</p>
+                <p className="text-xs text-slate-500">You need to review <span className="font-bold text-amber-600">{weakWords.length} weak/confused words</span>.</p>
                 {weakWords.length > 0 && (
                   <button
                     onClick={onLaunchPractice}
                     className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 mt-1"
                   >
-                    রিভিউ সেশন শুরু করুন &rarr;
+                    Start Review Session &rarr;
                   </button>
                 )}
               </div>
@@ -103,11 +103,11 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
             {/* Task 3 */}
             <div className="flex gap-4 p-4 bg-blue-50/20 border border-blue-100/50 rounded-xl">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
-                ৩
+                3
               </div>
               <div className="space-y-1">
-                <p className="font-bold text-slate-800 text-sm">শব্দমিল ও কুইজ প্র্যাকটিস</p>
-                <p className="text-xs text-slate-500">নিয়মিত কুইজ এবং শব্দমিল প্র্যাকটিস করলে মনে রাখার ক্ষমতা দ্বিগুণ বৃদ্ধি পায়।</p>
+                <p className="font-bold text-slate-800 text-sm">Word Match & Quiz Practice</p>
+                <p className="text-xs text-slate-500">Regular quiz and word match practice doubles retention power.</p>
               </div>
             </div>
           </div>
@@ -117,27 +117,27 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
         <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs space-y-4">
           <h3 className="font-extrabold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100">
             <BrainCircuit className="w-5 h-5 text-indigo-600" />
-            স্মরণশক্তি বৃদ্ধির বিজ্ঞানসম্মত টিপস
+            Scientific Memory Boost Tips
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans text-xs">
             <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-200/60 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-indigo-700">
                 <Star className="w-4 h-4 fill-current" />
-                <span>স্পেসড রিপিটিশন</span>
+                <span>Spaced Repetition</span>
               </div>
               <p className="text-slate-500 leading-relaxed">
-                যে শব্দগুলো কনফিউশন বা ভুল হয়েছে, সেগুলো পরের দিন, তারপরের ৩ দিন এবং পরবর্তী ৭ দিন রিভিউ করুন।
+                Review the confused or incorrect words the next day, then 3 days later, and then 7 days later.
               </p>
             </div>
 
             <div className="p-3 bg-slate-50/50 rounded-xl border border-slate-200/60 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-indigo-700">
                 <Clock className="w-4 h-4" />
-                <span>মর্নিং রিডিং ইফেক্ট</span>
+                <span>Morning Reading Effect</span>
               </div>
               <p className="text-slate-500 leading-relaxed">
-                ভোরে ঘুম থেকে ওঠার পর প্রথম ১ ঘণ্টা কগনিটিভ লার্নিং সবচেয়ে দ্রুত হয়। সকালে অন্তত ১০টি নতুন শব্দ শেখার অভ্যাস করুন।
+                Cognitive learning is fastest during the first hour after waking up. Make a habit of learning at least 10 words in the morning.
               </p>
             </div>
           </div>
@@ -151,16 +151,16 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
           <div className="space-y-1 pb-3 border-b border-slate-100">
             <h3 className="font-extrabold text-slate-800 flex items-center gap-2">
               <CalIcon className="w-5 h-5 text-indigo-600" />
-              ক্যালেন্ডার ও স্ট্রিক ট্র্যাকার
+              Calendar & Streak Tracker
             </h3>
-            <p className="text-xs text-slate-400 font-sans">আপনার ধারাবাহিকতার রিপোর্ট</p>
+            <p className="text-xs text-slate-400 font-sans">Your Consistency Report</p>
           </div>
 
           {/* Large Streak Gauge */}
           <div className="bg-gradient-to-br from-indigo-50/60 to-slate-50/50 p-4 rounded-xl border border-indigo-100/60 flex items-center justify-between">
             <div className="space-y-1 font-sans">
-              <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider">অ্যাক্টিভ স্ট্রিক</span>
-              <p className="text-2xl font-black text-indigo-950">{goal.streak} দিন</p>
+              <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider">Active Streak</span>
+              <p className="text-2xl font-black text-indigo-950">{goal.streak} Days</p>
             </div>
             <div className="p-3 bg-indigo-600 rounded-xl text-white animate-pulse shadow-md shadow-indigo-600/20">
               <Flame className="w-7 h-7 fill-current" />
@@ -169,7 +169,7 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
 
           {/* Week Calendar visual */}
           <div className="space-y-3 font-sans">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">গত ৭ দিনের রিপোর্ট</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Last 7 Days Report</p>
             <div className="grid grid-cols-7 gap-1.5">
               {last7Days.map((d, idx) => (
                 <div
@@ -179,7 +179,7 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm font-bold'
                       : 'bg-white border-slate-200 text-slate-500'
                   }`}
-                  title={`${d.dateStr}: ${d.studiedCount} শব্দ পড়া হয়েছে`}
+                  title={`${d.dateStr}: ${d.studiedCount} words studied`}
                 >
                   <span className="text-[9px] uppercase">{d.weekday}</span>
                   <span className="text-xs">{d.dayNum}</span>
@@ -189,10 +189,12 @@ export default function DailyPlanner({ words, progress, goal, setGoal, onLaunchP
           </div>
 
           <p className="text-[11px] text-slate-400 font-sans text-center">
-            প্রতিদিন অন্তত ১টি শব্দ পড়লেও আপনার পড়াশোনার স্ট্রিক সচল থাকবে!
+            Studying at least 1 word a day keeps your active streak alive!
           </p>
         </div>
       </div>
+
+
     </div>
   );
 }

@@ -106,4 +106,23 @@ export interface BlankQuestion {
   createdAt?: string;
 }
 
+export interface OddOneOutQuestion {
+  id: string;
+  words: string[]; // 4 words, e.g. ["benevolent", "generous", "kind", "malevolent"]
+  answer: string;  // e.g. "malevolent"
+  reason?: string; // explanation
+  courseId?: string;
+  createdAt?: string;
+}
+
+export interface WordAnalogyQuestion {
+  id: string;
+  analogy: string;  // e.g. "light : dark"
+  options: string[]; // 4 word pairs, e.g. ["hot : cold", "big : huge", "fast : quick", "soft : smooth"]
+  answer: string;   // e.g. "hot : cold"
+  explanation?: string;
+  courseId?: string;
+  createdAt?: string;
+}
+
 

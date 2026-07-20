@@ -73,7 +73,7 @@ export default function StudyToolsCenter({
             className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer self-start"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>ফিরে যান (Back to Hub)</span>
+            <span>Back to Hub</span>
           </button>
 
           {/* Sub Navigation Capsules */}
@@ -87,7 +87,7 @@ export default function StudyToolsCenter({
               }`}
             >
               <BookMarked className="w-3.5 h-3.5" />
-              <span>Bookmark (বুকমার্ক)</span>
+              <span>Bookmark</span>
             </button>
             <button
               onClick={() => setSubTab('dictionary')}
@@ -98,7 +98,7 @@ export default function StudyToolsCenter({
               }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Dictionary (অভিধান)</span>
+              <span>Dictionary</span>
             </button>
             <button
               onClick={() => setSubTab('planner')}
@@ -109,7 +109,7 @@ export default function StudyToolsCenter({
               }`}
             >
               <CalendarCheck2 className="w-3.5 h-3.5" />
-              <span>Planner (পরিকল্পনাকারী)</span>
+              <span>Planner</span>
             </button>
           </div>
         </div>
@@ -125,9 +125,9 @@ export default function StudyToolsCenter({
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-500/20 text-indigo-200 text-[10px] font-bold rounded-full uppercase tracking-wider border border-indigo-500/30">
                 Resource Hub
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Study Tools (সহায়ক টুলসমূহ)</h2>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Study Tools</h2>
               <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed font-medium">
-                আপনার পড়াশোনাকে আরও গোছানো এবং পরিকল্পিত করতে নিচের সহায়ক টুলগুলো ব্যবহার করুন। বুকমার্ক, অভিধান ও ডেইলি প্ল্যানার একসাথে সাজানো হয়েছে।
+                Use the study tools below to make your learning organized and planned. Bookmarks, Dictionary, and Daily Planner are integrated here.
               </p>
             </div>
           </div>
@@ -152,14 +152,14 @@ export default function StudyToolsCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Bookmark & Lists</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    গুরুত্বপূর্ণ এবং কঠিন শব্দগুলো কাস্টম ফোল্ডারে বুকমার্ক করে আপনার রিভিশন প্রসেসকে কাস্টমাইজড রাখুন।
+                    Keep your revision process customized by bookmarking important and difficult words in custom lists.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">{folders.length} Folders</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-                  <span>ফোল্ডার খুলুন</span>
+                  <span>Open Lists</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -179,14 +179,14 @@ export default function StudyToolsCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Dictionary</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    শব্দ ভাণ্ডার থেকে খুব দ্রুত যেকোনো শব্দ সার্চ করে তার বাংলা অর্থ, উদাহরণ, এবং সমার্থক শব্দ জেনে নিন।
+                    Quickly search any word from the vocabulary to learn its meaning, example sentences, and synonyms.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">Search Words</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-                  <span>অভিধান খুলুন</span>
+                  <span>Open Dictionary</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -206,14 +206,14 @@ export default function StudyToolsCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Daily Planner</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    দৈনিক পড়াশোনার লক্ষ্য ঠিক করুন এবং স্টাডি গোল ট্র্যাক করে আপনার পড়াশোনাতে ধারাবাহিকতা বজায় রাখুন।
+                    Set your daily study goals and track progress to maintain consistency in your studies.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">Goal: {goal.dailyTarget} Words</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-                  <span>প্ল্যানার খুলুন</span>
+                  <span>Open Planner</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>

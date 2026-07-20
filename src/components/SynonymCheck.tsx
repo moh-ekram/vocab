@@ -483,7 +483,7 @@ export default function SynonymCheck({
           
           {/* Select Group (Multi-select) */}
           <div className="space-y-1 relative" id="synonym-group-multi-selector">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Vocabulary Groups</label>
             <button
               type="button"
               onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
@@ -491,10 +491,10 @@ export default function SynonymCheck({
             >
               <span className="truncate max-w-[160px]">
                 {selectedGroups.length === uniqueGroups.length 
-                  ? 'সকল গ্রুপ' 
+                  ? 'All Groups' 
                   : selectedGroups.length === 0 
-                  ? 'কোনো গ্রুপ নেই' 
-                  : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
+                  ? 'No Groups' 
+                  : `${selectedGroups.length} Groups Selected`}
               </span>
               <span className="text-[10px] text-slate-400">▼</span>
             </button>
@@ -504,14 +504,14 @@ export default function SynonymCheck({
                 <div className="fixed inset-0 z-10" onClick={() => setIsGroupDropdownOpen(false)} />
                 <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-3 font-sans">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                    <span className="text-xs font-bold text-slate-600">Group Filter ({selectedGroups.length})</span>
                     <div className="flex gap-2 text-[10px]">
                       <button
                         type="button"
                         onClick={() => setSelectedGroups(uniqueGroups)}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব সিলেক্ট
+                        Select All
                       </button>
                       <span className="text-slate-300">|</span>
                       <button
@@ -519,7 +519,7 @@ export default function SynonymCheck({
                         onClick={() => setSelectedGroups([])}
                         className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব মুছুন
+                        Clear All
                       </button>
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export default function SynonymCheck({
                       onClick={() => setIsGroupDropdownOpen(false)}
                       className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
                     >
-                      ঠিক আছে
+                      OK
                     </button>
                   </div>
                 </div>
@@ -566,7 +566,7 @@ export default function SynonymCheck({
 
           {/* Select Status / Synonym Check tag (Multi-select) */}
           <div className="space-y-1 relative" id="synonym-status-multi-selector">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">সিনোনিম ট্যাগ ফিল্টার</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Synonym Status Tag</label>
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -574,13 +574,13 @@ export default function SynonymCheck({
             >
               <span className="truncate max-w-[160px]">
                 {selectedStatuses.length === 3 
-                  ? 'সকল ট্যাগ' 
+                  ? 'All Tags' 
                   : selectedStatuses.length === 0 
-                  ? 'কোনো ট্যাগ নেই' 
+                  ? 'No Tags' 
                   : selectedStatuses.map(s => {
-                      if (s === 'know') return 'সঠিক';
-                      if (s === 'dont_know') return 'ভুল';
-                      return 'পড়া হয়নি';
+                      if (s === 'know') return 'Correct';
+                      if (s === 'dont_know') return 'Incorrect';
+                      return 'Not Started';
                     }).join(', ')}
               </span>
               <span className="text-[10px] text-slate-400">▼</span>
@@ -591,14 +591,14 @@ export default function SynonymCheck({
                 <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-2.5 font-sans animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                    <span className="text-xs font-bold text-slate-600 font-sans">Tag Filter</span>
                     <div className="flex gap-2 text-[10px]">
                       <button
                         type="button"
                         onClick={() => setSelectedStatuses(['know', 'dont_know', 'unrated'])}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব সিলেক্ট
+                        Select All
                       </button>
                       <span className="text-slate-200">|</span>
                       <button
@@ -606,16 +606,16 @@ export default function SynonymCheck({
                         onClick={() => setSelectedStatuses([])}
                         className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব মুছুন
+                        Clear All
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     {[
-                      { key: 'know', label: 'সঠিক (সবুজ)', color: 'bg-emerald-500' },
-                      { key: 'dont_know', label: 'ভুল (লাল)', color: 'bg-rose-500' },
-                      { key: 'unrated', label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400' }
+                      { key: 'know', label: 'Correct (Green)', color: 'bg-emerald-500' },
+                      { key: 'dont_know', label: 'Incorrect (Red)', color: 'bg-rose-500' },
+                      { key: 'unrated', label: 'Not Started (Gray)', color: 'bg-slate-400' }
                     ].map(st => {
                       const isSelected = selectedStatuses.includes(st.key);
                       return (
@@ -651,7 +651,7 @@ export default function SynonymCheck({
                       onClick={() => setIsStatusDropdownOpen(false)}
                       className="px-3.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
                     >
-                      ঠিক আছে
+                      OK
                     </button>
                   </div>
                 </div>
@@ -661,13 +661,13 @@ export default function SynonymCheck({
 
           {/* Custom Bookmarks Select */}
           <div className="space-y-1" id="synonym-folder-selector">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">বুকমার্ক লিস্ট</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Bookmark List</label>
             <select
               value={selectedFolder}
               onChange={(e) => setSelectedFolder(e.target.value)}
               className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer"
             >
-              <option value="all">সকল লিস্ট</option>
+              <option value="all">All Lists</option>
               {folders.map(f => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
@@ -676,7 +676,7 @@ export default function SynonymCheck({
 
           {/* Study Order Control */}
           <div className="space-y-1 font-sans" id="synonym-study-order">
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">পড়ার ক্রম (Study Order)</label>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Study Order</label>
             <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 items-center gap-1">
               {['serial', 'alphabetical', 'random'].map((order) => (
                 <button
@@ -689,7 +689,7 @@ export default function SynonymCheck({
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  {order === 'serial' ? 'সিরিয়াল' : order === 'alphabetical' ? 'A-Z' : 'র্যান্ডম'}
+                  {order === 'serial' ? 'Serial' : order === 'alphabetical' ? 'A-Z' : 'Random'}
                 </button>
               ))}
             </div>
@@ -697,8 +697,8 @@ export default function SynonymCheck({
               <button
                 type="button"
                 onClick={() => setShuffleKey(prev => prev + 1)}
-                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-1 rounded-lg cursor-pointer transition flex items-center justify-center mt-0.5 ml-1 absolute left-full top-0"
-                title="পুনরায় শাফেল করুন"
+                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-550 p-1 rounded-lg cursor-pointer transition flex items-center justify-center mt-0.5 ml-1 absolute left-full top-0"
+                title="Reshuffle"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -714,7 +714,7 @@ export default function SynonymCheck({
           }`}
         >
           <Keyboard className="w-4 h-4" />
-          <span className="font-sans">কীবোর্ড শর্টকাট</span>
+          <span className="font-sans">Keyboard Shortcuts</span>
         </button>
       </div>
 
@@ -722,20 +722,20 @@ export default function SynonymCheck({
       {showHotkeysHelp && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900 grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner animate-fadeIn">
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">1-5</kbd> নম্বর কী</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">১ম থেকে ৫offset অপশন সিলেক্ট</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">1-5</kbd> Number Keys</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Select option 1 to 5</p>
           </div>
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Enter</kbd> এন্টার কী</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">উত্তর যাচাই / পরবর্তী শব্দ</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Enter</kbd> Enter Key</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Verify answer / Next word</p>
           </div>
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">➡</kbd> ডান অ্যারো</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">পরবর্তী শব্দে যান</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">➡</kbd> Right Arrow</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Go to next word</p>
           </div>
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬅</kbd> বাম অ্যারো</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">পূর্ববর্তী শব্দে ফিরুন</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬅</kbd> Left Arrow</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Return to previous word</p>
           </div>
         </div>
       )}
@@ -747,9 +747,9 @@ export default function SynonymCheck({
             <Info className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-lg font-bold text-gray-800">কোনো শব্দ মেলেনি!</h3>
+            <h3 className="text-lg font-bold text-gray-800">No words found!</h3>
             <p className="text-sm text-gray-500 font-sans">
-              আপনার নির্বাচিত ফিল্টার বা ক্যাটাগরিতে কোনো শব্দ খুঁজে পাওয়া যায়নি। অনুগ্রহ করে ফিল্টার পরিবর্তন করে পুনরায় চেষ্টা করুন।
+              No words found matching your selected filters or category. Please change filters and try again.
             </p>
           </div>
           <button
@@ -760,7 +760,7 @@ export default function SynonymCheck({
             }}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans"
           >
-            ফিল্টার রিসেট করুন
+            Reset Filters
           </button>
         </div>
       ) : (
@@ -793,9 +793,9 @@ export default function SynonymCheck({
                       <div className="p-3 rounded-xl border flex items-start gap-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-950 font-medium">
                         <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <div>
-                          <h4 className="text-xs font-black text-emerald-900">দারুণ হয়েছে! আপনার নির্বাচন সঠিক হয়েছে।</h4>
+                          <h4 className="text-xs font-black text-emerald-900">Great job! Your selection is correct.</h4>
                           <p className="text-[10px] text-emerald-600 font-bold mt-0.5">
-                            সমার্থক শব্দগুলো সাফল্যের সাথে শিখেছেন। প্রগ্রেস স্কোর যুক্ত হয়েছে।
+                            Synonyms successfully learned. Progress score updated.
                           </p>
                         </div>
                       </div>
@@ -855,12 +855,12 @@ export default function SynonymCheck({
                         isCorrectOption ? (
                           <div className="flex items-center gap-1 bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-lg text-[10px] font-black">
                             <Check className="w-3 h-3 stroke-[3.5]" />
-                            <span className="font-sans font-bold">সঠিক</span>
+                            <span className="font-sans font-bold">Correct</span>
                           </div>
                         ) : isSelected ? (
                           <div className="flex items-center gap-1 bg-rose-100 text-rose-800 px-2.5 py-1 rounded-lg text-[10px] font-black">
                             <XCircle className="w-3 h-3" />
-                            <span className="font-sans font-bold">ভুল</span>
+                            <span className="font-sans font-bold">Incorrect</span>
                           </div>
                         ) : null
                       ) : (
@@ -884,7 +884,7 @@ export default function SynonymCheck({
                 <button
                   onClick={handlePrev}
                   className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 active:scale-95 rounded-lg border border-slate-200 transition cursor-pointer"
-                  title="পূর্ববর্তী শব্দ"
+                  title="Previous Word"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -894,7 +894,7 @@ export default function SynonymCheck({
                 <button
                   onClick={handleNext}
                   className="p-2 bg-slate-50 text-slate-600 hover:bg-slate-100 active:scale-95 rounded-lg border border-slate-200 transition cursor-pointer"
-                  title="পরবর্তী শব্দ"
+                  title="Next Word"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -907,7 +907,7 @@ export default function SynonymCheck({
                     onClick={handleNext}
                     className="w-full sm:w-auto px-6 py-2 rounded-xl text-xs font-extrabold shadow-sm flex items-center justify-center gap-2 transition cursor-pointer bg-slate-950 hover:bg-slate-800 text-white"
                   >
-                    <span>{currentIndex === filteredWords.length - 1 ? 'পুনরায় প্রথম শব্দ' : 'পরবর্তী শব্দে যান'}</span>
+                    <span>{currentIndex === filteredWords.length - 1 ? 'Restart Word List' : 'Go to Next Word'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
@@ -927,17 +927,17 @@ export default function SynonymCheck({
               
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4.5 h-4.5 text-amber-400" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">সার্বাঙ্গিক কুইজ অগ্রগতি</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Overall Quiz Progress</span>
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-b border-indigo-900 pb-3 z-10 relative">
                 <div>
-                  <span className="text-[10px] text-indigo-300 block font-bold">মোট সম্পূর্ণ শব্দ</span>
-                  <p className="text-xl font-black font-sans">{toBengaliNumber(overallStats.completed)} / {toBengaliNumber(overallStats.total)}</p>
+                  <span className="text-[10px] text-indigo-300 block font-bold">Total Completed Words</span>
+                  <p className="text-xl font-black font-sans">{overallStats.completed} / {overallStats.total}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-indigo-300 block font-bold">অর্জি অগ্রগতি</span>
-                  <p className="text-xl font-black font-sans text-emerald-400">{toBengaliNumber(overallStats.percent)}%</p>
+                  <span className="text-[10px] text-indigo-300 block font-bold">Progress Achieved</span>
+                  <p className="text-xl font-black font-sans text-emerald-400">{overallStats.percent}%</p>
                 </div>
               </div>
 
@@ -949,7 +949,7 @@ export default function SynonymCheck({
               </div>
 
               <p className="text-[11px] text-indigo-200 font-sans leading-relaxed">
-                সকল ভোকাবুলারি গ্রুপের শব্দগুলোর সমার্থক শব্দ সঠিক হলে আপনার প্রগ্রেস রেট বৃদ্ধি পাবে।
+                Your progress rate increases when you answer synonyms correctly across all vocabulary groups.
               </p>
             </div>
 
@@ -957,38 +957,38 @@ export default function SynonymCheck({
             <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs space-y-3.5">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 pb-2.5 border-b border-slate-100 text-xs">
                 <Tag className="w-4 h-4 text-indigo-600" />
-                শব্দ কন্টেন্ট তথ্য (Content Info)
+                Word Content Info
               </h3>
 
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-bold">বর্তমান শব্দ গ্রুপ:</span>
+                  <span className="text-xs text-slate-500 font-bold">Current Word Group:</span>
                   <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 font-extrabold text-[11px] rounded-lg">
-                    গ্রুপ {currentActiveWord.group}
+                    Group {currentActiveWord.group}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-bold">শব্দ ক্রমিক:</span>
+                  <span className="text-xs text-slate-500 font-bold">Word Sequence:</span>
                   <span className="px-2.5 py-1 bg-indigo-50 text-indigo-800 font-extrabold text-[11px] rounded-lg">
-                    শব্দ {currentIndex + 1} / {filteredWords.length}
+                    Word {currentIndex + 1} / {filteredWords.length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500 font-bold">অগ্রগতি স্ট্যাটাস:</span>
+                  <span className="text-xs text-slate-500 font-bold">Progress Status:</span>
                   <div className="flex items-center gap-1.5">
                     {activeStatus?.correct === true && (
                       <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                        <CheckCircle2 className="w-3 h-3" /> সঠিক
+                        <CheckCircle2 className="w-3 h-3" /> Correct
                       </span>
                     )}
                     {activeStatus?.correct === false && (
                       <span className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full">
-                        <XCircle className="w-3 h-3" /> ভুল
+                        <XCircle className="w-3 h-3" /> Incorrect
                       </span>
                     )}
                     {!activeStatus && (
                       <span className="text-[11px] text-slate-400 bg-slate-50 px-2.5 py-0.5 rounded-full font-sans">
-                        পড়া হয়নি
+                        Not Started
                       </span>
                     )}
                   </div>
@@ -1001,9 +1001,9 @@ export default function SynonymCheck({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-xs font-black text-slate-800 flex items-center gap-2">
                   <Award className="w-4 h-4 text-amber-500" />
-                  <span>গ্রুপভিত্তিক অগ্রগতি</span>
+                  <span>Groupwise Progress</span>
                 </h3>
-                <span className="text-[10px] text-slate-400 font-bold font-sans">ক্লিক করুন ফিল্টার করতে</span>
+                <span className="text-[10px] text-slate-400 font-bold font-sans">Click to filter</span>
               </div>
 
               <div className="grid grid-cols-1 gap-2.5 max-h-[350px] overflow-y-auto pr-1">
@@ -1025,9 +1025,9 @@ export default function SynonymCheck({
                       }`}
                     >
                       <div className="flex justify-between items-center text-[11px] font-extrabold">
-                        <span className="text-slate-700">গ্রুপ {toBengaliNumber(gVal)}</span>
+                        <span className="text-slate-700">Group {gVal}</span>
                         <span className="text-slate-400 font-normal font-sans">
-                          {toBengaliNumber(stats.completed)} / {toBengaliNumber(stats.total)}
+                          {stats.completed} / {stats.total}
                         </span>
                       </div>
 
@@ -1039,8 +1039,8 @@ export default function SynonymCheck({
                           />
                         </div>
                         <div className="flex justify-between items-center text-[8px] font-bold">
-                          <span className="text-slate-400">অগ্রগতি</span>
-                          <span className="text-indigo-600">{toBengaliNumber(stats.percent)}%</span>
+                          <span className="text-slate-400">Progress</span>
+                          <span className="text-indigo-600">{stats.percent}%</span>
                         </div>
                       </div>
                     </div>
@@ -1053,7 +1053,7 @@ export default function SynonymCheck({
                   onClick={() => setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1))}
                   className="text-xs font-black text-indigo-600 hover:text-indigo-700 transition hover:underline cursor-pointer"
                 >
-                  সব গ্রুপ পুনরায় সিলেক্ট করুন
+                  Select All Groups Again
                 </button>
               </div>
             </div>

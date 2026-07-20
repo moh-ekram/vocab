@@ -112,22 +112,7 @@ export default function StatsDashboard({
       } else {
         setCheckoutMessage({
           type: 'success',
-          text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্সের এক্সেস এপ্রুভ করে দেবেন।'
-        });
-      }
-      setBkashSender('');
-      setTrxId('');
-      
-      // Auto-dismiss or reset after 4 seconds
-      setTimeout(() => {
-        setSelectedBuyCourse(null);
-        setCheckoutMessage(null);
-      }, 4000);
-    } catch (err) {
-      console.error('Error submitting access request:', err);
-      setCheckoutMessage({
-        type: 'error',
-        text: 'অনুরোধ পাঠাতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।'
+          text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্স�        text: 'Failed to send request. Please try again.'
       });
     } finally {
       setIsSubmittingRequest(false);
@@ -143,7 +128,7 @@ export default function StatsDashboard({
   const handleImportByCode = async () => {
     const rawCode = inputCourseCode.trim();
     if (!rawCode) {
-      setImportError('অনুগ্রহ করে একটি কোর্স কোড লিখুন।');
+      setImportError('Please enter a course code.');
       return;
     }
     
@@ -158,7 +143,7 @@ export default function StatsDashboard({
       const existing = allCourses.find(c => c.id === rawCode || c.id === codeLower);
       if (existing) {
         onImportCourse(existing);
-        setImportSuccess(`সফলভাবে "${existing.title}" কোর্সে যুক্ত হয়েছেন!`);
+        setImportSuccess(`Successfully joined "${existing.title}" course!`);
         setInputCourseCode('');
         setTimeout(() => {
           setShowEnrollModal(false);
@@ -179,18 +164,18 @@ export default function StatsDashboard({
       if (docSnap.exists()) {
         const courseData = docSnap.data() as Course;
         onImportCourse(courseData);
-        setImportSuccess(`সফলভাবে "${courseData.title}" কোর্সটি ক্লাউড থেকে ইমপোর্ট করা হয়েছে!`);
+        setImportSuccess(`Successfully imported "${courseData.title}" course from cloud!`);
         setInputCourseCode('');
         setTimeout(() => {
           setShowEnrollModal(false);
           setImportSuccess(null);
         }, 1500);
       } else {
-        setImportError('এই কোডের কোনো কোর্স পাওয়া যায়নি। অনুগ্রহ করে সঠিক কোর্স কোড দিন।');
+        setImportError('No course found with this code. Please enter a correct course code.');
       }
     } catch (err) {
       console.error('Error importing course by code:', err);
-      setImportError('কোর্স ইমপোর্ট করতে ব্যর্থ হয়েছে। নেটওয়ার্ক চেক করে আবার চেষ্টা করুন।');
+      setImportError('Failed to import course. Please check your network and try again.');
     } finally {
       setIsImporting(false);
     }
@@ -234,7 +219,7 @@ export default function StatsDashboard({
         fetchedList.push({
           id: doc.id,
           email: data.email || 'Anonymous',
-          displayName: data.displayName || data.email?.split('@')[0] || 'শিক্ষার্থী',
+          displayName: data.displayName || data.email?.split('@')[0] || 'Student',
           streak: data.goal?.streak || 0,
           knowCount: knowWordCount,
           isCurrentUser: auth.currentUser?.uid === doc.id
@@ -255,6 +240,33 @@ export default function StatsDashboard({
   }, []);
 
   // 1. Calculate overall counts
+  const totalWords = words.length;
+  let knowCount = 0;
+  let dontKnowCount = 0;
+  let confusionCount = 0;
+  let unratedCount = 0;
+
+  words.forEach(w => {
+    const status = progress[w.id]?.status || 'unrated';
+    if (status === 'know') knowCount++;
+    else if (status === 'dont_know') dontKnowCount++;
+    else if (status === 'confusion') confusionCount++;
+    else unratedCount++;
+  });
+
+  const overallCompleteness = totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0;
+
+  // Compute final merged leaderboard using ONLY real users
+  const currentUserId = auth.currentUser?.uid || 'current-local';
+  const currentUserStats = {
+    id: currentUserId,
+    displayName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'You',
+    email: auth.currentUser?.email || 'local-user',
+    streak: goal.streak || 1,
+    knowCount: knowCount,
+    isCurrentUser: true,
+    isMock: false
+  };// 1. Calculate overall counts
   const totalWords = words.length;
   let knowCount = 0;
   let dontKnowCount = 0;

@@ -7,12 +7,16 @@ import {
   ArrowLeft,
   Gamepad2,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  HelpCircle,
+  Shuffle
 } from 'lucide-react';
 import SynonymCheck from './SynonymCheck';
 import PracticeQuiz from './PracticeQuiz';
 import WordMatchGame from './WordMatchGame';
 import BlankFillingPractice from './BlankFillingPractice';
+import OddOneOutGame from './OddOneOutGame';
+import WordAnalogyGame from './WordAnalogyGame';
 import { VocabularyWord, WordStatus, CustomFolder, AppSettings, UserProgress } from '../types';
 
 interface PracticeCenterProps {
@@ -50,12 +54,46 @@ export default function PracticeCenter({
   activeCourseId,
   enabledGames
 }: PracticeCenterProps) {
-  const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank'>('hub');
+  const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank' | 'odd_one_out' | 'analogy'>('hub');
 
   const isQuizEnabled = !enabledGames || enabledGames.quiz !== false;
   const isMatchEnabled = !enabledGames || enabledGames.match !== false;
   const isSynonymEnabled = !enabledGames || enabledGames.synonym !== false;
   const isBlankEnabled = !enabledGames || enabledGames.blank !== false;
+  const isOddOneOutEnabled = !enabledGames || enabledGames.odd_one_out !== false;
+  const isAnalogyEnabled = !enabledGames || enabledGames.analogy !== false;
+
+  const [oooProgress, setOooProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_ooo_progress');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [analogyProgress, setAnalogyProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_analogy_progress');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const handleUpdateOooProgress = (questionId: string, correct: boolean) => {
+    setOooProgress(prev => {
+      const next = {
+        ...prev,
+        [questionId]: { correct, updatedAt: new Date().toISOString() }
+      };
+      localStorage.setItem('vocab_memorizer_ooo_progress', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleUpdateAnalogyProgress = (questionId: string, correct: boolean) => {
+    setAnalogyProgress(prev => {
+      const next = {
+        ...prev,
+        [questionId]: { correct, updatedAt: new Date().toISOString() }
+      };
+      localStorage.setItem('vocab_memorizer_analogy_progress', JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Stagger animation variants for cards
   const containerVariants = {
@@ -83,7 +121,7 @@ export default function PracticeCenter({
             className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer self-start"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>ফিরে যান (Back to Hub)</span>
+            <span>Back to Hub</span>
           </button>
 
           {/* Sub Navigation Capsules */}
@@ -138,6 +176,32 @@ export default function PracticeCenter({
               >
                 <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Blank Filling</span>
+              </button>
+            )}
+            {isOddOneOutEnabled && (
+              <button
+                onClick={() => setSubTab('odd_one_out')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'odd_one_out'
+                    ? 'bg-sky-50 text-sky-700 border border-sky-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-sky-650" />
+                <span>Odd One Out</span>
+              </button>
+            )}
+            {isAnalogyEnabled && (
+              <button
+                onClick={() => setSubTab('analogy')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'analogy'
+                    ? 'bg-purple-50 text-purple-700 border border-purple-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <Shuffle className="w-3.5 h-3.5 text-purple-600" />
+                <span>Word Analogy</span>
               </button>
             )}
           </div>
@@ -282,13 +346,71 @@ export default function PracticeCenter({
               </motion.div>
             )}
 
+            {/* 5. Odd One Out Card */}
+            {isOddOneOutEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('odd_one_out')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-sky-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+                    <HelpCircle className="w-6 h-6 text-sky-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Odd One Out</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Identify the word that does not belong among a group of synonyms.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase font-mono">Word Selection</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-sky-600 transition">
+                    <span>Play Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* 6. Word Analogy Card */}
+            {isAnalogyEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('analogy')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-purple-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-650 flex items-center justify-center border border-purple-100">
+                    <Shuffle className="w-6 h-6 text-purple-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Word Analogy</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Solve logic relationships between word pairs.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-purple-600 tracking-wider uppercase font-mono">Logic Challenge</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-purple-600 transition">
+                    <span>Solve Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </motion.div>
+            )}
+
             {/* Empty State when no games are enabled */}
-            {!isQuizEnabled && !isMatchEnabled && !isSynonymEnabled && !isBlankEnabled && (
+            {!isQuizEnabled && !isMatchEnabled && !isSynonymEnabled && !isBlankEnabled && !isOddOneOutEnabled && !isAnalogyEnabled && (
               <div className="col-span-full py-12 text-center bg-white border border-slate-150 rounded-3xl p-8 space-y-3">
                 <Gamepad2 className="w-12 h-12 text-slate-350 mx-auto" />
-                <h3 className="font-extrabold text-slate-700 text-base">কোনো প্র্যাকটিস বা গেম উপলব্ধ নেই</h3>
+                <h3 className="font-extrabold text-slate-700 text-base">No practices or games available</h3>
                 <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto leading-relaxed">
-                  এডমিন এই কোর্সের জন্য বর্তমানে কোনো গেম বা প্র্যাকটিস হাব অপশন অন করেননি। (No practices or games are currently enabled by the admin for this course.)
+                  The admin has not enabled any practice or game options for this course.
                 </p>
               </div>
             )}
@@ -334,6 +456,24 @@ export default function PracticeCenter({
         <BlankFillingPractice
           blankProgress={blankProgress}
           onUpdateBlankProgress={onUpdateBlankProgress}
+          activeCourseId={activeCourseId}
+          words={words}
+        />
+      )}
+
+      {subTab === 'odd_one_out' && (
+        <OddOneOutGame
+          progress={oooProgress}
+          onUpdateProgress={handleUpdateOooProgress}
+          activeCourseId={activeCourseId}
+          words={words}
+        />
+      )}
+
+      {subTab === 'analogy' && (
+        <WordAnalogyGame
+          progress={analogyProgress}
+          onUpdateProgress={handleUpdateAnalogyProgress}
           activeCourseId={activeCourseId}
           words={words}
         />

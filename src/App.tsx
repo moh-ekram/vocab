@@ -111,8 +111,8 @@ export default function App() {
   const [folders, setFolders] = useState<CustomFolder[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_FOLDERS_KEY);
     return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'গুরুত্বপূর্ণ শব্দ (High Priority)', color: '#ef4444' },
-      { id: '2', name: 'কঠিন সিনোনিম (Hard Synonyms)', color: '#f59e0b' }
+      { id: '1', name: 'Important Words (High Priority)', color: '#ef4444' },
+      { id: '2', name: 'Hard Synonyms', color: '#f59e0b' }
     ];
   });
 
@@ -735,7 +735,7 @@ export default function App() {
   };
 
   const handleLogOut = async () => {
-    if (confirm('আপনি কি নিশ্চিত যে লগআউট করতে চান?')) {
+    if (confirm('Are you sure you want to log out?')) {
       try {
         await signOut(auth);
         
@@ -745,8 +745,8 @@ export default function App() {
 
         const savedFolders = localStorage.getItem(LOCAL_STORAGE_FOLDERS_KEY);
         setFolders(savedFolders ? JSON.parse(savedFolders) : [
-          { id: '1', name: 'গুরুত্বপূর্ণ শব্দ (High Priority)', color: '#ef4444' },
-          { id: '2', name: 'কঠিন সিনোনিম (Hard Synonyms)', color: '#f59e0b' }
+          { id: '1', name: 'Important Words (High Priority)', color: '#ef4444' },
+          { id: '2', name: 'Hard Synonyms', color: '#f59e0b' }
         ]);
 
         const savedGoal = localStorage.getItem(LOCAL_STORAGE_GOALS_KEY);
@@ -810,6 +810,18 @@ export default function App() {
     });
   }, []);
 
+  // Keep users active in at least one enrolled course by default so it does not remain empty
+  useEffect(() => {
+    if (enrolledCourseIds && enrolledCourseIds.length > 0) {
+      if (!activeCourseId || !enrolledCourseIds.includes(activeCourseId)) {
+        setActiveCourseId(enrolledCourseIds[0]);
+      }
+    } else {
+      setEnrolledCourseIds(['gre']);
+      setActiveCourseId('gre');
+    }
+  }, [enrolledCourseIds, activeCourseId]);
+
   // helper function to format current date string
   function getTodayString() {
     const d = new Date();
@@ -824,7 +836,7 @@ export default function App() {
   const defaultGreCourse: Course = {
     id: 'gre',
     title: dbGreCourse?.title || 'BARC Vocabulary Book',
-    description: dbGreCourse?.description || '৩৮ গ্রুপের ১১লোটি ব্যারনস ওয়ার্ড প্রিপারেশন কোর্স (Default)',
+    description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
     totalGroups: 37,
     words: vocabulary,
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,

@@ -218,9 +218,9 @@ export default function SearchDictionary({
     const rows = sortedResults.map((w, index) => {
       const statusVal = progress[w.id]?.status || 'unrated';
       const statusText = 
-        statusVal === 'know' ? 'পারি (Learned)' : 
-        statusVal === 'confusion' ? 'কনফিউশন (Confused)' : 
-        statusVal === 'dont_know' ? 'পারি না (Unlearned)' : 'পড়া হয়নি (Unrated)';
+        statusVal === 'know' ? 'Learned' : 
+        statusVal === 'confusion' ? 'Confused' : 
+        statusVal === 'dont_know' ? 'Unlearned' : 'Unrated';
       
       const notesVal = progress[w.id]?.notes || '';
       
@@ -246,7 +246,7 @@ export default function SearchDictionary({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `শব্দ_ভান্ডার_গ্রুপ_${selectedGroup}_কন্ডিশন_${selectedStatus}.csv`);
+    link.setAttribute("download", `vocabulary_group_${selectedGroup}_status_${selectedStatus}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -264,10 +264,10 @@ export default function SearchDictionary({
         <div>
           <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <BookOpen className="w-6 h-6 text-indigo-600" />
-            শব্দ ভান্ডার (Vocabulary Catalog)
+            Vocabulary Catalog
           </h2>
           <p className="text-sm text-slate-500 font-sans mt-1 leading-relaxed">
-            কোর্সের সকল ইংরেজি শব্দ, বাংলা অর্থ ও সমার্থক শব্দ এক্সেল স্প্রেডশিটের মতো একই গ্রিড টেবিলে দেখুন, ফিল্টার করুন এবং প্রগ্রেস আপডেট করুন।
+            View all English words, definitions, and synonyms in a spreadsheet-style grid table, filter records, and update your learning progress.
           </p>
         </div>
 
@@ -276,17 +276,17 @@ export default function SearchDictionary({
           <button
             onClick={handleResetFilters}
             className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer"
-            title="সব ফিল্টার রিসেট করুন"
+            title="Reset all filters"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> রিসেট
+            <RotateCcw className="w-3.5 h-3.5" /> Reset
           </button>
           
           <button
             onClick={exportToCSV}
             className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition rounded-xl flex items-center gap-1.5 shadow-sm shadow-emerald-500/10 cursor-pointer"
-            title="এক্সেল ফাইল হিসেবে ডাউনলোড করুন"
+            title="Download as CSV file"
           >
-            <Download className="w-3.5 h-3.5" /> Excel / CSV ডাউনলোড
+            <Download className="w-3.5 h-3.5" /> Download Excel / CSV
           </button>
         </div>
       </div>
@@ -294,23 +294,23 @@ export default function SearchDictionary({
       {/* 2. Spreadsheet Stats Indicator Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 font-sans">
         <div className="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">মোট শব্দ</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Words</span>
           <span className="text-lg font-black text-slate-800">{stats.filtered} <span className="text-xs font-normal text-slate-400">/ {stats.total}</span></span>
         </div>
         <div className="bg-emerald-50/40 border border-emerald-100/50 p-3 rounded-2xl">
-          <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block">পারি (সবুজ)</span>
+          <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block">Learned (Green)</span>
           <span className="text-lg font-black text-emerald-700">{stats.know}</span>
         </div>
         <div className="bg-amber-50/40 border border-amber-100/50 p-3 rounded-2xl">
-          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">কনফিউশন (হলুদ)</span>
+          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">Confused (Yellow)</span>
           <span className="text-lg font-black text-amber-700">{stats.confusion}</span>
         </div>
         <div className="bg-rose-50/40 border border-rose-100/50 p-3 rounded-2xl">
-          <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">পারি না (লাল)</span>
+          <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">Unlearned (Red)</span>
           <span className="text-lg font-black text-rose-700">{stats.dont_know}</span>
         </div>
         <div className="col-span-2 lg:col-span-1 bg-slate-50/50 border border-slate-100 p-3 rounded-2xl">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">পড়া হয়নি</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Unrated</span>
           <span className="text-lg font-black text-slate-600">{stats.unrated}</span>
         </div>
       </div>
@@ -322,7 +322,7 @@ export default function SearchDictionary({
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="ইংরেজি শব্দ, বাংলা অর্থ, সিনোনিম বা নোট..."
+            placeholder="English word, meaning, synonym, or note..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700"
@@ -336,9 +336,9 @@ export default function SearchDictionary({
             onChange={(e) => setSelectedGroup(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
           >
-            <option value="all">গ্রুপ ফিল্টার: সকল গ্রুপ</option>
+            <option value="all">Group Filter: All Groups</option>
             {uniqueGroups.map((gVal) => (
-              <option key={gVal} value={String(gVal)}>গ্রুপ {gVal}</option>
+              <option key={gVal} value={String(gVal)}>Group {gVal}</option>
             ))}
           </select>
           <Filter className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -351,11 +351,11 @@ export default function SearchDictionary({
             onChange={(e) => setSelectedStatus(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
           >
-            <option value="all">কন্ডিশন ফিল্টার: সকল কন্ডিশন</option>
-            <option value="know">পারি (সবুজ)</option>
-            <option value="confusion">কনফিউশন (হলুদ)</option>
-            <option value="dont_know">পারি না (লাল)</option>
-            <option value="unrated">পড়া হয়নি (ধূসর)</option>
+            <option value="all">Status Filter: All Conditions</option>
+            <option value="know">Learned (Green)</option>
+            <option value="confusion">Confused (Yellow)</option>
+            <option value="dont_know">Unlearned (Red)</option>
+            <option value="unrated">Unrated (Grey)</option>
           </select>
           <Filter className="w-3 h-3 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
@@ -367,7 +367,7 @@ export default function SearchDictionary({
             onChange={(e) => setSelectedFolder(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 appearance-none cursor-pointer"
           >
-            <option value="all">বুকমার্ক ফোল্ডার: সকল বুকমার্ক</option>
+            <option value="all">Bookmark Folder: All Bookmarks</option>
             {folders.map(f => (
               <option key={f.id} value={f.id}>{f.name}</option>
             ))}
@@ -390,7 +390,7 @@ export default function SearchDictionary({
                   className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[150px]"
                 >
                   <div className="flex items-center gap-1">
-                    <span>ইংরেজি শব্দ</span>
+                    <span>English Word</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -401,7 +401,7 @@ export default function SearchDictionary({
                   className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[160px]"
                 >
                   <div className="flex items-center gap-1">
-                    <span>বাংলা অর্থ</span>
+                    <span>Meaning</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -412,16 +412,16 @@ export default function SearchDictionary({
                   className="px-3 py-3.5 text-center border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition w-24"
                 >
                   <div className="flex items-center justify-center gap-1">
-                    <span>গ্রুপ</span>
+                    <span>Group</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
 
                 {/* Column Synonyms */}
-                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[180px]">সমার্থক শব্দ (Synonyms)</th>
+                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[180px]">Synonyms</th>
                 
                 {/* Column Companion Extra Word */}
-                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[160px]">অতিরিক্ত শব্দ ও অর্থ</th>
+                <th className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 min-w-[160px]">Companion Word & Meaning</th>
 
                 {/* Column Status (Rating) */}
                 <th 
@@ -429,7 +429,7 @@ export default function SearchDictionary({
                   className="px-4 py-3.5 text-center border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[140px]"
                 >
                   <div className="flex items-center justify-center gap-1">
-                    <span>শেখার কন্ডিশন</span>
+                    <span>Status</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
@@ -440,16 +440,16 @@ export default function SearchDictionary({
                   className="px-4 py-3.5 text-left border-r border-slate-200 bg-slate-100 cursor-pointer hover:bg-slate-200/70 transition min-w-[200px]"
                 >
                   <div className="flex items-center gap-1">
-                    <span>স্মৃতিসহায়ক নোট</span>
+                    <span>Mnemonic Note</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
 
                 {/* Column Bookmarks Folder selection */}
-                <th className="px-4 py-3.5 text-center border-r border-slate-200 bg-slate-100 min-w-[120px]">বুকমার্ক ফোল্ডার</th>
+                <th className="px-4 py-3.5 text-center border-r border-slate-200 bg-slate-100 min-w-[120px]">Bookmark Folder</th>
                 
                 {/* Column Voice Speaker */}
-                <th className="px-3 py-3.5 text-center bg-slate-100 w-16">শুনুন</th>
+                <th className="px-3 py-3.5 text-center bg-slate-100 w-16">Audio</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-150 font-sans">
@@ -481,7 +481,7 @@ export default function SearchDictionary({
 
                     {/* Group number */}
                     <td className="px-3 py-2.5 text-center border-r border-slate-100 font-bold text-xs text-indigo-700">
-                      গ্রুপ {w.group}
+                      Group {w.group}
                     </td>
 
                     {/* Synonyms */}
@@ -516,10 +516,10 @@ export default function SearchDictionary({
                             : 'bg-slate-50 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <option value="unrated">পড়া হয়নি</option>
-                        <option value="know">পারি</option>
-                        <option value="confusion">কনফিউশন</option>
-                        <option value="dont_know">পারি না</option>
+                        <option value="unrated">Unrated</option>
+                        <option value="know">Learned</option>
+                        <option value="confusion">Confused</option>
+                        <option value="dont_know">Unlearned</option>
                       </select>
                     </td>
 
@@ -528,7 +528,7 @@ export default function SearchDictionary({
                       <input
                         type="text"
                         value={notes}
-                        placeholder="ক্লিক করে নোট লিখুন..."
+                        placeholder="Type note..."
                         onChange={(e) => onUpdateNotes(w.id, e.target.value)}
                         className="w-full bg-transparent hover:bg-slate-50 focus:bg-white border-b border-transparent hover:border-slate-300 focus:border-indigo-500 px-1 py-1 text-xs text-slate-700 focus:outline-none transition rounded font-sans"
                       />
@@ -545,14 +545,14 @@ export default function SearchDictionary({
                         }`}
                       >
                         <Bookmark className={`w-3 h-3 ${wordFolders.length > 0 ? 'fill-indigo-600 text-indigo-600' : ''}`} />
-                        <span>{wordFolders.length > 0 ? `${wordFolders.length} ফোল্ডার` : 'বুকমার্ক'}</span>
+                        <span>{wordFolders.length > 0 ? `${wordFolders.length} folders` : 'Bookmark'}</span>
                       </button>
 
                       {/* Floating overlay popover for folder bookmarks */}
                       {activeBookmarkWordId === w.id && (
                         <div className="absolute right-2 top-full mt-1.5 bg-white border border-slate-200/80 rounded-xl shadow-xl p-2.5 z-20 w-48 text-left space-y-1.5 font-sans">
                           <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest pb-1 border-b border-slate-100">
-                            বুকমার্ক সিলেক্ট করুন
+                            Select Bookmark
                           </p>
                           <div className="space-y-1 max-h-[150px] overflow-y-auto custom-scrollbar">
                             {folders.map(f => {
@@ -577,7 +577,7 @@ export default function SearchDictionary({
                             })}
                           </div>
                           {folders.length === 0 && (
-                            <p className="text-[11px] text-slate-400 p-1.5 leading-relaxed">কোনো বুকমার্ক ফোল্ডার তৈরি করা নেই। ফোল্ডার উইন্ডোতে যান।</p>
+                            <p className="text-[11px] text-slate-400 p-1.5 leading-relaxed">No bookmark folders created. Go to Folders View.</p>
                           )}
                         </div>
                       )}
@@ -588,7 +588,7 @@ export default function SearchDictionary({
                       <button
                         onClick={() => speak(w.word)}
                         className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer inline-flex items-center justify-center"
-                        title="ইংরেজি উচ্চারণ শুনুন"
+                        title="Listen to pronunciation"
                       >
                         <Volume2 className="w-4 h-4" />
                       </button>
@@ -601,7 +601,7 @@ export default function SearchDictionary({
                 <tr>
                   <td colSpan={10} className="text-center text-slate-400 font-sans py-16">
                     <Grid className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    কোনো শব্দ শব্দ ভান্ডারে খুঁজে পাওয়া যায়নি। ফিল্টার পরিবর্তন করে পুনরায় চেষ্টা করুন।
+                    No words found in the vocabulary catalog. Try changing your filters.
                   </td>
                 </tr>
               )}
@@ -615,7 +615,7 @@ export default function SearchDictionary({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 p-4 border border-slate-200/50 rounded-2xl font-sans text-xs text-slate-500">
           {/* Row count limit selector */}
           <div className="flex items-center gap-2">
-            <span>প্রতি পেজে সারি:</span>
+            <span>Rows per page:</span>
             <select
               value={itemsPerPage}
               onChange={(e) => {
@@ -624,17 +624,17 @@ export default function SearchDictionary({
               }}
               className="bg-white border border-slate-200 rounded-lg px-2 py-1 font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
             >
-              <option value={25}>২৫ টি</option>
-              <option value={50}>৫০ টি</option>
-              <option value={100}>১০০ টি</option>
-              <option value={250}>২৫০ টি</option>
-              <option value={-1}>সবগুলো শব্দ</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={250}>250</option>
+              <option value={-1}>All words</option>
             </select>
           </div>
 
           {/* Records summary */}
           <div>
-            <span>সারি {startIndex + 1} - {endIndex} (মোট {totalItems} টি ফলাফল)</span>
+            <span>Rows {startIndex + 1} - {endIndex} (Total {totalItems} results)</span>
           </div>
 
           {/* Dynamic pagination step selectors */}
