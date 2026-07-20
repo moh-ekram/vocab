@@ -27,7 +27,9 @@ import {
   AlertCircle,
   Trophy,
   Settings,
-  CreditCard
+  CreditCard,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 import {
@@ -132,6 +134,11 @@ export default function App() {
   const [blankProgress, setBlankProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_BLANK_PROGRESS_KEY);
     return saved ? JSON.parse(saved) : {};
+  });
+
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_dark_mode');
+    return saved ? JSON.parse(saved) : false;
   });
 
   const [settings, setSettings] = useState<AppSettings>(() => {
@@ -384,6 +391,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    localStorage.setItem('vocab_memorizer_dark_mode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY, JSON.stringify(enrolledCourseIds));
@@ -1117,6 +1133,16 @@ export default function App() {
               {!isOnline && pendingSyncCount > 0 && ` (${pendingSyncCount}টি পেন্ডিং)`}
             </span>
           </div>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={() => setDarkMode(prev => !prev)}
+            className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
+            title={darkMode ? "লাইট মোড চালু করুন" : "নাইট মোড চালু করুন"}
+            id="dark-mode-toggle"
+          >
+            {darkMode ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-300" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-300" />}
+          </button>
 
           {user ? (
             <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
