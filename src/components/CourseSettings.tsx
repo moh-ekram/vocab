@@ -1212,7 +1212,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-extrabold text-slate-600 block">কোর্সের মূল্য (টাকা) / Course Price (TK)</label>
+                    <label className="text-xs font-extrabold text-slate-600 block">Course Price (TK)</label>
                     <input
                       type="number"
                       value={price}
@@ -1223,7 +1223,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-extrabold text-slate-600 block">বিকাশ নাম্বার (সেন্ড মানি) / bKash Number</label>
+                    <label className="text-xs font-extrabold text-slate-600 block">bKash Number (Send Money)</label>
                     <input
                       type="text"
                       value={bkashNumber}
@@ -1594,7 +1594,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 <div className="border-b border-slate-100 pb-3 mb-2">
                   <h4 className="font-extrabold text-slate-900 text-sm">bKash Auto-Verification Gateway</h4>
                   <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
-                    পেমেন্ট সম্পন্ন করা শিক্ষার্থীদের মোবাইল ও ট্রাঞ্জেকশন আইডি (TrxID) জমা রাখুন। রিক্যুয়েস্ট সাবমিট করার সাথে সাথেই সঠিক তথ্যের জন্য অটো-এপ্রুভাল সম্পন্ন হবে।
+                    Store mobile numbers and transaction IDs (TrxID) of students who have completed payments. Students' access requests with matching details will be automatically approved.
                   </p>
                 </div>
 
@@ -1605,28 +1605,28 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-150 space-y-4">
                       <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                         <Plus className="w-4 h-4 text-indigo-600" />
-                        <span>ম্যানুয়ালি ডাটা যোগ করুন</span>
+                        <span>Add Record Manually</span>
                       </h5>
 
                       <div className="space-y-3">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">বিকাশ মোবাইল নাম্বার</label>
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">bKash Mobile Number</label>
                           <input
                             type="text"
                             value={newVpNumber}
                             onChange={(e) => setNewVpNumber(e.target.value)}
-                            placeholder="যেমন: 01712345678"
+                            placeholder="e.g. 01712345678"
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold transition text-slate-800"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">ট্রাঞ্জেকশন আইডি (TrxID)</label>
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">Transaction ID (TrxID)</label>
                           <input
                             type="text"
                             value={newVpTrxId}
                             onChange={(e) => setNewVpTrxId(e.target.value)}
-                            placeholder="যেমন: K8B9H5J2D"
+                            placeholder="e.g. K8B9H5J2D"
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-mono font-bold transition text-slate-800 uppercase"
                           />
                         </div>
@@ -1637,7 +1637,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                           className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>ডাটা যোগ করুন</span>
+                          <span>Add Record</span>
                         </button>
                       </div>
                     </div>
@@ -1646,7 +1646,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-150 space-y-4">
                       <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                         <UploadCloud className="w-4 h-4 text-indigo-600" />
-                        <span>বাল্ক ইম্পোর্ট করুন (Excel / Text)</span>
+                        <span>Bulk Import (Excel / Text)</span>
                       </h5>
 
                       {/* Spreadsheet Drag-n-Drop */}
@@ -1669,8 +1669,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           />
                           <FileSpreadsheet className="w-7 h-7 text-slate-400 mx-auto mb-2" />
-                          <p className="text-xs font-bold text-slate-700">Excel / CSV ফাইল আপলোড করুন</p>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">টেনে আনুন অথবা ব্রাউজ করুন</p>
+                          <p className="text-xs font-bold text-slate-700">Upload Excel / CSV File</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Drag and drop or browse files</p>
                         </div>
 
                         {vpExcelError && <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-2 rounded-xl">{vpExcelError}</p>}
@@ -1678,7 +1678,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                         <div className="relative flex items-center my-3">
                           <div className="flex-grow border-t border-slate-200"></div>
-                          <span className="flex-shrink mx-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">অথবা কপি-পেস্ট করুন</span>
+                          <span className="flex-shrink mx-3 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Or copy & paste</span>
                           <div className="flex-grow border-t border-slate-200"></div>
                         </div>
 
@@ -1688,7 +1688,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             rows={3}
                             value={vpBulkInput}
                             onChange={(e) => setVpBulkInput(e.target.value)}
-                            placeholder="মোবাইল, ট্রাঞ্জেকশন আইডি (এক লাইনে একটি করে)&#13;যেমন:&#13;01712345678, K8B9H5J2D&#13;01822334455, J3L4K2M5N"
+                            placeholder="Mobile, Transaction ID (one per line)&#13;e.g.&#13;01712345678, K8B9H5J2D&#13;01822334455, J3L4K2M5N"
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-semibold font-sans resize-none"
                           />
                           <button
@@ -1696,7 +1696,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             onClick={handleApplyVpBulk}
                             className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition cursor-pointer"
                           >
-                            টেক্সট ডাটা যোগ করুন
+                            Add Text Data
                           </button>
                         </div>
                       </div>
@@ -1709,22 +1709,22 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       {/* List Header */}
                       <div className="p-4 border-b border-slate-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">ভেরিফাইড লিস্ট</span>
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Verified List</span>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100">
-                            {verifiedPayments.length} রেকর্ড
+                            {verifiedPayments.length} records
                           </span>
                         </div>
                         {verifiedPayments.length > 0 && (
                           <button
                             type="button"
                             onClick={() => {
-                              if (window.confirm('সবগুলো রেকর্ড কি ডিলিট করতে চান?')) {
+                              if (window.confirm('Do you want to delete all records?')) {
                                 setVerifiedPayments([]);
                               }
                             }}
                             className="text-[10px] font-black text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-2.5 py-1 rounded-lg transition cursor-pointer"
                           >
-                            ক্লিয়ার অল
+                            Clear All
                           </button>
                         )}
                       </div>
@@ -1737,7 +1737,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             type="text"
                             value={vpSearchQuery}
                             onChange={(e) => setVpSearchQuery(e.target.value)}
-                            placeholder="মোবাইল বা TrxID দিয়ে সার্চ করুন..."
+                            placeholder="Search by Mobile or TrxID..."
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-4 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                           />
                         </div>
@@ -1751,7 +1751,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         }).length === 0 ? (
                           <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center h-48">
                             <ShieldCheck className="w-8 h-8 text-slate-300 mb-2" />
-                            <p>কোনো ভেরিফাইড পেমেন্ট ডাটা পাওয়া যায়নি।</p>
+                            <p>No verified payment data found.</p>
                           </div>
                         ) : (
                           verifiedPayments
@@ -1769,7 +1769,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                   type="button"
                                   onClick={() => setVerifiedPayments(prev => prev.filter((_, i) => i !== index))}
                                   className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                                  title="রেকর্ড ডিলিট করুন"
+                                  title="Delete record"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -1787,10 +1787,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div>
                       <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                         <UserCheck className="w-4 h-4 text-indigo-600" />
-                        <span>শিক্ষার্থীদের এক্সেস রিক্যুয়েস্ট ও স্ট্যাটাস</span>
+                        <span>Student Access Requests & Status</span>
                       </h5>
                       <p className="text-[10px] text-slate-450 font-semibold mt-0.5">
-                        শিক্ষার্থীদের সাবমিট করা বিকাশ পেমেন্ট রিক্যুয়েস্ট এখানে দেখা যাবে। কোনো রিক্যুয়েস্ট পেন্ডিং থাকলে ম্যানুয়ালি বা অটো-ভেরিফিকেশনে এপ্রুভ করুন।
+                        View bKash payment requests submitted by students. Approve pending requests manually or wait for auto-verification.
                       </p>
                     </div>
                     <button
@@ -1798,7 +1798,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       onClick={fetchRequests}
                       disabled={loadingRequests}
                       className="p-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-lg text-slate-500 transition cursor-pointer"
-                      title="রিফ্রেশ করুন"
+                      title="Refresh"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${loadingRequests ? 'animate-spin' : ''}`} />
                     </button>
@@ -1808,24 +1808,24 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     {loadingRequests ? (
                       <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center">
                         <RefreshCw className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
-                        <p>রিক্যুয়েস্ট লোড হচ্ছে...</p>
+                        <p>Loading requests...</p>
                       </div>
                     ) : courseRequests.length === 0 ? (
                       <div className="p-8 text-center text-slate-400 font-bold text-xs flex flex-col items-center justify-center">
                         <Users className="w-8 h-8 text-slate-300 mb-2" />
-                        <p>এখনো কোনো রিক্যুয়েস্ট পাওয়া যায়নি।</p>
+                        <p>No requests received yet.</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse text-xs">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-100 text-slate-450 text-[10px] font-bold uppercase tracking-wider">
-                              <th className="py-2.5 px-4">শিক্ষার্থীর ইমেইল</th>
-                              <th className="py-2.5 px-4">বিকাশ নাম্বার</th>
-                              <th className="py-2.5 px-4">ট্রাঞ্জেকশন আইডি</th>
-                              <th className="py-2.5 px-4">তারিখ</th>
-                              <th className="py-2.5 px-4 text-center">স্ট্যাটাস</th>
-                              <th className="py-2.5 px-4 text-right">অ্যাকশন</th>
+                              <th className="py-2.5 px-4">Student Email</th>
+                              <th className="py-2.5 px-4">bKash Number</th>
+                              <th className="py-2.5 px-4">Transaction ID</th>
+                              <th className="py-2.5 px-4">Date</th>
+                              <th className="py-2.5 px-4 text-center">Status</th>
+                              <th className="py-2.5 px-4 text-right">Action</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-sans">

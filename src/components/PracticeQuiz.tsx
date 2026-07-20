@@ -106,11 +106,11 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
     }
 
     if (sourcePool.length < 4 && quizType !== 'typing_spelling') {
-      alert('পরীক্ষা শুরু করার জন্য অন্তত ৪টি শব্দ প্রয়োজন। আপনার ফিল্টার পরিবর্তন করুন।');
+      alert('A minimum of 4 words is required to start a quiz. Please adjust your filters.');
       return;
     }
     if (sourcePool.length === 0) {
-      alert('কোনো শব্দ পাওয়া যায়নি!');
+      alert('No words found matching the current filters!');
       return;
     }
 
@@ -237,16 +237,16 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             <div className="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-2xl mb-2">
               <Award className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900">ভোকাবুলারি পরীক্ষা ও কুইজ</h2>
+            <h2 className="text-2xl font-black text-slate-900">Vocabulary Quiz & Exam</h2>
             <p className="text-sm text-slate-500 font-sans max-w-md mx-auto">
-              কাস্টম পরীক্ষার মাধ্যমে আপনার মেমোরাইজেশন যাচাই করুন। MCQ বা স্পেলিং টাইপিং চ্যালেঞ্জ বেছে নিন।
+              Test your memorization skills with custom exams. Choose between multiple choice options (MCQ) or spelling challenges.
             </p>
           </div>
 
           <div className="space-y-6">
             {/* Quiz Type Selector */}
             <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-450 uppercase tracking-wider font-sans">পরীক্ষার ধরন নির্বাচন</span>
+              <span className="text-xs font-bold text-slate-450 uppercase tracking-wider font-sans">Choose Exam Type</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-sans">
                 <button
                   onClick={() => setQuizType('mcq_en_bn')}
@@ -256,8 +256,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">MCQ (ইংরেজি ➡ বাংলা)</span>
-                  <span className="text-xs text-slate-400">ইংরেজি শব্দ দেখে সঠিক বাংলা অর্থ চিহ্নিত করুন।</span>
+                  <span className="font-bold text-slate-800 text-sm">MCQ (English ➡ Meaning)</span>
+                  <span className="text-xs text-slate-400">View the English word and choose the correct meaning.</span>
                 </button>
 
                 <button
@@ -268,8 +268,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">MCQ (বাংলা ➡ ইংরেজি)</span>
-                  <span className="text-xs text-slate-400">বাংলা অর্থ দেখে সঠিক ইংরেজি শব্দ চিহ্নিত করুন।</span>
+                  <span className="font-bold text-slate-800 text-sm">MCQ (Meaning ➡ English)</span>
+                  <span className="text-xs text-slate-400">View the meaning and choose the correct English word.</span>
                 </button>
 
                 <button
@@ -280,8 +280,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">স্পেলিং টাইপিং চ্যালেঞ্জ</span>
-                  <span className="text-xs text-slate-400">অর্থ ও সিনোনিম দেখে সঠিক ইংরেজি বানান টাইপ করুন।</span>
+                  <span className="font-bold text-slate-800 text-sm">Spelling Type Challenge</span>
+                  <span className="text-xs text-slate-400">Type the correct English spelling based on meaning and clues.</span>
                 </button>
               </div>
             </div>
@@ -289,7 +289,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               {/* Select Group (Multi-select) */}
               <div className="space-y-1.5 relative" id="group-multi-selector">
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Vocabulary Group</label>
                 <button
                   type="button"
                   onClick={() => {
@@ -300,10 +300,10 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                 >
                   <span className="truncate">
                     {selectedGroups.length === uniqueGroups.length 
-                      ? 'সকল গ্রুপ' 
+                      ? 'All Groups' 
                       : selectedGroups.length === 0 
-                      ? 'কোনো গ্রুপ নেই' 
-                      : `${selectedGroups.length} টি গ্রুপ নির্বাচিত`}
+                      ? 'No Groups Selected' 
+                      : `${selectedGroups.length} Groups Selected`}
                   </span>
                   <span className="text-[10px] text-slate-400">▼</span>
                 </button>
@@ -316,14 +316,14 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                     {/* Dropdown panel */}
                     <div className="absolute left-0 mt-2 w-72 md:w-80 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-3 font-sans">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                        <span className="text-xs font-bold text-slate-600">Group Filter ({selectedGroups.length})</span>
                         <div className="flex gap-2 text-[10px]">
                           <button
                             type="button"
                             onClick={() => setSelectedGroups(uniqueGroups)}
                             className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                           >
-                            সব সিলেক্ট
+                            Select All
                           </button>
                           <span className="text-slate-300">|</span>
                           <button
@@ -331,7 +331,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                             onClick={() => setSelectedGroups([])}
                             className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                           >
-                            সব মুছুন
+                            Clear All
                           </button>
                         </div>
                       </div>
@@ -369,7 +369,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                           onClick={() => setIsGroupDropdownOpen(false)}
                           className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
                         >
-                          ঠিক আছে
+                          OK
                         </button>
                       </div>
                     </div>
@@ -379,7 +379,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
 
               {/* Select Status (Multi-select) */}
               <div className="space-y-1.5 relative" id="status-multi-selector">
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Tag Filter</label>
                 <button
                   type="button"
                   onClick={() => {
@@ -390,14 +390,14 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                 >
                   <span className="truncate">
                     {selectedStatuses.length === 4 
-                      ? 'সকল ট্যাগ' 
+                      ? 'All Tags' 
                       : selectedStatuses.length === 0 
-                      ? 'কোনো ট্যাগ নেই' 
+                      ? 'No Tags Selected' 
                       : selectedStatuses.map(s => {
-                          if (s === 'know') return 'পারি';
-                          if (s === 'dont_know') return 'পারি না';
-                          if (s === 'confusion') return 'কনফিউশন';
-                          return 'পড়া হয়নি';
+                          if (s === 'know') return 'Know';
+                          if (s === 'dont_know') return "Don't Know";
+                          if (s === 'confusion') return 'Confused';
+                          return 'Unrated';
                         }).join(', ')}
                   </span>
                   <span className="text-[10px] text-slate-400">▼</span>
@@ -408,14 +408,14 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                     <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
                     <div className="absolute left-0 mt-2 w-56 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-4 z-20 space-y-2.5 font-sans">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <span className="text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                        <span className="text-xs font-bold text-slate-600 font-sans">Tag Filter</span>
                         <div className="flex gap-2 text-[10px]">
                           <button
                             type="button"
                             onClick={() => setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated'])}
                             className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                           >
-                            সব সিলেক্ট
+                            Select All
                           </button>
                           <span className="text-slate-200">|</span>
                           <button
@@ -423,17 +423,17 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                             onClick={() => setSelectedStatuses([])}
                             className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                           >
-                            সব মুছুন
+                            Clear All
                           </button>
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
                         {[
-                          { key: 'know', label: 'পারি (সবুজ)', color: 'bg-emerald-500' },
-                          { key: 'confusion', label: 'কনফিউশন (হলুদ)', color: 'bg-amber-500' },
-                          { key: 'dont_know', label: 'পারি না (লাল)', color: 'bg-rose-500' },
-                          { key: 'unrated', label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400' }
+                          { key: 'know', label: 'Know (Green)', color: 'bg-emerald-500' },
+                          { key: 'confusion', label: 'Confused (Yellow)', color: 'bg-amber-500' },
+                          { key: 'dont_know', label: "Don't Know (Red)", color: 'bg-rose-500' },
+                          { key: 'unrated', label: 'Unrated (Gray)', color: 'bg-slate-400' }
                         ].map(st => {
                           const isSelected = selectedStatuses.includes(st.key);
                           return (
@@ -469,7 +469,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                           onClick={() => setIsStatusDropdownOpen(false)}
                           className="px-3.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
                         >
-                          ঠিক আছে
+                          OK
                         </button>
                       </div>
                     </div>
@@ -479,7 +479,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
 
               {/* Quiz Length */}
               <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">প্রশ্নের সংখ্যা</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Number of Questions</span>
                 <div className="flex gap-1.5 h-[46px]">
                   {[5, 10, 15, 20].map(count => (
                     <button
@@ -492,7 +492,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                           : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200/60'
                       }`}
                     >
-                      {count}টি
+                      {count}
                     </button>
                   ))}
                 </div>
@@ -505,7 +505,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-2xl shadow-md shadow-indigo-600/10 transition flex items-center justify-center gap-2 font-sans"
           >
             <Sparkles className="w-5 h-5" />
-            কুইজ শুরু করুন
+            Start Quiz
           </button>
         </div>
       )}
@@ -515,9 +515,9 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
         <div className="space-y-6 animate-fadeIn">
           {/* Header Stats */}
           <div className="flex justify-between items-center text-xs font-semibold text-slate-400 font-sans border-b border-slate-100 pb-3">
-            <span>প্রশ্ন {currentQuestionIndex + 1} / {questions.length}</span>
+            <span>Question {currentQuestionIndex + 1} / {questions.length}</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-600">স্কোর: {score}</span>
+              <span className="text-indigo-600">Score: {score}</span>
               <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div className="bg-indigo-600 h-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
               </div>
@@ -527,7 +527,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
           {/* Question display */}
           <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-200/60 text-center space-y-4">
             <span className="px-3 py-1 bg-indigo-50 text-indigo-800 text-[10px] font-extrabold uppercase rounded-full tracking-wider font-sans">
-              {quizType === 'mcq_bn_en' ? 'বাংলা অর্থ' : 'ইংরেজি শব্দ'}
+              {quizType === 'mcq_bn_en' ? 'Meaning' : 'English Word'}
             </span>
 
             <h1 className="text-3xl md:text-4xl font-black text-slate-800 leading-tight">
@@ -577,12 +577,12 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             /* Spelling Typing Mode input fields */
             <div className="space-y-4">
               <div className="space-y-1 font-sans">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">ইংরেজি বানান টাইপ করুন</label>
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type English Spelling</label>
                 <div className="relative">
                   <input
                     type="text"
                     disabled={answerSubmitted}
-                    placeholder="বানান লিখুন..."
+                    placeholder="Enter spelling..."
                     value={typedAnswer}
                     onChange={(e) => setTypedAnswer(e.target.value)}
                     onKeyDown={(e) => {
@@ -609,9 +609,9 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                     className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1.5"
                   >
                     <HelpIcon className="w-4 h-4" />
-                    <span>বানানের সাহায্য (Hint)</span>
+                    <span>Spelling Hint</span>
                   </button>
-                  <span className="text-[11px] text-slate-400">মোট বর্ণ: {questions[currentQuestionIndex].correctAnswer.length} টি</span>
+                  <span className="text-[11px] text-slate-400">Total characters: {questions[currentQuestionIndex].correctAnswer.length}</span>
                 </div>
               )}
             </div>
@@ -626,14 +626,14 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                   disabled={!typedAnswer.trim()}
                   className="px-6 py-3 bg-indigo-600 disabled:opacity-50 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm"
                 >
-                  উত্তর যাচাই করুন
+                  Verify Answer
                 </button>
               ) : (
                 <button
                   onClick={handleNext}
                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm flex items-center gap-1.5"
                 >
-                  <span>{currentQuestionIndex === questions.length - 1 ? 'ফলাফল দেখুন' : 'পরবর্তী প্রশ্ন'}</span>
+                  <span>{currentQuestionIndex === questions.length - 1 ? 'Show Results' : 'Next Question'}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               )
@@ -643,7 +643,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                   onClick={handleNext}
                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm flex items-center gap-1.5"
                 >
-                  <span>{currentQuestionIndex === questions.length - 1 ? 'ফলাফল দেখুন' : 'পরবর্তী প্রশ্ন'}</span>
+                  <span>{currentQuestionIndex === questions.length - 1 ? 'Show Results' : 'Next Question'}</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               )
@@ -659,9 +659,9 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             <div className="mx-auto w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center animate-bounce">
               <Trophy className="w-10 h-10 animate-pulse" />
             </div>
-            <h2 className="text-2xl font-black text-slate-900">পরীক্ষার ফলাফল রিপোর্ট</h2>
+            <h2 className="text-2xl font-black text-slate-900">Exam Results Report</h2>
             <p className="text-sm text-slate-500 font-sans">
-              দারুণ চেষ্টা! নিচে আপনার সঠিক উত্তরের পরিসংখ্যান দেওয়া হল।
+              Great effort! Here is your performance statistics report.
             </p>
           </div>
 
@@ -669,15 +669,15 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 font-sans max-w-md mx-auto">
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <p className="text-2xl font-black text-indigo-600">{score} / {questions.length}</p>
-              <p className="text-xs text-slate-400 mt-1">সঠিক উত্তর</p>
+              <p className="text-xs text-slate-400 mt-1">Correct Answers</p>
             </div>
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <p className="text-2xl font-black text-rose-500">{questions.length - score}</p>
-              <p className="text-xs text-slate-400 mt-1">ভুল উত্তর</p>
+              <p className="text-xs text-slate-400 mt-1">Incorrect Answers</p>
             </div>
             <div className="bg-slate-50 col-span-2 md:col-span-1 p-4 rounded-2xl border border-slate-100">
               <p className="text-2xl font-black text-indigo-750">{Math.round((score / questions.length) * 100)}%</p>
-              <p className="text-xs text-slate-400 mt-1">সফলতার হার</p>
+              <p className="text-xs text-slate-400 mt-1">Success Rate</p>
             </div>
           </div>
 
@@ -686,7 +686,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             <div className="space-y-3 text-left">
               <div className="flex items-center gap-1.5 border-b border-slate-100 pb-2">
                 <AlertCircle className="w-4 h-4 text-rose-500" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider font-sans">ভুল হওয়া দুর্বল শব্দসমূহ (পুনরায় পড়ুন)</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider font-sans">Words to Review (Incorrectly Answered)</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-2">
                 {incorrectWords.map((w, idx) => (
@@ -695,7 +695,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       <p className="font-bold text-slate-800 text-sm">{w.word}</p>
                       <p className="text-xs text-rose-700 font-sans mt-0.5">{w.meaning}</p>
                     </div>
-                    <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md font-sans">গ্রুপ {w.group}</span>
+                    <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-md font-sans">Group {w.group}</span>
                   </div>
                 ))}
               </div>
@@ -709,13 +709,13 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
               className="flex-1 py-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-sm rounded-xl transition flex items-center justify-center gap-1.5"
             >
               <RefreshCw className="w-4 h-4" />
-              সেটআপ পেজে যান
+              Go to Setup
             </button>
             <button
               onClick={startQuiz}
               className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
             >
-              আবার পরীক্ষা দিন
+              Take Quiz Again
             </button>
           </div>
         </div>

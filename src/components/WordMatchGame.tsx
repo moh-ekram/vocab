@@ -164,9 +164,9 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
             <Trophy className="w-10 h-10" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-slate-900">শব্দমিল খেলা (Word Match)</h2>
+            <h2 className="text-2xl font-black text-slate-900">Word Match Game</h2>
             <p className="text-sm text-slate-500 font-sans max-w-sm mx-auto">
-              বাম পাশের ইংরেজি শব্দের সাথে ডান পাশের সঠিক বাংলা অর্থটি মিলাতে হবে। দ্রুততম সময়ে মিলাতে পারেন কি না দেখুন!
+              Match the English words on the left with their correct meanings on the right. See how fast you can complete the pairs!
             </p>
           </div>
 
@@ -175,7 +175,7 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
             className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 font-sans"
           >
             <Play className="w-4 h-4 fill-current" />
-            খেলা শুরু করুন
+            Start Game
           </button>
         </div>
       ) : (
@@ -185,13 +185,13 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
           <div className="flex justify-between items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-200/60 font-sans">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
               <Timer className="w-4 h-4 text-indigo-500" />
-              <span>সময়: {timeElapsed} সেকেন্ড</span>
+              <span>Time: {timeElapsed} seconds</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
-              <span>চেষ্টা: {attempts} বার</span>
+              <span>Attempts: {attempts}</span>
             </div>
             <span className="text-xs font-extrabold text-indigo-600">
-              মিলেছে: {matchesCount} / 6
+              Matched: {matchesCount} / 6
             </span>
           </div>
 
@@ -200,7 +200,7 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
             <div className="grid grid-cols-2 gap-4">
               {/* Left Side: English */}
               <div className="space-y-3">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">ইংরেজি শব্দ</span>
+                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">English Word</span>
                 {leftColumn.map(card => {
                   const isSelected = selectedLeft?.id === card.id;
                   let borderStyle = 'border-slate-200/60 bg-white text-slate-700 hover:border-indigo-200 hover:shadow-xs';
@@ -225,9 +225,9 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
                 })}
               </div>
 
-              {/* Right Side: Bengali */}
+              {/* Right Side: Bengali meaning */}
               <div className="space-y-3">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">বাংলা অর্থ</span>
+                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">Meaning</span>
                 {rightColumn.map(card => {
                   const isSelected = selectedRight?.id === card.id;
                   let borderStyle = 'border-slate-200/60 bg-white text-slate-700 hover:border-indigo-200 hover:shadow-xs';
@@ -260,9 +260,9 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-slate-800">অভিনন্দন! আপনি জয়ী হয়েছেন</h3>
+                <h3 className="text-xl font-bold text-slate-800">Congratulations! You won!</h3>
                 <p className="text-sm text-slate-500 font-sans">
-                  আপনি <span className="font-bold text-indigo-600">{timeElapsed} সেকেন্ডে</span> এবং <span className="font-bold text-indigo-600">{attempts} টি চেষ্টায়</span> সফলভাবে সব শব্দ জোড়া মিলিয়েছেন!
+                  You successfully matched all word pairs in <span className="font-bold text-indigo-600">{timeElapsed} seconds</span> and <span className="font-bold text-indigo-600">{attempts} attempts</span>!
                 </p>
               </div>
 
@@ -271,7 +271,7 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 font-sans"
               >
                 <RotateCw className="w-4 h-4" />
-                আবার খেলুন
+                Play Again
               </button>
             </div>
           )}
@@ -279,13 +279,13 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
           {/* Quick instructions / reset */}
           {!isGameOver && (
             <div className="flex justify-between items-center pt-4 border-t border-slate-100 font-sans">
-              <span className="text-[11px] text-slate-400">টিপস: শব্দ মেলালে অটোমেটিক অগ্রগতি ড্যাশবোর্ডে আপডেট হবে।</span>
+              <span className="text-[11px] text-slate-400">Tip: Matching words automatically records progress to your dashboard.</span>
               <button
                 onClick={initGame}
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
               >
                 <RotateCw className="w-3.5 h-3.5" />
-                রিসেট
+                Reset
               </button>
             </div>
           )}

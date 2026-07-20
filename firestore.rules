@@ -142,5 +142,11 @@ service cloud.firestore {
 
       allow delete: if isAdmin();
     }
+
+    // 5. Blank Questions Collection
+    match /blank_questions/{questionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

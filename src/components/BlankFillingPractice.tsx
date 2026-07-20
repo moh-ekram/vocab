@@ -19,6 +19,7 @@ import { BlankQuestion } from '../types';
 interface BlankFillingPracticeProps {
   blankProgress: Record<string, { correct: boolean; updatedAt: string }>;
   onUpdateBlankProgress: (questionId: string, correct: boolean) => void;
+  activeCourseId: string;
 }
 
 const DEFAULT_QUESTIONS: BlankQuestion[] = [
@@ -56,7 +57,8 @@ const DEFAULT_QUESTIONS: BlankQuestion[] = [
 
 export default function BlankFillingPractice({
   blankProgress,
-  onUpdateBlankProgress
+  onUpdateBlankProgress,
+  activeCourseId
 }: BlankFillingPracticeProps) {
   const [questions, setQuestions] = useState<BlankQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ export default function BlankFillingPractice({
   const [score, setScore] = useState(0);
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
-  // Fetch blank questions from Firestore on mount
+  // Fetch blank questions from Firestore on mount/activeCourseId change
   useEffect(() => {
     const fetchQuestions = async () => {
       setLoading(true);
@@ -74,30 +76,42 @@ export default function BlankFillingPractice({
         const qSnap = await getDocs(collection(db, 'blank_questions'));
         const loaded: BlankQuestion[] = [];
         qSnap.forEach(docSnap => {
-          loaded.push({ id: docSnap.id, ...docSnap.data() } as BlankQuestion);
+          const data = docSnap.data();
+          // Filter by active course or if courseId is empty default to gre
+          if (data.courseId === activeCourseId || (!data.courseId && activeCourseId === 'gre')) {
+            loaded.push({ id: docSnap.id, ...data } as BlankQuestion);
+          }
         });
         
         if (loaded.length > 0) {
           setQuestions(loaded);
         } else {
-          // Fallback to default high-quality questions if none uploaded yet
-          setQuestions(DEFAULT_QUESTIONS);
+          // Fallback to default high-quality questions for default GRE or if none uploaded yet
+          if (activeCourseId === 'gre') {
+            setQuestions(DEFAULT_QUESTIONS);
+          } else {
+            setQuestions([]);
+          }
         }
       } catch (err) {
         console.error('Error fetching blank questions:', err);
-        setQuestions(DEFAULT_QUESTIONS);
+        if (activeCourseId === 'gre') {
+          setQuestions(DEFAULT_QUESTIONS);
+        } else {
+          setQuestions([]);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [activeCourseId]);
 
   if (loading) {
     return (
       <div className="bg-white p-12 rounded-3xl border border-slate-200/60 shadow-xs flex flex-col items-center justify-center space-y-4 min-h-[350px]">
         <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
-        <p className="text-xs font-bold text-slate-500 font-mono">প্রশ্নপত্র লোড হচ্ছে...</p>
+        <p className="text-xs font-bold text-slate-500 font-mono">Loading questions...</p>
       </div>
     );
   }
@@ -107,8 +121,8 @@ export default function BlankFillingPractice({
       <div className="bg-white p-12 rounded-3xl border border-slate-200/60 shadow-xs text-center space-y-4">
         <HelpCircle className="w-12 h-12 text-slate-300 mx-auto" />
         <div>
-          <p className="text-sm font-bold text-slate-700">কোনো প্রশ্ন পাওয়া যায়নি</p>
-          <p className="text-xs text-slate-400 mt-1">এডমিন প্যানেল থেকে এখনও কোনো শূন্যস্থান পূরণের প্রশ্ন আপলোড করা হয়নি।</p>
+          <p className="text-sm font-bold text-slate-700">No questions found</p>
+          <p className="text-xs text-slate-400 mt-1">No blank filling questions have been uploaded for this course yet.</p>
         </div>
       </div>
     );
@@ -167,7 +181,7 @@ export default function BlankFillingPractice({
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800">অভিনন্দন! অনুশীলন সম্পন্ন হয়েছে</h3>
+          <h3 className="text-xl sm:text-2xl font-black text-slate-800">Practice Completed!</h3>
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Session Summary</p>
         </div>
 
@@ -187,9 +201,9 @@ export default function BlankFillingPractice({
         <div className="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50 flex items-center gap-3 justify-center text-left">
           <Activity className="w-5 h-5 text-indigo-500" />
           <div>
-            <p className="text-xs font-black text-slate-800">সর্বমোট প্রগ্রেস (Total Progress)</p>
+            <p className="text-xs font-black text-slate-800">Total Progress</p>
             <p className="text-[11px] text-slate-500 font-medium">
-              ডাটাবেজে থাকা মোট {totalQuestionsInDatabase} টি প্রশ্নের মধ্যে আপনি এ পর্যন্ত {totalCorrectInHistory} টি সঠিক উত্তর দিয়েছেন।
+              You have successfully answered {totalCorrectInHistory} of {totalQuestionsInDatabase} total questions in the database.
             </p>
           </div>
         </div>
@@ -199,7 +213,7 @@ export default function BlankFillingPractice({
           className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm rounded-xl transition cursor-pointer shadow-sm shadow-indigo-500/10 flex items-center justify-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>পুনরায় শুরু করুন (Restart Session)</span>
+          <span>Restart Session</span>
         </button>
       </motion.div>
     );
@@ -213,10 +227,10 @@ export default function BlankFillingPractice({
       <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center justify-between gap-4">
         <div className="space-y-1">
           <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest font-mono">Active Game Mode</span>
-          <h4 className="text-sm font-extrabold text-slate-800">Blank Filling Practice (শূন্যস্থান পূরণ)</h4>
+          <h4 className="text-sm font-extrabold text-slate-800">Blank Filling Practice</h4>
         </div>
         <div className="text-right">
-          <span className="text-xs font-bold text-slate-400">প্রশ্ন: </span>
+          <span className="text-xs font-bold text-slate-400">Question: </span>
           <span className="text-xs font-black text-indigo-600 font-mono">{currentIndex + 1} / {questions.length}</span>
         </div>
       </div>
@@ -231,10 +245,10 @@ export default function BlankFillingPractice({
           {sentenceParts[0]}
           <span className={`inline-block px-3 py-1 mx-1.5 rounded-xl border-2 font-mono text-xs sm:text-sm transition-all duration-300 ${
             isAnswered 
-              ? (selectedOption === currentQuestion.answer 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
-                  : 'bg-rose-50 text-rose-700 border-rose-300')
-              : 'bg-indigo-50/50 text-indigo-600 border-dashed border-indigo-200 min-w-[70px] text-center'
+            ? (selectedOption === currentQuestion.answer 
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
+                : 'bg-rose-50 text-rose-700 border-rose-300')
+            : 'bg-indigo-50/50 text-indigo-600 border-dashed border-indigo-200 min-w-[70px] text-center'
           }`}>
             {isAnswered ? selectedOption : '___'}
           </span>
@@ -286,12 +300,12 @@ export default function BlankFillingPractice({
                 {selectedOption === currentQuestion.answer ? (
                   <span className="flex items-center gap-1 text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
                     <Check className="w-3.5 h-3.5" />
-                    সঠিক উত্তর! (Correct Answer)
+                    Correct Answer
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-rose-600 font-extrabold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
                     <X className="w-3.5 h-3.5" />
-                    ভুল উত্তর! সঠিক: {currentQuestion.answer}
+                    Incorrect! Correct answer is: {currentQuestion.answer}
                   </span>
                 )}
               </div>
@@ -300,7 +314,7 @@ export default function BlankFillingPractice({
                 onClick={handleNext}
                 className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
-                <span>{currentIndex === questions.length - 1 ? 'শেষ করুন' : 'পরবর্তী প্রশ্ন'}</span>
+                <span>{currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </motion.div>
@@ -312,10 +326,10 @@ export default function BlankFillingPractice({
       <div className="bg-slate-50 border border-slate-200/50 p-4 rounded-2xl flex items-center justify-between text-xs">
         <span className="font-bold text-slate-500 flex items-center gap-1.5">
           <Activity className="w-4 h-4 text-slate-400" />
-          <span>টোটাল প্রগ্রেস রেকর্ড (All-time Progress)</span>
+          <span>All-time Progress Record</span>
         </span>
         <span className="font-black text-slate-700">
-          সঠিক সমাধান: {totalCorrectInHistory} / {totalQuestionsInDatabase}
+          Correct Solutions: {totalCorrectInHistory} / {totalQuestionsInDatabase}
         </span>
       </div>
     </div>

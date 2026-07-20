@@ -29,6 +29,7 @@ interface PracticeCenterProps {
   activeGroup: number | string | null;
   settings: AppSettings;
   onQuizComplete: (score: number, totalQuestions: number) => void;
+  activeCourseId: string;
 }
 
 export default function PracticeCenter({
@@ -44,7 +45,8 @@ export default function PracticeCenter({
   onUpdateBlankProgress,
   activeGroup,
   settings,
-  onQuizComplete
+  onQuizComplete,
+  activeCourseId
 }: PracticeCenterProps) {
   const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank'>('hub');
 
@@ -136,9 +138,9 @@ export default function PracticeCenter({
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-500/20 text-indigo-200 text-[10px] font-bold rounded-full uppercase tracking-wider border border-indigo-500/30">
                 Practice Hub
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Practice & Games (অনুশীলন কেন্দ্র)</h2>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Practice & Games</h2>
               <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed font-medium">
-                আপনার শেখা শব্দগুলোকে মজাদার ও কার্যকরী উপায়ে রিভিশন দিন। আপনার মনে রাখার গতি ও সঠিকতা যাচাই করতে নিচের যেকোনো একটি মোড সিলেক্ট করুন।
+                Review your vocabulary words in fun, interactive ways. Select one of the practice modes below to test your recall and accuracy.
               </p>
             </div>
           </div>
@@ -163,14 +165,14 @@ export default function PracticeCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Practice & Quiz</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    মাল্টিপল চয়েস কোশ্চেন (MCQ) এবং স্পেলিং টেস্ট দিয়ে নিজের মেমোরি লেভেল টেস্ট করুন।
+                    Test your memory recall using multiple choice questions (MCQ) and spelling checks.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">Test Recall</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-                  <span>স্টার্ট করুন</span>
+                  <span>Start Now</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -190,14 +192,14 @@ export default function PracticeCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Word Match</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    কার্ড ম্যাচিং করার এই ফাস্ট-পেসড গেমটির মাধ্যমে রিফ্লেক্স এবং মেমোরি বুস্ট করুন।
+                    Boost your reflexes and memory retention through this fast-paced card matching game.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-pink-600 tracking-wider uppercase font-mono">Play Game</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-pink-600 transition">
-                  <span>খেলা শুরু করুন</span>
+                  <span>Start Play</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -217,14 +219,14 @@ export default function PracticeCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Synonym Check</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    শব্দের সমার্থক ও বিপরীতার্থক রূপগুলো এনালাইসিস করে ভোকাবুলারি গভীরতা বাড়ান।
+                    Deepen your vocabulary knowledge by matching synonyms and word meanings.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-amber-600 tracking-wider uppercase font-mono">AI Verification</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-amber-600 transition">
-                  <span>যাচাই করুন</span>
+                  <span>Verify Now</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -244,14 +246,14 @@ export default function PracticeCenter({
                 <div className="space-y-1">
                   <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling</h3>
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    বাক্যের উপযুক্ত শূন্যস্থানটি পূরণ করে ব্যাকরণ ও রিকল স্কিল বৃদ্ধি করুন।
+                    Practice grammar, syntax, and sentence memory recall by filling in correct blanks.
                   </p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-bold text-emerald-600 tracking-wider uppercase font-mono">Sentence Quiz</span>
                 <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-600 transition">
-                  <span>অনুশীলন করুন</span>
+                  <span>Practice Now</span>
                   <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
@@ -298,6 +300,7 @@ export default function PracticeCenter({
         <BlankFillingPractice
           blankProgress={blankProgress}
           onUpdateBlankProgress={onUpdateBlankProgress}
+          activeCourseId={activeCourseId}
         />
       )}
     </div>

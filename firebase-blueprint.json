@@ -75,6 +75,20 @@
         }
       },
       "required": ["courseId", "bkashNumber", "email", "trxId", "status", "createdAt"]
+    },
+    "BlankQuestion": {
+      "title": "Blank Question",
+      "description": "Represents a blank-filling practice question scoped to a particular vocabulary course.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sentence": { "type": "string" },
+        "options": { "type": "array" },
+        "answer": { "type": "string" },
+        "courseId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "sentence", "options", "answer", "courseId"]
     }
   },
   "firestore": {
@@ -85,6 +99,10 @@
     "/access_requests/{requestId}": {
       "schema": "AccessRequest",
       "description": "Storage of course access/purchase requests submitted by students."
+    },
+    "/blank_questions/{questionId}": {
+      "schema": "BlankQuestion",
+      "description": "Storage of course-specific blank filling practice questions."
     }
   }
 }

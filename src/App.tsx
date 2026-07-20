@@ -1097,7 +1097,7 @@ export default function App() {
 
   // Clear data function for reset/refresh study
   const handleClearAllProgress = () => {
-    if (confirm('আপনি কি নিশ্চিত যে আপনার পড়াশোনার সমস্ত প্রগ্রেস এবং স্ট্রিক মুছে ফেলতে চান? এটি পুনরায় ফিরিয়ে আনা সম্ভব নয়।')) {
+    if (confirm('Are you sure you want to delete all your study progress and streaks? This action cannot be undone.')) {
       setProgress({});
       setGoal({
         dailyTarget: 15,
@@ -1106,7 +1106,7 @@ export default function App() {
         history: {}
       });
       setSynonymProgress({});
-      alert('সফলভাবে সমস্ত প্রগ্রেস মুছে ফেলা হয়েছে।');
+      alert('All progress has been successfully deleted.');
     }
   };
 
@@ -1129,8 +1129,8 @@ export default function App() {
           <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-bold">
             <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
             <span className={isOnline ? 'text-emerald-300' : 'text-amber-300'}>
-              {isOnline ? 'অনলাইন' : 'অফলাইন'}
-              {!isOnline && pendingSyncCount > 0 && ` (${pendingSyncCount}টি পেন্ডিং)`}
+              {isOnline ? 'Online' : 'Offline'}
+              {!isOnline && pendingSyncCount > 0 && ` (${pendingSyncCount} pending)`}
             </span>
           </div>
 
@@ -1138,7 +1138,7 @@ export default function App() {
           <button
             onClick={() => setDarkMode(prev => !prev)}
             className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
-            title={darkMode ? "লাইট মোড চালু করুন" : "নাইট মোড চালু করুন"}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Night Mode"}
             id="dark-mode-toggle"
           >
             {darkMode ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-300" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-300" />}
@@ -1360,6 +1360,7 @@ export default function App() {
                 setQuizScore(prev => prev + score);
                 setQuizTaken(prev => prev + 1);
               }}
+              activeCourseId={activeCourseId}
             />
           )}
 
