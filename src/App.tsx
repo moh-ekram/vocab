@@ -1131,7 +1131,10 @@ export default function App() {
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div>
-            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans">Vocabulary Memorizer</h1>
+            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans flex items-center gap-2">
+              <span>Memorizer:</span>
+              <span className="text-emerald-400 font-extrabold">{activeCourse?.title}</span>
+            </h1>
           </div>
         </div>
 

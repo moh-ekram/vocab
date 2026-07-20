@@ -353,12 +353,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
+          const explanation = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
+
           if (opts.length > 0 && answer) {
             questionsList.push({
               id: `bq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
               sentence,
               options: opts,
               answer,
+              explanation,
               courseId: course.id,
               createdAt: new Date().toISOString()
             });
@@ -489,7 +492,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
-          const reason = row[4] ? String(row[4]).trim() : '';
+          const reason = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
 
           if (wordsOpts.length === 4 && answer) {
             questionsList.push({
@@ -627,7 +630,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
-          const explanation = row[5] ? String(row[5]).trim() : '';
+          const explanation = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
 
           if (analogy && opts.length === 4 && answer) {
             questionsList.push({
@@ -972,8 +975,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             });
           };
 
-          const mobileKey = findKey(['mobile', 'bkashNumber', 'bkash', 'phone', 'number', 'মোবাইল', 'বিকাশ']);
-          const trxKey = findKey(['trxid', 'transaction', 'txid', 'transactionid', 'ট্রাঞ্জেকশন']);
+          const mobileKey = findKey(['mobile', 'bkashnumber', 'bkash', 'phone', 'number']);
+          const trxKey = findKey(['trxid', 'transaction', 'txid', 'transactionid']);
 
           const mobileVal = mobileKey ? String(row[mobileKey]).trim() : '';
           const trxVal = trxKey ? String(row[trxKey]).trim() : '';
@@ -1720,7 +1723,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                 <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white divide-y divide-slate-100">
                   {[
-                    { key: 'quiz', label: 'Practice & Quiz', desc: 'Multiple choice questions and spelling practice games.', icon: GraduationCap },
+                    { key: 'quiz', label: 'MCQ Quiz', desc: 'Multiple choice questions and spelling practice games.', icon: GraduationCap },
                     { key: 'match', label: 'Word Match Game', desc: 'Card matching memory training game.', icon: Gamepad2 },
                     { key: 'synonym', label: 'Synonym Check', desc: 'Synonym matching and verification game.', icon: Sparkles },
                     { key: 'blank', label: 'Blank Filling Practice', desc: 'Sentence fill-in-the-blanks practice.', icon: BookOpen },

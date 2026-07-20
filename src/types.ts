@@ -1,6 +1,6 @@
 export interface VocabularyWord {
   id: string; // unique id, e.g. "g1-w1"
-  group: number | string; // Support both numeric (1 to 37) and custom group names (like 'ক')
+  group: number | string; // Support both numeric (1 to 37) and custom group names (like letter-based)
   word: string; // Base Word
   meaning: string; // Bengali Meaning
   synonyms: string; // Synonyms
@@ -9,7 +9,7 @@ export interface VocabularyWord {
   example?: string; // Optional usage sentence/example
 }
 
-export type WordStatus = 'know' | 'dont_know' | 'confusion' | 'unrated'; // 'পারি', 'পারি না', 'কনফিউশন', 'Unrated'
+export type WordStatus = 'know' | 'dont_know' | 'confusion' | 'unrated'; // 'know', 'dont_know', 'confusion', 'unrated'
 
 export interface UserProgress {
   status: WordStatus;
@@ -102,6 +102,7 @@ export interface BlankQuestion {
   sentence: string;
   options: string[];
   answer: string;
+  explanation?: string;
   courseId?: string;
   createdAt?: string;
 }

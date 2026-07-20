@@ -236,12 +236,15 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             }
           }
 
+          const explanation = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
+
           if (opts.length > 0 && answer) {
             questionsList.push({
               id: `bq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
               sentence,
               options: opts,
               answer,
+              explanation,
               createdAt: new Date().toISOString()
             });
           }
@@ -1407,7 +1410,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                     <button
                       type="button"
                       onClick={() => {
-                        const sample = `word\tmeaning\tgroup\tsynonyms\textraWord\textraMeaning\texample\nApple\tআপেল\t1\tMalus domestica\t\t\tAn apple a day keeps the doctor away.\nBanana\tকলা\t1\tMusa sapientum\t\t\tBananas are rich in potassium.`;
+                        const sample = `word\tmeaning\tgroup\tsynonyms\textraWord\textraMeaning\texample\nApple\tA sweet red round fruit\t1\tMalus domestica\t\t\tAn apple a day keeps the doctor away.\nBanana\tA long curved yellow fruit\t1\tMusa sapientum\t\t\tBananas are rich in potassium.`;
                         setPasteInputText(sample);
                         processPastedText(sample);
                       }}
@@ -1423,7 +1426,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                       setPasteInputText(e.target.value);
                       processPastedText(e.target.value);
                     }}
-                    placeholder="Word[Tab]Meaning[Tab]Group[Tab]Synonyms&#10;e.g.:&#10;Abate&#09;প্রশমিত হওয়া&#09;1&#09;subside, decrease&#10;Banal&#09;তুচ্ছ বা সাধারণ&#09;1&#09;hackneyed, trite"
+                    placeholder="Word[Tab]Meaning[Tab]Group[Tab]Synonyms&#10;e.g.:&#10;Abate&#09;subside or decrease&#09;1&#09;subside, decrease&#10;Banal&#09;trite or commonplace&#09;1&#09;hackneyed, trite"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition text-slate-700"
                   />
                   <p className="text-[9px] text-slate-400 leading-relaxed font-semibold">
@@ -1817,9 +1820,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         <div className="space-y-8 animate-fade-in">
           {/* Header */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs">
-            <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling Practice Management (শূন্যস্থান পূরণ অনুশীলন ব্যবস্থাপনা)</h3>
+            <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling Practice Management</h3>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              এডমিন প্যানেল থেকে শূন্যস্থান পূরণ প্রশ্নাবলী পরিচালনা করুন। আপনি এক্সেল ফাইল আপলোড করতে পারেন অথবা ম্যানুয়ালি প্রশ্ন যোগ করতে পারেন।
+              Manage blank filling questions from the Admin Panel. You can upload an Excel file or add questions manually.
             </p>
           </div>
 
@@ -1829,10 +1832,10 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               <div>
                 <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                   <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                  <span>Excel Upload (এক্সেল ফাইল আপলোড)</span>
+                  <span>Excel Upload</span>
                 </h4>
                 <p className="text-[11px] text-slate-400 mt-1 font-medium">
-                  ফাইল ফরম্যাট: প্রথম কলামে Sentence with blank (যেমন: "He is a ___ boy."), পরের ৪ কলামে ৪টি অপশন। সঠিক অপশনটির সাথে '#' ট্যাগ যুক্ত থাকবে (যেমন: "good#")।
+                  File format: First column has Sentence with blank (e.g., "He is a ___ boy."), next 4 columns are options. The correct option must have '#' appended (e.g., "good#").
                 </p>
               </div>
 
@@ -1845,7 +1848,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-xs font-bold text-slate-700">ফাইল নির্বাচন করতে ক্লিক বা ড্র্যাগ করুন</p>
+                <p className="text-xs font-bold text-slate-700">Click or drag file to select</p>
                 <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Supports .xlsx, .xls, .csv</p>
               </div>
 
@@ -1861,7 +1864,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-emerald-600 flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg">
                       <CheckCircle className="w-3.5 h-3.5" />
-                      <span>{excelQuestionsPreview.length} টি প্রশ্ন পাওয়া গেছে</span>
+                      <span>{excelQuestionsPreview.length} questions found</span>
                     </span>
                     <button
                       onClick={handleSaveBlankExcelQuestions}
@@ -1870,7 +1873,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                         excelSaveStatus === 'saving' ? 'bg-slate-400' : 'bg-emerald-600 hover:bg-emerald-500'
                       }`}
                     >
-                      {excelSaveStatus === 'saving' ? 'Saving...' : 'ফায়ারস্টোরে সেভ করুন'}
+                      {excelSaveStatus === 'saving' ? 'Saving...' : 'Save to Firestore'}
                     </button>
                   </div>
 
@@ -1895,7 +1898,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               {excelSaveStatus === 'saved' && (
                 <div className="p-3.5 bg-emerald-50 text-emerald-700 rounded-xl flex items-center gap-2 border border-emerald-100 text-xs font-semibold">
                   <CheckCircle className="w-4 h-4" />
-                  <span>প্রশ্নগুলো ফায়ারস্টোরে সফলভাবে সেভ করা হয়েছে!</span>
+                  <span>Questions successfully saved to Firestore!</span>
                 </div>
               )}
             </div>
@@ -1905,14 +1908,14 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               <div>
                 <h4 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                   <PlusCircle className="w-4 h-4 text-indigo-500" />
-                  <span>Add Question Manually (ম্যানুয়ালি প্রশ্ন যোগ করুন)</span>
+                  <span>Add Question Manually</span>
                 </h4>
-                <p className="text-[11px] text-slate-400 mt-1 font-medium">নিচের ফর্মটি পূরণ করে সরাসরি নতুন একটি প্রশ্ন ডাটাবেজে যুক্ত করুন।</p>
+                <p className="text-[11px] text-slate-400 mt-1 font-medium">Fill out the form below to add a new question directly to the database.</p>
               </div>
 
               <form onSubmit={handleManualAddBlankQuestion} className="space-y-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sentence with blank (শূন্যস্থানসহ বাক্য)</label>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Sentence with blank</label>
                   <input
                     type="text"
                     required
@@ -1971,7 +1974,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Correct Option (সঠিক উত্তর নির্বাচন করুন)</label>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Correct Option</label>
                   <select
                     value={newCorrectIndex}
                     onChange={(e) => setNewCorrectIndex(Number(e.target.value))}
@@ -1988,7 +1991,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   type="submit"
                   className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs"
                 >
-                  ডাটাবেজে যুক্ত করুন
+                  Add to Database
                 </button>
               </form>
             </div>
@@ -1998,8 +2001,8 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h4 className="font-extrabold text-slate-800 text-sm">Existing Questions ({blankQuestions.length} টি প্রশ্ন আছে)</h4>
-                <p className="text-[11px] text-slate-400 font-medium">ডাটাবেজে সংরক্ষিত সব শূন্যস্থান পূরণ প্রশ্নাবলী।</p>
+                <h4 className="font-extrabold text-slate-800 text-sm">Existing Questions ({blankQuestions.length})</h4>
+                <p className="text-[11px] text-slate-400 font-medium">All blank filling questions stored in the database.</p>
               </div>
               <button
                 onClick={fetchBlankQuestions}
@@ -2018,17 +2021,17 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             ) : blankQuestions.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-100 rounded-2xl">
                 <Info className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-bold text-slate-600">কোনো প্রশ্ন পাওয়া যায়নি</p>
-                <p className="text-[10px] text-slate-400 font-semibold">অনুগ্রহ করে এক্সেল আপলোড বা ম্যানুয়ালি প্রশ্ন যোগ করুন।</p>
+                <p className="text-xs font-bold text-slate-600">No questions found</p>
+                <p className="text-[10px] text-slate-400 font-semibold">Please upload an Excel sheet or add questions manually.</p>
               </div>
             ) : (
               <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-xs">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-[10px] font-extrabold text-slate-450 uppercase tracking-wider border-b border-slate-100 font-sans">
-                      <th className="px-4 py-3">Sentence (বাক্য)</th>
-                      <th className="px-4 py-3">Options (অপশনসমূহ)</th>
-                      <th className="px-4 py-3">Answer (সঠিক উত্তর)</th>
+                      <th className="px-4 py-3">Sentence</th>
+                      <th className="px-4 py-3">Options</th>
+                      <th className="px-4 py-3">Answer</th>
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>

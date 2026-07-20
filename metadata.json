@@ -1,6 +1,6 @@
 {
-  "name": "Vocabulary Learning: Bishorghor",
-  "description": "ভোকাবুলারি মেমোরাইজেশন অ্যাপ - ৩৭ টি গ্রুপে বিভক্ত ১১১০ টি শব্দ, ফ্ল্যাশ কার্ড, কুইজ পরীক্ষা, শব্দমিল খেলা এবং প্রগ্রেস ট্র্যাকার।",
+  "name": "Memorizer",
+  "description": "Memorizer - Vocabulary learning app with structured courses, flashcards, MCQ quizzes, word games, and detailed progress tracking.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

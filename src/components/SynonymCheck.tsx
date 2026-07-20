@@ -466,10 +466,9 @@ export default function SynonymCheck({
     };
   };
 
-  // Bengali number converter helper
+  // Bengali number converter helper (disabled to remove Bengali representations)
   const toBengaliNumber = (num: number | string) => {
-    const bnNums = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, d => bnNums[parseInt(d)]);
+    return num.toString();
   };
 
   const overallStats = getOverallStats();

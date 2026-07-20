@@ -430,7 +430,7 @@ export default function OddOneOutGame({
               >
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
                   <span className="font-extrabold text-slate-800 block mb-1">Explanation:</span>
-                  {currentQuestion.reason || "One of these words is distinct in meaning from the others."}
+                  {currentQuestion.reason ? currentQuestion.reason : "Explanation not found"}
                 </div>
 
                 <div className="flex items-center justify-between gap-4">

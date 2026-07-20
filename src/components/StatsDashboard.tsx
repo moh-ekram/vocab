@@ -68,7 +68,7 @@ export default function StatsDashboard({
     const cleanTrx = trxId.trim();
 
     if (!cleanSender || !cleanEmail || !cleanTrx) {
-      setCheckoutMessage({ type: 'error', text: 'অনুগ্রহ করে সবগুলো ঘর সঠিকভাবে পূরণ করুন।' });
+      setCheckoutMessage({ type: 'error', text: 'Please fill in all fields correctly.' });
       return;
     }
 
@@ -107,12 +107,19 @@ export default function StatsDashboard({
         onImportCourse(selectedBuyCourse);
         setCheckoutMessage({
           type: 'success',
-          text: 'পেমেন্ট স্বয়ংক্রিয়ভাবে যাচাই করা হয়েছে! আপনাকে তাত্ক্ষণিকভাবে কোর্সে অ্যাক্সেস দেওয়া হয়েছে। পড়াশোনা শুরু করুন!'
+          text: 'Payment automatically verified! You have been granted instant access. Start learning!'
         });
       } else {
         setCheckoutMessage({
           type: 'success',
-          text: 'আপনার রিক্যুয়েস্টটি সফলভাবে পাঠানো হয়েছে! এডমিন শীঘ্রই যাচাই করে আপনার কোর্স�        text: 'Failed to send request. Please try again.'
+          text: 'Your request has been successfully submitted! Admin will verify and activate your course access soon.'
+        });
+      }
+    } catch (err) {
+      console.error("Error submitting access request:", err);
+      setCheckoutMessage({
+        type: "error",
+        text: "Failed to send request. Please try again."
       });
     } finally {
       setIsSubmittingRequest(false);
@@ -266,33 +273,6 @@ export default function StatsDashboard({
     knowCount: knowCount,
     isCurrentUser: true,
     isMock: false
-  };// 1. Calculate overall counts
-  const totalWords = words.length;
-  let knowCount = 0;
-  let dontKnowCount = 0;
-  let confusionCount = 0;
-  let unratedCount = 0;
-
-  words.forEach(w => {
-    const status = progress[w.id]?.status || 'unrated';
-    if (status === 'know') knowCount++;
-    else if (status === 'dont_know') dontKnowCount++;
-    else if (status === 'confusion') confusionCount++;
-    else unratedCount++;
-  });
-
-  const overallCompleteness = totalWords > 0 ? Math.round((knowCount / totalWords) * 100) : 0;
-
-  // Compute final merged leaderboard using ONLY real users
-  const currentUserId = auth.currentUser?.uid || 'current-local';
-  const currentUserStats = {
-    id: currentUserId,
-    displayName: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'আপনি (You)',
-    email: auth.currentUser?.email || 'local-user',
-    streak: goal.streak || 1,
-    knowCount: knowCount,
-    isCurrentUser: true,
-    isMock: false
   };
 
   const otherDbUsers = dbLeaderboard.filter(user => user.id !== currentUserId);
@@ -353,7 +333,7 @@ export default function StatsDashboard({
   // Filter groups
   const filteredGroups = groupStats.filter(g => {
     if (!searchTerm) return true;
-    return `গ্রুপ ${g.group}`.includes(searchTerm) || g.group.toString() === searchTerm;
+    return `Group ${g.group}`.includes(searchTerm) || g.group.toString() === searchTerm;
   });
 
   // Calculate today's study progress
@@ -376,7 +356,7 @@ export default function StatsDashboard({
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     const dateStr = `${year}-${month}-${day}`;
-    const formattedDate = d.toLocaleDateString('bn-BD', { month: 'short', day: 'numeric' });
+    const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return {
       date: dateStr,
       label: formattedDate,
@@ -418,7 +398,7 @@ export default function StatsDashboard({
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
           <div className="space-y-1 md:space-y-2">
-            <h2 className="text-xl md:text-3xl font-black font-sans tracking-tight">আপনার শব্দভাণ্ডার ড্যাশবোর্ড</h2>
+            <h2 className="text-xl md:text-3xl font-black font-sans tracking-tight">Your Vocabulary Dashboard</h2>
           </div>
 
           <div className="grid grid-cols-3 md:flex md:items-center md:justify-end gap-2.5 sm:gap-4 w-full md:w-auto">
@@ -431,8 +411,8 @@ export default function StatsDashboard({
                 <Flame className="w-4 h-4 sm:w-6 sm:h-6 fill-current" />
               </div>
               <div className="min-w-0">
-                <p className="text-[8px] sm:text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans truncate">স্ট্রিক</p>
-                <p className="text-xs sm:text-xl font-black font-sans truncate">{goal.streak} দিন</p>
+                <p className="text-[8px] sm:text-[10px] text-indigo-200 font-bold uppercase tracking-wider font-sans truncate">Streak</p>
+                <p className="text-xs sm:text-xl font-black font-sans truncate">{goal.streak} Days</p>
               </div>
             </motion.div>
 
@@ -441,14 +421,14 @@ export default function StatsDashboard({
               whileHover={{ scale: 1.05 }}
               onClick={() => onSelectTab?.('flashcard')}
               className="bg-white/10 backdrop-blur-md rounded-2xl p-2 sm:p-4 flex flex-row items-center text-left gap-2 sm:gap-3 border border-white/10 shadow-xs cursor-pointer hover:bg-white/15 transition-all w-full justify-start col-span-2 md:flex-1 md:max-w-[280px]"
-              title="ফ্ল্যাশকার্ডে যান"
+              title="Go to Flashcards"
             >
               <div className="p-1 sm:p-2 bg-indigo-500 rounded-xl text-white flex-shrink-0">
                 <CreditCard className="w-4 h-4 sm:w-6 sm:h-6 animate-icon-flip" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs sm:text-xl font-black font-sans flex items-center justify-between sm:justify-start gap-1 truncate">
-                  <span>ফ্ল্যাশকার্ড প্র্যাকটিস</span>
+                  <span>Flashcards Practice</span>
                   <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-200 flex-shrink-0" />
                 </p>
               </div>
@@ -529,7 +509,7 @@ export default function StatsDashboard({
                     setTrxId('');
                     setCheckoutMessage(null);
                   }}
-                  className="p-4 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-4 min-h-[112px] h-auto py-4 bg-slate-50 border-slate-200 hover:border-amber-350 hover:bg-amber-50/10"
+                  className="p-4 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-4 min-h-[112px] h-auto py-4 bg-slate-50 border-slate-200 hover:border-amber-300 hover:bg-amber-50/10"
                 >
                   {/* Left Side: Title and Locked Tag */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-1">
@@ -539,24 +519,24 @@ export default function StatsDashboard({
                     <div className="mt-2 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
                       {isExpired ? (
                         <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 text-rose-600 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-rose-100">
-                          <Lock className="w-2.5 h-2.5" /> মেয়াদ উত্তীর্ণ (Expired)
+                          <Lock className="w-2.5 h-2.5" /> Expired
                         </span>
                       ) : (
                         <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-amber-100">
-                          <Lock className="w-2.5 h-2.5" /> পেমেন্ট পেন্ডিং (Locked)
+                          <Lock className="w-2.5 h-2.5" /> Locked
                         </span>
                       )}
 
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (confirm(`আপনি কি "${c.title}" কোর্সটির এনরোলমেন্ট বাতিল করতে চান?`)) {
+                          if (confirm(`Are you sure you want to unenroll from the "${c.title}" course?`)) {
                             setEnrolledCourseIds(prev => prev.filter(id => id !== c.id));
                           }
                         }}
                         className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase transition border cursor-pointer bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50/50 hover:text-rose-600 hover:border-rose-150"
                       >
-                        <Trash2 className="w-2.5 h-2.5" /> ডিলিট
+                        <Trash2 className="w-2.5 h-2.5" /> Delete
                       </button>
                     </div>
                   </div>
@@ -593,18 +573,18 @@ export default function StatsDashboard({
                   <div className="mt-2 flex items-center gap-2 flex-wrap">
                     {isActive ? (
                       <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-white text-emerald-600 font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs">
-                        <Check className="w-2.5 h-2.5" /> সক্রিয়
+                        <Check className="w-2.5 h-2.5" /> Active
                       </span>
                     ) : (
                       <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-emerald-500 text-white font-black text-[9px] rounded-full uppercase tracking-wider shadow-xs shadow-emerald-500/15">
-                        <Check className="w-2.5 h-2.5" /> ইনরোলড
+                        <Check className="w-2.5 h-2.5" /> Enrolled
                       </span>
                     )}
 
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`আপনি কি "${c.title}" কোর্সটির এনরোলমেন্ট বাতিল করতে চান?`)) {
+                        if (confirm(`Are you sure you want to unenroll from the "${c.title}" course?`)) {
                           setEnrolledCourseIds(prev => {
                             const updated = prev.filter(id => id !== c.id);
                             if (activeCourseId === c.id) {
@@ -635,7 +615,7 @@ export default function StatsDashboard({
                           : 'bg-slate-100 border-slate-200 text-slate-500 hover:bg-rose-50/50 hover:text-rose-600 hover:border-rose-150'
                       }`}
                     >
-                      <Trash2 className="w-2.5 h-2.5" /> ডিলিট
+                      <Trash2 className="w-2.5 h-2.5" /> Delete
                     </button>
                   </div>
                 </div>
@@ -694,9 +674,9 @@ export default function StatsDashboard({
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-1.5">
                   <Sparkles className="w-5 h-5 text-indigo-500" />
-                  নতুন কোর্সে এনরোল করুন
+                  Enroll in a New Course
                 </h3>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">আপনার শব্দভাণ্ডার বৃদ্ধি করতে আরও কোর্স শুরু করুন</p>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">Start more courses to expand your vocabulary</p>
               </div>
               <button 
                 onClick={() => setShowEnrollModal(false)}
@@ -711,8 +691,8 @@ export default function StatsDashboard({
                 <div className="p-8 text-center text-slate-400 font-bold border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2">
                   <Check className="w-8 h-8 text-emerald-500 bg-emerald-50 p-1.5 rounded-full" />
                   <div>
-                    <p className="text-slate-700">আপনি ইতিমধ্যেই সব কোর্সে যুক্ত আছেন!</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">নতুন নতুন কোর্স অ্যাডমিন প্যানেল থেকে আপলোড করার সাথে সাথেই এখানে তালিকাভুক্ত হয়ে যাবে।</p>
+                    <p className="text-slate-700">You are already enrolled in all courses!</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">New courses will appear here as soon as they are uploaded from the Admin Panel.</p>
                   </div>
                 </div>
               ) : (
@@ -761,11 +741,11 @@ export default function StatsDashboard({
                         </div>
                         <p className="text-[11px] text-slate-500 leading-relaxed">{c.description}</p>
                         <div className="text-[10px] text-slate-400 font-extrabold font-mono pt-1">
-                          শব্দসংখ্যা: {courseWords.length} টি • গ্রুপসমূহ: {c.totalGroups} টি
+                          Words: {courseWords.length} • Groups: {c.totalGroups}
                         </div>
                         {c.isRestricted && (
                           <div className="text-[10px] text-amber-600 bg-amber-50 px-2 py-1 rounded-lg font-bold mt-1.5 flex items-center gap-1">
-                            <span>🔒 রেস্ট্রিকটেড কোর্স (Restricted Course)</span>
+                            <span>🔒 Restricted Course</span>
                           </div>
                         )}
                       </div>
@@ -781,7 +761,7 @@ export default function StatsDashboard({
                           className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm animate-fade-in"
                         >
                           <Plus className="w-3.5 h-3.5" />
-                          <span>এনরোল করুন ও পড়া শুরু করুন</span>
+                          <span>Enroll & Start Learning</span>
                         </button>
                       ) : (
                         <button
@@ -808,7 +788,7 @@ export default function StatsDashboard({
                 onClick={() => setShowEnrollModal(false)}
                 className="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 text-xs font-bold rounded-xl cursor-pointer"
               >
-                বন্ধ করুন
+                Close
               </button>
             </div>
           </div>
@@ -823,7 +803,7 @@ export default function StatsDashboard({
               <div>
                 <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2">
                   <span className="p-1 bg-pink-500 rounded-lg text-white font-black text-xs font-mono px-1.5">bKash</span>
-                  কোর্স এক্সেস রিক্যুয়েস্ট
+                  Course Access Request
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold mt-0.5">{selectedBuyCourse.title}</p>
               </div>
@@ -837,24 +817,24 @@ export default function StatsDashboard({
 
             <form onSubmit={handleRequestAccess} className="p-6 overflow-y-auto space-y-4 flex-1">
               <div className="p-4 bg-pink-50 border border-pink-100 rounded-2xl space-y-2 text-xs">
-                <p className="font-black text-pink-700">বিকাশ সেন্ড মানি নির্দেশাবলী:</p>
+                <p className="font-black text-pink-700">bKash Send Money Instructions:</p>
                 <p className="font-semibold text-slate-700 leading-relaxed">
-                  নিচের বিকাশ নাম্বারে <strong className="text-pink-600 font-black text-sm">{selectedBuyCourse.price || 0} টাকা</strong> সেন্ড মানি (Send Money) করে নিচের ফরমটি ফিলাপ করুন।
+                  Send <strong className="text-pink-600 font-black text-sm">{selectedBuyCourse.price || 0} BDT</strong> to the bKash number below (Send Money option) and fill out the form.
                 </p>
                 <div className="flex items-center justify-between p-2.5 bg-white border border-pink-100 rounded-xl mt-1.5">
                   <div>
-                    <p className="text-[9px] text-slate-400 font-bold">বিকাশ পার্সোনাল নাম্বার:</p>
+                    <p className="text-[9px] text-slate-400 font-bold">bKash Personal Number:</p>
                     <p className="font-black text-slate-800 text-xs font-mono">{selectedBuyCourse.bkashNumber || '01700000000'}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(selectedBuyCourse.bkashNumber || '01700000000');
-                      alert('নাম্বারটি কপি করা হয়েছে!');
+                      alert('Number copied!');
                     }}
                     className="p-1.5 hover:bg-slate-100 rounded-lg text-indigo-600 font-bold text-[10px] flex items-center gap-1 cursor-pointer border border-indigo-100"
                   >
-                    <Copy className="w-3 h-3" /> কপি করুন
+                    <Copy className="w-3 h-3" /> Copy
                   </button>
                 </div>
               </div>
@@ -876,37 +856,37 @@ export default function StatsDashboard({
 
               <div className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">১/ বিকাশ নাম্বার (যেটি দিয়ে {selectedBuyCourse.price || 0} টাকা সেন্ড মানি করেছেন) <span className="text-rose-500">*</span></label>
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">1. bKash Sender Number (used to send {selectedBuyCourse.price || 0} BDT) <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     required
                     value={bkashSender}
                     onChange={(e) => setBkashSender(e.target.value)}
-                    placeholder="যেমন: 01712345678"
+                    placeholder="e.g. 01712345678"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">২/ ইমেইল (যেখানে কোর্সের এক্সেস দেওয়া হবে) <span className="text-rose-500">*</span></label>
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">2. Email (where course access will be granted) <span className="text-rose-500">*</span></label>
                   <input
                     type="email"
                     required
                     value={accessEmail}
                     onChange={(e) => setAccessEmail(e.target.value)}
-                    placeholder="যেমন: student@gmail.com"
+                    placeholder="e.g. student@gmail.com"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">৩/ বিকাশ ট্রাঞ্জেকশন নাম্বার (TrxID) <span className="text-rose-500">*</span></label>
+                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">3. bKash Transaction ID (TrxID) <span className="text-rose-500">*</span></label>
                   <input
                     type="text"
                     required
                     value={trxId}
                     onChange={(e) => setTrxId(e.target.value)}
-                    placeholder="যেমন: K8B9H5J2D"
+                    placeholder="e.g. K8B9H5J2D"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono font-bold transition text-slate-800 uppercase"
                   />
                 </div>
@@ -921,12 +901,12 @@ export default function StatsDashboard({
                   {isSubmittingRequest ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>অনুরোধ পাঠানো হচ্ছে...</span>
+                      <span>Sending Request...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>রিক্যুয়েস্ট এক্সেস (Request Access)</span>
+                      <span>Request Access</span>
                     </>
                   )}
                 </button>
@@ -951,9 +931,9 @@ export default function StatsDashboard({
             <div>
               <h3 className="text-base md:text-lg font-black text-slate-800 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-indigo-600" />
-                <span>অগ্রগতি ও শেখার বন্টন</span>
+                <span>Progress & Learning Distribution</span>
               </h3>
-              <p className="text-[11px] text-slate-400 font-bold font-sans">শব্দভাণ্ডারের সার্বিক অবস্থা এবং শিখন অগ্রগতির সামগ্রিক বিবরণী</p>
+              <p className="text-[11px] text-slate-400 font-bold font-sans">Overall vocabulary statistics and detailed study progress report</p>
             </div>
           </div>
 
@@ -1001,7 +981,7 @@ export default function StatsDashboard({
                 </div>
                 <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-emerald-700 font-sans">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span>পারি</span>
+                  <span>Known</span>
                 </div>
               </div>
 
@@ -1032,7 +1012,7 @@ export default function StatsDashboard({
                 </div>
                 <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-amber-700 font-sans">
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>কনফিউশন</span>
+                  <span>Confused</span>
                 </div>
               </div>
 
@@ -1063,7 +1043,7 @@ export default function StatsDashboard({
                 </div>
                 <div className="flex items-center gap-1 text-[10px] sm:text-xs font-black text-rose-700 font-sans">
                   <XCircle className="w-3.5 h-3.5" />
-                  <span>পারি না</span>
+                  <span>Don't Know</span>
                 </div>
               </div>
             </div>
@@ -1073,17 +1053,17 @@ export default function StatsDashboard({
           <div className="bg-white p-6 rounded-3xl border border-slate-200/60 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h4 className="font-extrabold text-slate-800 text-sm">গত ৭ দিনের পড়াশোনার অগ্রগতি</h4>
-                <p className="text-[10px] text-slate-400 font-bold font-sans">প্রতিদিন কতগুলো নতুন শব্দ শিখেছেন তার ইতিহাস</p>
+                <h4 className="font-extrabold text-slate-800 text-sm">Last 7 Days Study Progress</h4>
+                <p className="text-[10px] text-slate-400 font-bold font-sans">History of daily learned words</p>
               </div>
               <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 font-sans">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 bg-indigo-500 rounded-sm" />
-                  <span>পঠিত শব্দ</span>
+                  <span>Words Studied</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-0.5 bg-rose-400 border-t-2 border-dashed border-rose-400" />
-                  <span>দৈনিক লক্ষ্য ({goal.dailyTarget})</span>
+                  <span>Daily Goal ({goal.dailyTarget})</span>
                 </div>
               </div>
             </div>
@@ -1122,14 +1102,14 @@ export default function StatsDashboard({
                           <div className="bg-slate-900 text-white p-3 rounded-xl border border-slate-800 shadow-lg text-xs font-sans space-y-1">
                             <p className="font-extrabold text-slate-400">{data.label}</p>
                             <p className="font-black text-sm flex items-center gap-1">
-                              <span>{data.count} টি শব্দ</span>
+                              <span>{data.count} Words</span>
                               {completedTarget ? (
-                                <span className="text-emerald-400 text-[9px] bg-emerald-500/10 px-1.5 py-0.2 rounded font-black">লক্ষ্য অর্জিত 🔥</span>
+                                <span className="text-emerald-400 text-[9px] bg-emerald-500/10 px-1.5 py-0.2 rounded font-black">Goal Achieved 🔥</span>
                               ) : (
-                                <span className="text-rose-400 text-[9px] bg-rose-50/10 px-1.5 py-0.2 rounded font-semibold font-sans">বাকি {Math.max(0, data.target - data.count)} টি</span>
+                                <span className="text-rose-400 text-[9px] bg-rose-50/10 px-1.5 py-0.2 rounded font-semibold font-sans">{Math.max(0, data.target - data.count)} Left</span>
                               )}
                             </p>
-                            <p className="text-[10px] text-slate-500">দৈনিক লক্ষ্য: {data.target} টি</p>
+                            <p className="text-[10px] text-slate-500">Daily Goal: {data.target} Words</p>
                           </div>
                         );
                       }
@@ -1165,10 +1145,10 @@ export default function StatsDashboard({
           <div className="space-y-1">
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <BookOpen className="w-6 h-6 text-indigo-600" />
-              ভোকাবুলারি গ্রুপসমূহ (১-৩৭)
+              Vocabulary Groups (1-37)
             </h3>
             <p className="text-sm text-slate-500 font-sans">
-              যেকোনো নির্দিষ্ট গ্রুপে ক্লিক করে ফ্ল্যাশ কার্ড এবং শেখার গেম শুরু করুন।
+              Click on any group to start flashcard studies and learning games.
             </p>
           </div>
 
@@ -1177,7 +1157,7 @@ export default function StatsDashboard({
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="গ্রুপ নাম্বার বা নাম লিখুন..."
+              placeholder="Search group number or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-sans text-slate-700"
@@ -1210,7 +1190,7 @@ export default function StatsDashboard({
               <div className="relative z-10 flex items-center justify-between w-full font-sans">
                 <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  গ্রুপ {g.group}
+                  Group {g.group}
                 </span>
                 <div className="flex items-center gap-1 font-sans">
                   <span className="text-[9px] text-slate-400 font-medium">({g.total})</span>
@@ -1222,7 +1202,7 @@ export default function StatsDashboard({
 
           {filteredGroups.length === 0 && (
             <div className="col-span-full py-12 text-center text-gray-400 font-sans">
-              কোনো গ্রুপ পাওয়া যায়নি।
+              No groups found.
             </div>
           )}
         </motion.div>

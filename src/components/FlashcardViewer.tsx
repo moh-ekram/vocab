@@ -151,7 +151,7 @@ export default function FlashcardViewer({
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   
-  // Study Order Mode: 'serial' (সিরিয়াল), 'alphabetical' (A-Z), 'random' (র্যান্ডম)
+  // Study Order Mode: 'serial', 'alphabetical' (A-Z), 'random'
   const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>(() => {
     return settings?.defaultFlashcardOrder || 'random';
   });
@@ -217,7 +217,7 @@ export default function FlashcardViewer({
 
       setReportMessage({
         type: 'success',
-        text: 'আপনার রিপোর্টটি সফলভাবে অ্যাডমিনের কাছে পাঠানো হয়েছে। সংশোধন করার জন্য ধন্যবাদ!'
+        text: 'Your report has been successfully submitted to the admin. Thank you for the correction!'
       });
       setTimeout(() => {
         setReportingWord(null);
@@ -226,7 +226,7 @@ export default function FlashcardViewer({
       console.error('Error submitting report:', err);
       setReportMessage({
         type: 'error',
-        text: 'রিপোর্ট সাবমিট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।'
+        text: 'Failed to submit report. Please try again.'
       });
     } finally {
       setIsSubmittingReport(false);
@@ -271,11 +271,11 @@ export default function FlashcardViewer({
 
   const getStatusLabel = (status: WordStatus) => {
     switch (status) {
-      case 'know': return 'পারি (সবুজ)';
-      case 'confusion': return 'কনফিউশন (হলুদ)';
-      case 'dont_know': return 'পারি না (লাল)';
-      case 'unrated': return 'পড়া হয়নি (ধূসর)';
-      default: return 'পড়া হয়নি';
+      case 'know': return 'Learned (Green)';
+      case 'confusion': return 'Confused (Yellow)';
+      case 'dont_know': return 'Not Learned (Red)';
+      case 'unrated': return 'Unrated (Gray)';
+      default: return 'Unrated';
     }
   };
 
@@ -638,7 +638,7 @@ export default function FlashcardViewer({
           
           {/* Select Group (Multi-select) */}
           <div className="space-y-1 relative flex-shrink-0" id="group-multi-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ভোকাবুলারি গ্রুপ</label>
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Vocabulary Group</label>
             <button
               type="button"
               onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
@@ -648,10 +648,10 @@ export default function FlashcardViewer({
                 <Layers className="w-3.5 h-3.5 text-indigo-500" />
                 <span>
                   {selectedGroups.length === uniqueGroups.length 
-                    ? `সকল গ্রুপ` 
+                    ? `All Groups` 
                     : selectedGroups.length === 0 
-                    ? 'কোনো গ্রুপ নেই' 
-                    : `${selectedGroups.length} গ্রুপ`}
+                    ? 'No Group Selected' 
+                    : `${selectedGroups.length} Groups`}
                 </span>
               </div>
               <span className="text-[10px] text-slate-400">▼</span>
@@ -665,14 +665,14 @@ export default function FlashcardViewer({
                 {/* Dropdown panel / Bottom sheet */}
                 <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-80 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-sm md:text-xs font-bold text-slate-600">গ্রুপ ফিল্টার ({selectedGroups.length} টি)</span>
+                    <span className="text-sm md:text-xs font-bold text-slate-600">Group Filter ({selectedGroups.length})</span>
                     <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
                         onClick={() => setSelectedGroups(uniqueGroups)}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব সিলেক্ট
+                        Select All
                       </button>
                       <span className="text-slate-300">|</span>
                       <button
@@ -680,7 +680,7 @@ export default function FlashcardViewer({
                         onClick={() => setSelectedGroups([])}
                         className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব মুছুন
+                        Clear All
                       </button>
                     </div>
                   </div>
@@ -718,7 +718,7 @@ export default function FlashcardViewer({
                       onClick={() => setIsGroupDropdownOpen(false)}
                       className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[11px] font-bold rounded-xl transition cursor-pointer"
                     >
-                      ঠিক আছে
+                      Apply
                     </button>
                   </div>
                 </div>
@@ -728,7 +728,7 @@ export default function FlashcardViewer({
 
           {/* Select Status (Multi-select) */}
           <div className="space-y-1 relative flex-shrink-0" id="status-multi-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">ট্যাগ ফিল্টার</label>
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Tag Filter</label>
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -738,17 +738,17 @@ export default function FlashcardViewer({
                 <Tag className="w-3.5 h-3.5 text-amber-500" />
                 <span>
                   {selectedStatuses.length === 4 
-                    ? 'সকল ট্যাগ' 
+                    ? 'All Tags' 
                     : selectedStatuses.length === 0 
-                    ? 'কোনো ট্যাগ নেই' 
+                    ? 'No Tag Selected' 
                     : selectedStatuses.length === 1
                     ? selectedStatuses.map(s => {
-                        if (s === 'know') return 'পারি';
-                        if (s === 'dont_know') return 'পারি না';
-                        if (s === 'confusion') return 'কনফিউশন';
-                        return 'পড়া হয়নি';
+                        if (s === 'know') return 'Learned';
+                        if (s === 'dont_know') return 'Not Learned';
+                        if (s === 'confusion') return 'Confused';
+                        return 'Unrated';
                       })[0]
-                    : `${selectedStatuses.length} ট্যাগ`}
+                    : `${selectedStatuses.length} Tags`}
                 </span>
               </div>
               <span className="text-[10px] text-slate-400">▼</span>
@@ -762,7 +762,7 @@ export default function FlashcardViewer({
                 {/* Dropdown panel / Bottom sheet */}
                 <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-56 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-sm md:text-xs font-bold text-slate-600 font-sans">ট্যাগ ফিল্টার</span>
+                    <span className="text-sm md:text-xs font-bold text-slate-600 font-sans">Tag Filter</span>
                     <div className="flex gap-2 text-xs md:text-[10px]">
                       <button
                         type="button"
@@ -772,7 +772,7 @@ export default function FlashcardViewer({
                         }}
                         className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব সিলেক্ট
+                        Select All
                       </button>
                       <span className="text-slate-200">|</span>
                       <button
@@ -783,17 +783,17 @@ export default function FlashcardViewer({
                         }}
                         className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
                       >
-                        সব মুছুন
+                        Clear All
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
                     {[
-                      { key: 'know', label: 'পারি (সবুজ)', color: 'bg-emerald-500' },
-                      { key: 'confusion', label: 'কনফিউশন (হলুদ)', color: 'bg-amber-500' },
-                      { key: 'dont_know', label: 'পারি না (লাল)', color: 'bg-rose-500' },
-                      { key: 'unrated', label: 'পড়া হয়নি (ধূসর)', color: 'bg-slate-400' }
+                      { key: 'know', label: 'Learned (Green)', color: 'bg-emerald-500' },
+                      { key: 'confusion', label: 'Confused (Yellow)', color: 'bg-amber-500' },
+                      { key: 'dont_know', label: 'Not Learned (Red)', color: 'bg-rose-500' },
+                      { key: 'unrated', label: 'Unrated (Gray)', color: 'bg-slate-400' }
                     ].map(st => {
                       const isSelected = selectedStatuses.includes(st.key);
                       return (
@@ -830,7 +830,7 @@ export default function FlashcardViewer({
                       onClick={() => setIsStatusDropdownOpen(false)}
                       className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[10px] font-bold rounded-xl transition cursor-pointer"
                     >
-                      ঠিক আছে
+                      Apply
                     </button>
                   </div>
                 </div>
@@ -840,7 +840,7 @@ export default function FlashcardViewer({
 
           {/* Custom Bookmarks Select */}
           <div className="space-y-1 flex-shrink-0" id="bookmark-folder-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">বুকমার্ক লিস্ট</label>
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Bookmark List</label>
             <div className="relative flex items-center">
               <Bookmark className="w-3.5 h-3.5 text-emerald-500 absolute left-3 pointer-events-none" />
               <select
@@ -848,7 +848,7 @@ export default function FlashcardViewer({
                 onChange={(e) => setSelectedFolder(e.target.value)}
                 className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-8 pr-8 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer appearance-none flex-shrink-0 min-w-[120px]"
               >
-                <option value="all">সকল লিস্ট</option>
+                <option value="all">All Lists</option>
                 {folders.map(f => (
                   <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
@@ -859,7 +859,7 @@ export default function FlashcardViewer({
 
           {/* Study Order Control */}
           <div className="space-y-1 font-sans flex-shrink-0" id="study-order-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider">পড়ার ক্রম (Study Order)</label>
+            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Study Order</label>
             <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 items-center gap-1">
               <button
                 type="button"
@@ -871,7 +871,7 @@ export default function FlashcardViewer({
                 }`}
               >
                 <ArrowUpDown className="w-3 h-3" />
-                <span>সিরিয়াল</span>
+                <span>Serial</span>
               </button>
               <button
                 type="button"
@@ -883,7 +883,7 @@ export default function FlashcardViewer({
                 }`}
               >
                 <span className="text-[9px] font-black font-mono">A-Z</span>
-                <span>অক্ষর</span>
+                <span>Alphabetical</span>
               </button>
               <button
                 type="button"
@@ -895,7 +895,7 @@ export default function FlashcardViewer({
                 }`}
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>র্যান্ডম</span>
+                <span>Random</span>
               </button>
             </div>
             {studyOrder === 'random' && (
@@ -903,7 +903,7 @@ export default function FlashcardViewer({
                 type="button"
                 onClick={() => setShuffleKey(prev => prev + 1)}
                 className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-1 rounded-lg cursor-pointer transition flex items-center justify-center mt-0.5 ml-1 absolute left-full top-0"
-                title="পুনরায় শাফেল করুন"
+                title="Reshuffle"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
               </button>
@@ -919,7 +919,7 @@ export default function FlashcardViewer({
           }`}
         >
           <Keyboard className="w-4 h-4" />
-          <span className="font-sans">কীবোর্ড শর্টকাট</span>
+          <span className="font-sans">Keyboard Shortcuts</span>
         </button>
       </div>
 
@@ -927,20 +927,20 @@ export default function FlashcardViewer({
       {showHotkeysHelp && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900 grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner animate-fadeIn">
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Space</kbd> বা ক্লিক</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">কার্ড উল্টানো / Flip</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Space</kbd> or Click</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Flip Card</p>
           </div>
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">➡</kbd> ডান অ্যারো</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">"পারি" চিহ্নিত করে পরবর্তী</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">➡</kbd> Right Arrow</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Learned" & Next</p>
           </div>
           <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬅</kbd> বাম অ্যারো</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">"পারি না" চিহ্নিত করে পরবর্তী</p>
+            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬅</kbd> Left Arrow</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Not Learned" & Next</p>
           </div>
           <div>
             <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬆</kbd> / <kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Enter</kbd></p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">কনফিউশন চিহ্নিত করে পরবর্তী</p>
+            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Confused" & Next</p>
           </div>
         </div>
       )}
@@ -948,8 +948,8 @@ export default function FlashcardViewer({
       {filteredWords.length === 0 ? (
         <div className="text-center py-20 bg-amber-50/40 border border-dashed border-amber-200 rounded-3xl space-y-4 max-w-xl mx-auto" id="no-filtered-words">
           <div className="space-y-1">
-            <h3 className="font-extrabold text-slate-800 text-base font-sans">কোনো শব্দ পাওয়া যায়নি!</h3>
-            <p className="text-xs text-slate-500 font-medium font-sans">আপনার নির্বাচিত ফিল্টার বা বুকমার্ক লিস্টের অধীনে কোনো শব্দ নেই।</p>
+            <h3 className="font-extrabold text-slate-800 text-base font-sans">No words found!</h3>
+            <p className="text-xs text-slate-500 font-medium font-sans">There are no words under your selected filters or bookmark list.</p>
           </div>
           <button
             onClick={() => {
@@ -960,7 +960,7 @@ export default function FlashcardViewer({
             }}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans cursor-pointer shadow-md"
           >
-            ফিল্টার রিসেট করুন
+            Reset Filters
           </button>
         </div>
       ) : (
@@ -992,7 +992,7 @@ export default function FlashcardViewer({
                             speakWord();
                           }}
                           className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition shadow-xs animate-pulse"
-                          title="উচ্চারণ শুনুন"
+                          title="Listen Pronunciation"
                         >
                           <Volume2 className="w-5 h-5" />
                         </button>
@@ -1003,7 +1003,7 @@ export default function FlashcardViewer({
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition shadow-xs flex items-center justify-center"
-                        title="গুগলে সার্চ করুন"
+                        title="Search on Google"
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -1018,7 +1018,7 @@ export default function FlashcardViewer({
                           handleOpenReportModal(currentActiveWord);
                         }}
                         className="p-2.5 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 rounded-xl transition shadow-xs flex items-center justify-center cursor-pointer"
-                        title="ভুল রিপোর্ট করুন (Report Error)"
+                        title="Report Error"
                       >
                         <AlertTriangle className="w-5 h-5 text-rose-500" />
                       </button>
@@ -1044,7 +1044,7 @@ export default function FlashcardViewer({
                 <div className={backFaceClass}>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center pb-1.5 border-b border-slate-100">
-                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">গ্রুপ {currentActiveWord.group} • উত্তর</span>
+                      <span className="text-[11px] font-bold text-indigo-600 uppercase tracking-wider font-sans">Group {currentActiveWord.group} • Answer</span>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-xl font-black ${backWordColorClass}`}>{currentActiveWord.word}</span>
                         <a
@@ -1053,7 +1053,7 @@ export default function FlashcardViewer({
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="p-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-lg transition"
-                          title="গুগলে সার্চ করুন"
+                          title="Search on Google"
                         >
                           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -1068,7 +1068,7 @@ export default function FlashcardViewer({
                             handleOpenReportModal(currentActiveWord);
                           }}
                           className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer"
-                          title="ভুল রিপোর্ট করুন (Report Error)"
+                          title="Report Error"
                         >
                           <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                         </button>
@@ -1119,7 +1119,7 @@ export default function FlashcardViewer({
                             )}
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-450 italic font-sans pl-3">কোনো উদাহরণ পাওয়া যায়নি।</p>
+                          <p className="text-xs text-slate-450 italic font-sans pl-3">No example found.</p>
                         )}
                       </div>
                     )}
@@ -1162,7 +1162,7 @@ export default function FlashcardViewer({
                     }`}
                   >
                     <XCircle className="w-4 h-4" />
-                    <span>পারি না</span>
+                    <span>Not Learned</span>
                     {getShortcutKeyForAction('dont_know') && (
                       <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
                         activeStatus === 'dont_know'
@@ -1184,7 +1184,7 @@ export default function FlashcardViewer({
                     }`}
                   >
                     <AlertTriangle className="w-4 h-4" />
-                    <span>কনফিউশন</span>
+                    <span>Confused</span>
                     {getShortcutKeyForAction('confusion') && (
                       <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
                         activeStatus === 'confusion'
@@ -1206,7 +1206,7 @@ export default function FlashcardViewer({
                     }`}
                   >
                     <CheckCircle className="w-4 h-4" />
-                    <span>পারি</span>
+                    <span>Learned</span>
                     {getShortcutKeyForAction('know') && (
                       <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
                         activeStatus === 'know'
@@ -1230,14 +1230,14 @@ export default function FlashcardViewer({
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h3 className="font-bold text-slate-800 flex items-center gap-2">
                     <Edit3 className="w-5 h-5 text-indigo-600" />
-                    ব্যক্তিগত নোট ও নেমোনিক
+                    Personal Notes & Mnemonics
                   </h3>
                   {!isEditingNote && (
                     <button
                       onClick={() => setIsEditingNote(true)}
                       className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 font-sans"
                     >
-                      সম্পাদনা
+                      Edit
                     </button>
                   )}
                 </div>
@@ -1247,7 +1247,7 @@ export default function FlashcardViewer({
                     <textarea
                       value={noteText}
                       onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="শব্দটি সহজে মনে রাখার সূত্র বা কোনো উদাহরণ বাক্য এখানে লিখুন..."
+                      placeholder="Write mnemonics or example sentences to easily remember this word..."
                       rows={4}
                       className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
                     ></textarea>
@@ -1259,7 +1259,7 @@ export default function FlashcardViewer({
                         }}
                         className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition font-sans"
                       >
-                        সেভ করুন
+                        Save
                       </button>
                       <button
                         onClick={() => {
@@ -1268,7 +1268,7 @@ export default function FlashcardViewer({
                         }}
                         className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition font-sans"
                       >
-                        বাতিল
+                        Cancel
                       </button>
                     </div>
                   </div>
@@ -1280,7 +1280,7 @@ export default function FlashcardViewer({
                       </p>
                     ) : (
                       <p className="text-xs text-slate-400 font-sans text-center py-6">
-                        কোনো স্মৃতিসহায়ক নোট বা নেমোনিক যুক্ত করা নেই। ডানে 'সম্পাদনা' বাটনে ক্লিক করে লিখে রাখুন!
+                        No mnemonic notes or hints have been added yet. Click 'Edit' to write one.
                       </p>
                     )}
                   </div>
@@ -1292,40 +1292,40 @@ export default function FlashcardViewer({
             <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs space-y-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-3">
                 <Bookmark className="w-5 h-5 text-indigo-600" />
-                শব্দের অগ্রগতি ও স্থিতি
+                Word Progress & Status
               </h3>
 
               <div className="flex flex-col gap-3 font-sans pt-1">
                 {/* Tag 1: Group and Index position */}
                 <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">শব্দের অবস্থান:</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Word Position:</span>
                   <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-extrabold text-xs rounded-lg border border-indigo-100 shadow-3xs">
-                    গ্রুপ {currentActiveWord.group} • শব্দ {currentIndex + 1} / {filteredWords.length}
+                    Group {currentActiveWord.group} • Word {currentIndex + 1} / {filteredWords.length}
                   </span>
                 </div>
 
                 {/* Tag 2: Active Tag/Status */}
                 <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ট্যাগ স্থিতি:</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tag Status:</span>
                   <div className="flex items-center">
                     {activeStatus === 'know' && (
                       <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> পারি
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Learned
                       </span>
                     )}
                     {activeStatus === 'confusion' && (
                       <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> কনফিউশন
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Confused
                       </span>
                     )}
                     {activeStatus === 'dont_know' && (
                       <span className="flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <XCircle className="w-3.5 h-3.5 text-rose-500" /> পারি না
+                        <XCircle className="w-3.5 h-3.5 text-rose-500" /> Not Learned
                       </span>
                     )}
                     {activeStatus === 'unrated' && (
                       <span className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        পড়া হয়নি
+                        Unrated
                       </span>
                     )}
                   </div>
@@ -1354,9 +1354,9 @@ export default function FlashcardViewer({
               </div>
               
               <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-950 font-sans">ট্যাগ পরিবর্তন নিশ্চিতকরণ</h3>
+                <h3 className="text-lg font-bold text-slate-950 font-sans">Confirm Tag Change</h3>
                 <p className="text-sm text-slate-600 font-sans leading-relaxed">
-                  আপনি ইতিমধ্যে <span className="font-extrabold text-slate-800">"{pendingRating.wordName}"</span> শব্দটিকে{' '}
+                  You have already marked <span className="font-extrabold text-slate-800">"{pendingRating.wordName}"</span> as{' '}
                   <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
                     pendingRating.oldStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
                     pendingRating.oldStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
@@ -1364,10 +1364,10 @@ export default function FlashcardViewer({
                   }`}>
                     {getStatusLabel(pendingRating.oldStatus)}
                   </span>{' '}
-                  হিসেবে চিহ্নিত করেছেন।
+                  .
                 </p>
                 <p className="text-sm text-slate-600 font-sans leading-relaxed">
-                  আপনি কি নিশ্চিত যে এর ট্যাগ পরিবর্তন করে{' '}
+                  Are you sure you want to change its tag to{' '}
                   <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
                     pendingRating.newStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
                     pendingRating.newStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
@@ -1376,7 +1376,7 @@ export default function FlashcardViewer({
                   }`}>
                     {getStatusLabel(pendingRating.newStatus)}
                   </span>{' '}
-                  করতে চান?
+                  ?
                 </p>
               </div>
 
@@ -1392,13 +1392,13 @@ export default function FlashcardViewer({
                   }}
                   className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs"
                 >
-                  হ্যাঁ, পরিবর্তন করুন
+                  Yes, Change
                 </button>
                 <button
                   onClick={() => setPendingRating(null)}
                   className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
                 >
-                  বাতিল
+                  Cancel
                 </button>
               </div>
             </div>
@@ -1424,9 +1424,9 @@ export default function FlashcardViewer({
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-950 font-sans">ভুল রিপোর্ট করুন</h3>
+                  <h3 className="text-base font-bold text-slate-950 font-sans">Report Error</h3>
                   <p className="text-xs text-slate-500 font-sans">
-                    শব্দ: <span className="font-extrabold text-slate-800">{reportingWord.word}</span> (গ্রুপ: {reportingWord.group})
+                    Word: <span className="font-extrabold text-slate-800">{reportingWord.word}</span> (Group: {reportingWord.group})
                   </p>
                 </div>
               </div>
@@ -1441,7 +1441,7 @@ export default function FlashcardViewer({
                 <div className="space-y-4 pt-1">
                   {/* Issue Type */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 font-sans">ভুলের ধরণ:</label>
+                    <label className="text-xs font-bold text-slate-500 font-sans">Issue Type:</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -1452,7 +1452,7 @@ export default function FlashcardViewer({
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
                         }`}
                       >
-                        ভুল অর্থ (Meaning)
+                        Incorrect Meaning
                       </button>
                       <button
                         type="button"
@@ -1463,7 +1463,7 @@ export default function FlashcardViewer({
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
                         }`}
                       >
-                        ভুল সমার্থক শব্দ (Synonyms)
+                        Incorrect Synonyms
                       </button>
                       <button
                         type="button"
@@ -1474,7 +1474,7 @@ export default function FlashcardViewer({
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
                         }`}
                       >
-                        ভুল উদাহরণ বাক্য
+                        Incorrect Example
                       </button>
                       <button
                         type="button"
@@ -1485,19 +1485,19 @@ export default function FlashcardViewer({
                             : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
                         }`}
                       >
-                        অন্যান্য সমস্যা
+                        Other Issues
                       </button>
                     </div>
                   </div>
 
                   {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 font-sans">সধীক তথ্য বা বর্ণনা দিন:</label>
+                    <label className="text-xs font-bold text-slate-500 font-sans">Provide correct info or description:</label>
                     <textarea
                       value={reportDescription}
                       onChange={(e) => setReportDescription(e.target.value)}
                       rows={3}
-                      placeholder="এখানে সঠিক তথ্যটি লিখুন (যেমন: সঠিক অর্থ, বানান বা উদাহরণ বাক্য)"
+                      placeholder="Write the correct info here (e.g., correct meaning, spelling, or example sentence)..."
                       className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500 font-sans leading-relaxed resize-none"
                     />
                   </div>
@@ -1511,7 +1511,7 @@ export default function FlashcardViewer({
                       className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
                     >
                       {isSubmittingReport && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                      রিপোর্ট পাঠান
+                      Send Report
                     </button>
                     <button
                       type="button"
@@ -1519,7 +1519,7 @@ export default function FlashcardViewer({
                       onClick={() => setReportingWord(null)}
                       className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
                     >
-                      বাতিল
+                      Cancel
                     </button>
                   </div>
                 </div>

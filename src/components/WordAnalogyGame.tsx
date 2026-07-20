@@ -395,7 +395,7 @@ export default function WordAnalogyGame({
               >
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
                   <span className="font-extrabold text-slate-800 block mb-1">Explanation / Analogy Logic:</span>
-                  {currentQuestion.explanation || "These word pairs represent logical relationships (synonyms, antonyms, degree, or category)."}
+                  {currentQuestion.explanation ? currentQuestion.explanation : "Explanation not found"}
                 </div>
 
                 <div className="flex items-center justify-between gap-4">

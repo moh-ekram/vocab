@@ -136,7 +136,7 @@ export default function PracticeCenter({
                 }`}
               >
                 <GraduationCap className="w-3.5 h-3.5" />
-                <span>Practice & Quiz</span>
+                <span>MCQ Quiz</span>
               </button>
             )}
             {isMatchEnabled && (
@@ -243,7 +243,7 @@ export default function PracticeCenter({
                     <GraduationCap className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-extrabold text-slate-800 text-lg">Practice & Quiz</h3>
+                    <h3 className="font-extrabold text-slate-800 text-lg">MCQ Quiz</h3>
                     <p className="text-xs text-slate-400 font-semibold leading-relaxed">
                       Test your memory recall using multiple choice questions (MCQ) and spelling checks.
                     </p>

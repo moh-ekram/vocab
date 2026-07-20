@@ -484,29 +484,42 @@ export default function BlankFillingPractice({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100"
+                className="space-y-4 pt-6 border-t border-slate-100"
               >
-                <div className="flex items-center gap-2.5 text-xs">
-                  {selectedOption === currentQuestion.answer ? (
-                    <span className="flex items-center gap-1 text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
-                      <Check className="w-3.5 h-3.5" />
-                      Correct Answer
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-rose-600 font-extrabold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
-                      <X className="w-3.5 h-3.5" />
-                      Incorrect! Correct answer is: {currentQuestion.answer}
-                    </span>
-                  )}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2.5 text-xs">
+                    {selectedOption === currentQuestion.answer ? (
+                      <span className="flex items-center gap-1 text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                        <Check className="w-3.5 h-3.5" />
+                        Correct Answer
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-rose-600 font-extrabold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+                        <X className="w-3.5 h-3.5" />
+                        Incorrect! Correct answer is: {currentQuestion.answer}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleNext}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <span>{currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <button
-                  onClick={handleNext}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-                >
-                  <span>{currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+                {/* Explainer Div */}
+                <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl text-xs space-y-1">
+                  <p className="font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Explanation</span>
+                  </p>
+                  <p className="text-slate-500 font-medium">
+                    {currentQuestion.explanation ? currentQuestion.explanation : "Explanation not found"}
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
