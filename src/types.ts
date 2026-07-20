@@ -96,3 +96,12 @@ export interface AccessRequest {
   requestedBy?: string;
 }
 
+export interface BlankQuestion {
+  id: string;
+  sentence: string;
+  options: string[];
+  answer: string;
+  createdAt?: string;
+}
+
+

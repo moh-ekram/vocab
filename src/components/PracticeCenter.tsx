@@ -12,6 +12,7 @@ import {
 import SynonymCheck from './SynonymCheck';
 import PracticeQuiz from './PracticeQuiz';
 import WordMatchGame from './WordMatchGame';
+import BlankFillingPractice from './BlankFillingPractice';
 import { VocabularyWord, WordStatus, CustomFolder, AppSettings, UserProgress } from '../types';
 
 interface PracticeCenterProps {
@@ -23,6 +24,8 @@ interface PracticeCenterProps {
   folders: CustomFolder[];
   synonymProgress: Record<string, { correct: boolean; updatedAt: string }>;
   onUpdateSynonymProgress: (wordId: string, correct: boolean) => void;
+  blankProgress: Record<string, { correct: boolean; updatedAt: string }>;
+  onUpdateBlankProgress: (questionId: string, correct: boolean) => void;
   activeGroup: number | string | null;
   settings: AppSettings;
   onQuizComplete: (score: number, totalQuestions: number) => void;
@@ -37,11 +40,13 @@ export default function PracticeCenter({
   folders,
   synonymProgress,
   onUpdateSynonymProgress,
+  blankProgress,
+  onUpdateBlankProgress,
   activeGroup,
   settings,
   onQuizComplete
 }: PracticeCenterProps) {
-  const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym'>('hub');
+  const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank'>('hub');
 
   // Stagger animation variants for cards
   const containerVariants = {
@@ -107,6 +112,17 @@ export default function PracticeCenter({
               <Sparkle className="w-3.5 h-3.5 text-amber-500" />
               <span>Synonym Check</span>
             </button>
+            <button
+              onClick={() => setSubTab('blank')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                subTab === 'blank'
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-150'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Blank Filling</span>
+            </button>
           </div>
         </div>
       )}
@@ -131,7 +147,7 @@ export default function PracticeCenter({
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {/* 1. Practice & Quiz Card */}
             <motion.div
@@ -213,6 +229,33 @@ export default function PracticeCenter({
                 </span>
               </div>
             </motion.div>
+
+            {/* 4. Blank Filling Practice Card */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ y: -4, scale: 1.01 }}
+              onClick={() => setSubTab('blank')}
+              className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-emerald-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                  <BookOpen className="w-6 h-6 text-emerald-500" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling</h3>
+                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                    বাক্যের উপযুক্ত শূন্যস্থানটি পূরণ করে ব্যাকরণ ও রিকল স্কিল বৃদ্ধি করুন।
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-bold text-emerald-600 tracking-wider uppercase font-mono">Sentence Quiz</span>
+                <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-600 transition">
+                  <span>অনুশীলন করুন</span>
+                  <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       )}
@@ -248,6 +291,13 @@ export default function PracticeCenter({
           onUpdateNotes={onUpdateNotes}
           onToggleBookmark={onToggleBookmark}
           settings={settings}
+        />
+      )}
+
+      {subTab === 'blank' && (
+        <BlankFillingPractice
+          blankProgress={blankProgress}
+          onUpdateBlankProgress={onUpdateBlankProgress}
         />
       )}
     </div>

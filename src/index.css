@@ -99,3 +99,104 @@
   transform-style: preserve-3d;
   perspective: 100px;
 }
+
+/* Custom Night/Dark Mode Stylesheet Overrides */
+html.dark, html.dark body {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark #main-layout-stage {
+  background-color: #0b0f19 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .bg-white {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-slate-850,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-slate-600 {
+  color: #e5e7eb !important;
+}
+
+html.dark .text-slate-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-slate-400 {
+  color: #a1a1aa !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-100,
+html.dark .border-slate-200\/60,
+html.dark .border-slate-250\/60 {
+  border-color: #1f2937 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-100 {
+  background-color: #1f2937 !important;
+}
+
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-50\/50:hover {
+  background-color: #374151 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+html.dark .shadow-xs,
+html.dark .shadow-sm,
+html.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Modals & Popups and slides in Dark Mode */
+html.dark .fixed.inset-0 .bg-white {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Make sure the text on light badges is legible */
+html.dark .bg-indigo-50,
+html.dark .bg-emerald-50,
+html.dark .bg-amber-50,
+html.dark .bg-pink-50 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-700 {
+  color: #a5b4fc !important;
+}
+
+html.dark .text-emerald-650,
+html.dark .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+
+html.dark .text-amber-700 {
+  color: #fde047 !important;
+}
+
+html.dark .text-pink-700 {
+  color: #fbcfe8 !important;
+}
+

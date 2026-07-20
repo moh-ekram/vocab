@@ -58,6 +58,7 @@ const LOCAL_STORAGE_PROGRESS_KEY = 'vocab_memorizer_progress_v2';
 const LOCAL_STORAGE_FOLDERS_KEY = 'vocab_memorizer_folders_v2';
 const LOCAL_STORAGE_GOALS_KEY = 'vocab_memorizer_goals_v2';
 const LOCAL_STORAGE_SYNONYM_PROGRESS_KEY = 'vocab_memorizer_synonym_progress_v2';
+const LOCAL_STORAGE_BLANK_PROGRESS_KEY = 'vocab_memorizer_blank_progress_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'vocab_memorizer_settings_v3';
 const LOCAL_STORAGE_ENROLLED_COURSES_KEY = 'vocab_memorizer_enrolled_courses_v2';
 const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
@@ -125,6 +126,11 @@ export default function App() {
 
   const [synonymProgress, setSynonymProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [blankProgress, setBlankProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_BLANK_PROGRESS_KEY);
     return saved ? JSON.parse(saved) : {};
   });
 
@@ -372,6 +378,10 @@ export default function App() {
   }, [synonymProgress]);
 
   useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_BLANK_PROGRESS_KEY, JSON.stringify(blankProgress));
+  }, [blankProgress]);
+
+  useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
 
@@ -562,6 +572,25 @@ export default function App() {
                 return merged;
               });
             }
+            if (data.blankProgress) {
+              setBlankProgress(prev => {
+                const merged = { ...data.blankProgress };
+                Object.keys(prev).forEach(key => {
+                  const localItem = prev[key];
+                  const cloudItem = data.blankProgress[key];
+                  if (!cloudItem) {
+                    merged[key] = localItem;
+                  } else {
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
+                    if (localTime > cloudTime) {
+                      merged[key] = localItem;
+                    }
+                  }
+                });
+                return merged;
+              });
+            }
             if (data.settings) {
               setSettings(prev => ({ ...prev, ...data.settings }));
             }
@@ -586,6 +615,7 @@ export default function App() {
               folders,
               goal,
               synonymProgress,
+              blankProgress,
               settings,
               enrolledCourseIds,
               activeCourseId,
@@ -640,6 +670,7 @@ export default function App() {
           folders,
           goal,
           synonymProgress,
+          blankProgress,
           settings,
           enrolledCourseIds,
           activeCourseId,
@@ -660,7 +691,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user, hasLoadedFromCloud]);
+  }, [progress, folders, goal, synonymProgress, blankProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user, hasLoadedFromCloud]);
 
   const forceSyncToCloud = async () => {
     if (!user || !hasLoadedFromCloud) return;
@@ -671,6 +702,7 @@ export default function App() {
         folders,
         goal,
         synonymProgress,
+        blankProgress,
         settings,
         enrolledCourseIds,
         activeCourseId,
@@ -711,6 +743,9 @@ export default function App() {
 
         const savedSynonymProgress = localStorage.getItem(LOCAL_STORAGE_SYNONYM_PROGRESS_KEY);
         setSynonymProgress(savedSynonymProgress ? JSON.parse(savedSynonymProgress) : {});
+
+        const savedBlankProgress = localStorage.getItem(LOCAL_STORAGE_BLANK_PROGRESS_KEY);
+        setBlankProgress(savedBlankProgress ? JSON.parse(savedBlankProgress) : {});
 
         const savedSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
         setSettings(savedSettings ? JSON.parse(savedSettings) : {
@@ -1031,6 +1066,19 @@ export default function App() {
     });
   };
 
+  // Update Blank Filling progress
+  const handleUpdateBlankProgress = (questionId: string, correct: boolean) => {
+    setBlankProgress(prev => {
+      return {
+        ...prev,
+        [questionId]: {
+          correct,
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+  };
+
   // Clear data function for reset/refresh study
   const handleClearAllProgress = () => {
     if (confirm('আপনি কি নিশ্চিত যে আপনার পড়াশোনার সমস্ত প্রগ্রেস এবং স্ট্রিক মুছে ফেলতে চান? এটি পুনরায় ফিরিয়ে আনা সম্ভব নয়।')) {
@@ -1278,6 +1326,8 @@ export default function App() {
               folders={folders}
               synonymProgress={synonymProgress}
               onUpdateSynonymProgress={handleUpdateSynonymProgress}
+              blankProgress={blankProgress}
+              onUpdateBlankProgress={handleUpdateBlankProgress}
               activeGroup={selectedGroupFromDash}
               settings={settings}
               onQuizComplete={(score, totalQuestions) => {
