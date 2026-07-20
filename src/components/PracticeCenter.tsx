@@ -301,6 +301,7 @@ export default function PracticeCenter({
           blankProgress={blankProgress}
           onUpdateBlankProgress={onUpdateBlankProgress}
           activeCourseId={activeCourseId}
+          words={words}
         />
       )}
     </div>

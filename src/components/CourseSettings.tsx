@@ -36,15 +36,19 @@ interface CourseSettingsProps {
   course: Course;
   onClose: () => void;
   onSaveSuccess: () => void;
+  initialTab?: 'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions';
+  initialEditWordName?: string;
 }
 
 export const CourseSettings: React.FC<CourseSettingsProps> = ({
   course,
   onClose,
   onSaveSuccess,
+  initialTab,
+  initialEditWordName,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions'>(initialTab || 'general');
 
   // --- BLANK QUESTIONS STATES ---
   const [courseBlankQuestions, setCourseBlankQuestions] = useState<BlankQuestion[]>([]);
@@ -420,6 +424,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
   // Synchronize on course prop changes
   useEffect(() => {
@@ -444,8 +449,21 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       ...(course.variableToggles || {})
     });
     setSelectedWordIds(new Set());
-    setActiveTab('general');
-  }, [course]);
+    setActiveTab(initialTab || 'general');
+    setHasAutoOpened(false);
+  }, [course, initialTab]);
+
+  // Handle auto-editing of a specified word
+  useEffect(() => {
+    if (initialEditWordName && localWords.length > 0 && !hasAutoOpened) {
+      const match = localWords.find(w => w.word.toLowerCase() === initialEditWordName.trim().toLowerCase());
+      if (match) {
+        handleStartEditWord(match);
+        setWordSearchQuery(match.word);
+        setHasAutoOpened(true);
+      }
+    }
+  }, [initialEditWordName, localWords, hasAutoOpened]);
 
   // Compute variable availability based on real word list data
   const variableAvailability = useMemo(() => {

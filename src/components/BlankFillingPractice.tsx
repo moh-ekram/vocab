@@ -14,12 +14,13 @@ import {
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { BlankQuestion } from '../types';
+import { BlankQuestion, VocabularyWord } from '../types';
 
 interface BlankFillingPracticeProps {
   blankProgress: Record<string, { correct: boolean; updatedAt: string }>;
   onUpdateBlankProgress: (questionId: string, correct: boolean) => void;
   activeCourseId: string;
+  words?: VocabularyWord[];
 }
 
 const DEFAULT_QUESTIONS: BlankQuestion[] = [
@@ -58,7 +59,8 @@ const DEFAULT_QUESTIONS: BlankQuestion[] = [
 export default function BlankFillingPractice({
   blankProgress,
   onUpdateBlankProgress,
-  activeCourseId
+  activeCourseId,
+  words
 }: BlankFillingPracticeProps) {
   const [questions, setQuestions] = useState<BlankQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,10 @@ export default function BlankFillingPractice({
         qSnap.forEach(docSnap => {
           const data = docSnap.data();
           // Filter by active course or if courseId is empty default to gre
-          if (data.courseId === activeCourseId || (!data.courseId && activeCourseId === 'gre')) {
+          if (
+            (data.courseId && activeCourseId && data.courseId.toLowerCase() === activeCourseId.toLowerCase()) ||
+            (!data.courseId && activeCourseId === 'gre')
+          ) {
             loaded.push({ id: docSnap.id, ...data } as BlankQuestion);
           }
         });
@@ -89,6 +94,75 @@ export default function BlankFillingPractice({
           // Fallback to default high-quality questions for default GRE or if none uploaded yet
           if (activeCourseId === 'gre') {
             setQuestions(DEFAULT_QUESTIONS);
+          } else if (words && words.length > 0) {
+            // Auto-generate high-quality practice questions from vocabulary words
+            const generated: BlankQuestion[] = [];
+            
+            const makeOptionsForWord = (correctWord: string) => {
+              const distractors = words
+                .filter(w => w.word !== correctWord)
+                .map(w => w.word);
+              const shuffledDist = [...distractors].sort(() => 0.5 - Math.random());
+              const picked = shuffledDist.slice(0, 3);
+              while (picked.length < 3) {
+                picked.push("Option " + (picked.length + 1));
+              }
+              const opts = [correctWord, ...picked];
+              return opts.sort(() => 0.5 - Math.random());
+            };
+
+            // First: Generate from words that have example sentences
+            const wordsWithExample = words.filter(w => w.example && w.example.trim().length > 0);
+            wordsWithExample.forEach((w, index) => {
+              const wordLower = w.word.toLowerCase();
+              let sentence = w.example || '';
+              const regex = new RegExp(`\\b${w.word}[a-z]*\\b`, 'gi');
+              let hasReplaced = false;
+
+              if (sentence.toLowerCase().includes(wordLower)) {
+                sentence = sentence.replace(regex, '___');
+                hasReplaced = true;
+              } else {
+                const idx = sentence.toLowerCase().indexOf(wordLower);
+                if (idx !== -1) {
+                  sentence = sentence.substring(0, idx) + '___' + sentence.substring(idx + w.word.length);
+                  hasReplaced = true;
+                }
+              }
+
+              if (hasReplaced && sentence.includes('___')) {
+                generated.push({
+                  id: `bq-gen-${w.id}-${index}`,
+                  sentence: sentence,
+                  options: makeOptionsForWord(w.word),
+                  answer: w.word,
+                  courseId: activeCourseId
+                });
+              }
+            });
+
+            // Second: Generate definition/meaning match questions if we need more or don't have enough examples
+            if (generated.length < 15 && words.length > 0) {
+              const remainingNeeded = 20 - generated.length;
+              const wordsForMeanings = words
+                .filter(w => !generated.some(g => g.answer === w.word))
+                .sort(() => 0.5 - Math.random())
+                .slice(0, Math.max(0, remainingNeeded));
+
+              wordsForMeanings.forEach((w, index) => {
+                generated.push({
+                  id: `bq-gen-mean-${w.id}-${index}`,
+                  sentence: `Choose the correct word that matches the meaning: "${w.meaning}"`,
+                  options: makeOptionsForWord(w.word),
+                  answer: w.word,
+                  courseId: activeCourseId
+                });
+              });
+            }
+
+            // Shuffle the complete generated list and select up to 20 for a bite-sized practice session
+            const randomized = [...generated].sort(() => 0.5 - Math.random()).slice(0, 20);
+            setQuestions(randomized);
           } else {
             setQuestions([]);
           }
@@ -105,7 +179,7 @@ export default function BlankFillingPractice({
       }
     };
     fetchQuestions();
-  }, [activeCourseId]);
+  }, [activeCourseId, words]);
 
   if (loading) {
     return (

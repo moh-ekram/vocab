@@ -35,7 +35,8 @@ import {
   FileSpreadsheet,
   Trash2,
   PlusCircle,
-  BookOpen
+  BookOpen,
+  Edit
 } from 'lucide-react';
 
 interface FirestoreUserDoc {
@@ -108,7 +109,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests'>('users');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests'>('courses');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -132,6 +133,8 @@ export default function AdminPanel({ words }: AdminPanelProps) {
 
   // Editing course states
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [courseSettingsInitialTab, setCourseSettingsInitialTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | undefined>(undefined);
+  const [courseSettingsInitialEditWordName, setCourseSettingsInitialEditWordName] = useState<string | undefined>(undefined);
 
   // Access requests states
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
@@ -978,17 +981,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       {/* Admin Tab Navigation */}
       <div className="flex border-b border-slate-200">
         <button
-          onClick={() => setActiveAdminTab('users')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-            activeAdminTab === 'users'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Users & Analytics</span>
-        </button>
-        <button
           onClick={() => setActiveAdminTab('courses')}
           className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
             activeAdminTab === 'courses'
@@ -998,6 +990,17 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         >
           <FileSpreadsheet className="w-4 h-4" />
           <span>Course Upload & Creation</span>
+        </button>
+        <button
+          onClick={() => setActiveAdminTab('users')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'users'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Users & Analytics</span>
         </button>
         <button
           onClick={() => {
@@ -1601,8 +1604,32 @@ export default function AdminPanel({ words }: AdminPanelProps) {
                   {reports.map((rep) => (
                     <tr key={rep.id} className="hover:bg-slate-50/50 transition">
                       <td className="px-4 py-3">
-                        <div className="font-extrabold text-slate-800 text-sm">{rep.word}</div>
-                        <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
+                        <button
+                          onClick={() => {
+                            // Find the course
+                            let targetCourse: Course | undefined = undefined;
+                            if (rep.courseId === 'gre') {
+                              targetCourse = defaultGreCourse;
+                            } else {
+                              targetCourse = customCourses.find(c => c.id === rep.courseId);
+                            }
+
+                            if (!targetCourse) {
+                              alert(`Course for this word (ID: ${rep.courseId || 'unknown'}) was not found.`);
+                              return;
+                            }
+
+                            setCourseSettingsInitialTab('wordlist');
+                            setCourseSettingsInitialEditWordName(rep.word);
+                            setEditingCourse(targetCourse);
+                          }}
+                          className="font-extrabold text-indigo-600 hover:text-indigo-800 text-sm hover:underline cursor-pointer text-left flex items-center gap-1.5 focus:outline-none"
+                          title="Click to directly edit this word inside course list"
+                        >
+                          <span>{rep.word}</span>
+                          <Edit className="w-3.5 h-3.5 opacity-60 inline" />
+                        </button>
+                        <div className="text-[10px] text-slate-400 font-bold font-mono uppercase tracking-wide mt-0.5">
                           Course ID: {rep.courseId || 'unknown'}
                         </div>
                       </td>
@@ -2294,8 +2321,14 @@ export default function AdminPanel({ words }: AdminPanelProps) {
       {editingCourse && (
         <CourseSettings 
           course={editingCourse} 
-          onClose={() => setEditingCourse(null)} 
+          onClose={() => {
+            setEditingCourse(null);
+            setCourseSettingsInitialTab(undefined);
+            setCourseSettingsInitialEditWordName(undefined);
+          }} 
           onSaveSuccess={fetchCustomCourses} 
+          initialTab={courseSettingsInitialTab}
+          initialEditWordName={courseSettingsInitialEditWordName}
         />
       )}
     </div>
