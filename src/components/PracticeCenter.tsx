@@ -30,6 +30,7 @@ interface PracticeCenterProps {
   settings: AppSettings;
   onQuizComplete: (score: number, totalQuestions: number) => void;
   activeCourseId: string;
+  enabledGames?: Record<string, boolean>;
 }
 
 export default function PracticeCenter({
@@ -46,9 +47,15 @@ export default function PracticeCenter({
   activeGroup,
   settings,
   onQuizComplete,
-  activeCourseId
+  activeCourseId,
+  enabledGames
 }: PracticeCenterProps) {
   const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank'>('hub');
+
+  const isQuizEnabled = !enabledGames || enabledGames.quiz !== false;
+  const isMatchEnabled = !enabledGames || enabledGames.match !== false;
+  const isSynonymEnabled = !enabledGames || enabledGames.synonym !== false;
+  const isBlankEnabled = !enabledGames || enabledGames.blank !== false;
 
   // Stagger animation variants for cards
   const containerVariants = {
@@ -81,50 +88,58 @@ export default function PracticeCenter({
 
           {/* Sub Navigation Capsules */}
           <div className="flex items-center gap-1.5 overflow-x-auto p-0.5 scrollbar-none">
-            <button
-              onClick={() => setSubTab('quiz')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                subTab === 'quiz'
-                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-150'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Practice & Quiz</span>
-            </button>
-            <button
-              onClick={() => setSubTab('match')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                subTab === 'match'
-                  ? 'bg-pink-50 text-pink-700 border border-pink-150'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-              }`}
-            >
-              <Gamepad2 className="w-3.5 h-3.5 text-pink-650" />
-              <span>Word Match</span>
-            </button>
-            <button
-              onClick={() => setSubTab('synonym')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                subTab === 'synonym'
-                  ? 'bg-amber-50 text-amber-700 border border-amber-150'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-              }`}
-            >
-              <Sparkle className="w-3.5 h-3.5 text-amber-500" />
-              <span>Synonym Check</span>
-            </button>
-            <button
-              onClick={() => setSubTab('blank')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                subTab === 'blank'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-150'
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Blank Filling</span>
-            </button>
+            {isQuizEnabled && (
+              <button
+                onClick={() => setSubTab('quiz')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'quiz'
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>Practice & Quiz</span>
+              </button>
+            )}
+            {isMatchEnabled && (
+              <button
+                onClick={() => setSubTab('match')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'match'
+                    ? 'bg-pink-50 text-pink-700 border border-pink-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <Gamepad2 className="w-3.5 h-3.5 text-pink-650" />
+                <span>Word Match</span>
+              </button>
+            )}
+            {isSynonymEnabled && (
+              <button
+                onClick={() => setSubTab('synonym')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'synonym'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <Sparkle className="w-3.5 h-3.5 text-amber-500" />
+                <span>Synonym Check</span>
+              </button>
+            )}
+            {isBlankEnabled && (
+              <button
+                onClick={() => setSubTab('blank')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
+                  subTab === 'blank'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-150'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Blank Filling</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -152,112 +167,131 @@ export default function PracticeCenter({
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {/* 1. Practice & Quiz Card */}
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4, scale: 1.01 }}
-              onClick={() => setSubTab('quiz')}
-              className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-                  <GraduationCap className="w-6 h-6" />
+            {isQuizEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('quiz')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Practice & Quiz</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Test your memory recall using multiple choice questions (MCQ) and spelling checks.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-slate-800 text-lg">Practice & Quiz</h3>
-                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    Test your memory recall using multiple choice questions (MCQ) and spelling checks.
-                  </p>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">Test Recall</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
+                    <span>Start Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-indigo-600 tracking-wider uppercase font-mono">Test Recall</span>
-                <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-indigo-600 transition">
-                  <span>Start Now</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* 2. Word Match Game Card */}
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4, scale: 1.01 }}
-              onClick={() => setSubTab('match')}
-              className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-pink-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center border border-pink-100">
-                  <Gamepad2 className="w-6 h-6 text-pink-650" />
+            {isMatchEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('match')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-pink-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center border border-pink-100">
+                    <Gamepad2 className="w-6 h-6 text-pink-650" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Word Match</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Boost your reflexes and memory retention through this fast-paced card matching game.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-slate-800 text-lg">Word Match</h3>
-                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    Boost your reflexes and memory retention through this fast-paced card matching game.
-                  </p>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-pink-600 tracking-wider uppercase font-mono">Play Game</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-pink-600 transition">
+                    <span>Start Play</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-pink-600 tracking-wider uppercase font-mono">Play Game</span>
-                <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-pink-600 transition">
-                  <span>Start Play</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* 3. Synonym Check Card */}
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4, scale: 1.01 }}
-              onClick={() => setSubTab('synonym')}
-              className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-                  <Sparkle className="w-6 h-6 text-amber-500" />
+            {isSynonymEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('synonym')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+                    <Sparkle className="w-6 h-6 text-amber-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Synonym Check</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Deepen your vocabulary knowledge by matching synonyms and word meanings.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-slate-800 text-lg">Synonym Check</h3>
-                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    Deepen your vocabulary knowledge by matching synonyms and word meanings.
-                  </p>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-amber-600 tracking-wider uppercase font-mono">AI Verification</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-amber-600 transition">
+                    <span>Verify Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-amber-600 tracking-wider uppercase font-mono">AI Verification</span>
-                <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-amber-600 transition">
-                  <span>Verify Now</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
 
             {/* 4. Blank Filling Practice Card */}
-            <motion.div
-              variants={itemVariants}
-              whileHover={{ y: -4, scale: 1.01 }}
-              onClick={() => setSubTab('blank')}
-              className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-emerald-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
-            >
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-                  <BookOpen className="w-6 h-6 text-emerald-500" />
+            {isBlankEnabled && (
+              <motion.div
+                variants={itemVariants}
+                whileHover={{ y: -4, scale: 1.01 }}
+                onClick={() => setSubTab('blank')}
+                className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-emerald-200 transition duration-300 p-6 flex flex-col justify-between cursor-pointer space-y-6"
+              >
+                <div className="space-y-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+                    <BookOpen className="w-6 h-6 text-emerald-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                      Practice grammar, syntax, and sentence memory recall by filling in correct blanks.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling</h3>
-                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                    Practice grammar, syntax, and sentence memory recall by filling in correct blanks.
-                  </p>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold text-emerald-600 tracking-wider uppercase font-mono">Sentence Quiz</span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-600 transition">
+                    <span>Practice Now</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
                 </div>
+              </motion.div>
+            )}
+
+            {/* Empty State when no games are enabled */}
+            {!isQuizEnabled && !isMatchEnabled && !isSynonymEnabled && !isBlankEnabled && (
+              <div className="col-span-full py-12 text-center bg-white border border-slate-150 rounded-3xl p-8 space-y-3">
+                <Gamepad2 className="w-12 h-12 text-slate-350 mx-auto" />
+                <h3 className="font-extrabold text-slate-700 text-base">কোনো প্র্যাকটিস বা গেম উপলব্ধ নেই</h3>
+                <p className="text-xs text-slate-400 font-semibold max-w-sm mx-auto leading-relaxed">
+                  এডমিন এই কোর্সের জন্য বর্তমানে কোনো গেম বা প্র্যাকটিস হাব অপশন অন করেননি। (No practices or games are currently enabled by the admin for this course.)
+                </p>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold text-emerald-600 tracking-wider uppercase font-mono">Sentence Quiz</span>
-                <span className="flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-emerald-600 transition">
-                  <span>Practice Now</span>
-                  <ChevronRight className="w-4 h-4" />
-                </span>
-              </div>
-            </motion.div>
+            )}
           </motion.div>
         </div>
       )}

@@ -1361,6 +1361,7 @@ export default function App() {
                 setQuizTaken(prev => prev + 1);
               }}
               activeCourseId={activeCourseId}
+              enabledGames={activeCourse?.enabledGames}
             />
           )}
 

@@ -76,6 +76,7 @@ export interface Course {
   allowedUsers?: string[];
   allowedUsersExpiry?: Record<string, string>;
   variableToggles?: Record<string, boolean>;
+  enabledGames?: Record<string, boolean>;
   createdAt: string;
   createdBy: string;
   price?: number;

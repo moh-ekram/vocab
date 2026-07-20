@@ -26,7 +26,10 @@ import {
   Eye,
   Volume2,
   UserCheck,
-  ShieldCheck
+  ShieldCheck,
+  Gamepad2,
+  GraduationCap,
+  Sparkles
 } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -36,7 +39,7 @@ interface CourseSettingsProps {
   course: Course;
   onClose: () => void;
   onSaveSuccess: () => void;
-  initialTab?: 'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions';
+  initialTab?: 'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'practice-games';
   initialEditWordName?: string;
 }
 
@@ -48,7 +51,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   initialEditWordName,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions'>(initialTab || 'general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'practice-games'>(initialTab || 'general');
 
   // --- BLANK QUESTIONS STATES ---
   const [courseBlankQuestions, setCourseBlankQuestions] = useState<BlankQuestion[]>([]);
@@ -382,6 +385,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     example: true,
     audio: true,
     ...(course.variableToggles || {})
+  });
+
+  const [enabledGames, setEnabledGames] = useState<Record<string, boolean>>({
+    quiz: true,
+    match: true,
+    synonym: true,
+    blank: true,
+    ...(course.enabledGames || {})
   });
 
   // --- WORDS LIST STATES ---
@@ -1056,6 +1067,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         allowedUsersExpiry: allowedUsersExpiry, // Save student access expiry dates map
         words: localWords,
         variableToggles: finalToggles,
+        enabledGames: enabledGames, // Save practice and games toggles!
         totalGroups: uniqueGroupsSize || 1,
         price: Number(price) || 0,
         bkashNumber: bkashNumber.trim(),
@@ -1081,6 +1093,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const menuItems = [
     { id: 'general' as const, label: 'Course Identity', icon: Sliders },
     { id: 'variables' as const, label: 'Features & Variables', icon: Settings },
+    { id: 'practice-games' as const, label: 'Practice & Games', icon: Gamepad2 },
     { id: 'access' as const, label: 'Student Access', icon: Users },
     { id: 'students' as const, label: 'Allowed Students', icon: UserCheck, badge: allowedUsers.length },
     { id: 'verification' as const, label: 'Auto-Verification', icon: ShieldCheck, badge: verifiedPayments.length },
@@ -1334,6 +1347,75 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                           className={`mt-1 transition-all ${!hasData ? 'cursor-not-allowed opacity-50' : 'cursor-pointer active:scale-95'}`}
                         >
                           {isEnabled && hasData ? (
+                            <ToggleRight className="w-10 h-10 text-indigo-600" />
+                          ) : (
+                            <ToggleLeft className="w-10 h-10 text-slate-300" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* --- SECTION 2.5: PRACTICE & GAMES ON/OFF CONTROL --- */}
+            {activeTab === 'practice-games' && (
+              <div className="space-y-5 animate-fadeIn">
+                <div className="border-b border-slate-100 pb-3 mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-sm">Practice & Games Controller</h4>
+                </div>
+
+                <div className="bg-indigo-50 border border-indigo-100 text-indigo-900 p-4 rounded-2xl text-xs flex items-start gap-2.5 leading-relaxed">
+                  <Gamepad2 className="w-4.5 h-4.5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <span className="font-black text-indigo-950 block">গেম নিয়ন্ত্রণ পলিসি (Games Control Policy)</span>
+                    <p className="mt-0.5">
+                      যেসব গেম বা প্র্যাকটিস অপশন অফ (Off) করে রাখা হবে, শিক্ষার্থীরা এই কোর্সের Practice & Games হাব-এ সেগুলো দেখতে পাবে না। সবগুলো চালু রাখতে চাইলে অন (On) করে দিন।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border border-slate-100 rounded-3xl overflow-hidden bg-white divide-y divide-slate-100">
+                  {[
+                    { key: 'quiz', label: 'Practice & Quiz', desc: 'একাধিক নির্বাচনি প্রশ্ন (MCQ) এবং টাইপিং বানান অনুশীলনের গেম। (Multiple choice questions and spelling practice games)', icon: GraduationCap },
+                    { key: 'match', label: 'Word Match Game', desc: 'কার্ড ড্র্যাগ-ম্যাচ করার মাধ্যমে দ্রুত শব্দের অর্থ মুখস্থ করার খেলা। (Card matching memory training game)', icon: Gamepad2 },
+                    { key: 'synonym', label: 'Synonym Check', desc: 'সমার্থক শব্দ বা Synonym মিলিয়ে ভোকাবুলারি যাচাই করার খেলা। (Synonym matching and verification game)', icon: Sparkles },
+                    { key: 'blank', label: 'Blank Filling Practice', desc: 'বাক্যের সঠিক স্থানে উপযুক্ত শব্দ বসিয়ে শূন্যস্থান পূরণ করার প্র্যাকটিস। (Sentence fill-in-the-blanks practice)', icon: BookOpen }
+                  ].map(item => {
+                    const isEnabled = enabledGames[item.key] !== false;
+                    
+                    return (
+                      <div 
+                        key={item.key} 
+                        className="p-4 flex items-start justify-between gap-4 transition-all duration-200 bg-white hover:bg-slate-50/40"
+                      >
+                        <div className="flex gap-3">
+                          <div className={`p-2 rounded-xl mt-0.5 ${
+                            isEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            <item.icon className="w-4.5 h-4.5" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">
+                              {item.label}
+                            </span>
+                            <span className="text-[10px] text-slate-450 font-medium block mt-1 leading-relaxed">{item.desc}</span>
+                          </div>
+                        </div>
+
+                        {/* Switch Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEnabledGames(prev => ({
+                              ...prev,
+                              [item.key]: !prev[item.key]
+                            }));
+                          }}
+                          className="mt-1 transition-all cursor-pointer active:scale-95"
+                        >
+                          {isEnabled ? (
                             <ToggleRight className="w-10 h-10 text-indigo-600" />
                           ) : (
                             <ToggleLeft className="w-10 h-10 text-slate-300" />
