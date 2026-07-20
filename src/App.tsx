@@ -1398,7 +1398,13 @@ export default function App() {
           )}
 
           {activeTab === 'admin' && user && user.email === 'mohammad.001ekram@gmail.com' && (
-            <AdminPanel words={activeWords} />
+            <AdminPanel 
+              words={activeWords} 
+              onCoursesUpdated={(updatedCourses) => {
+                setCustomCourses(updatedCourses);
+                localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(updatedCourses));
+              }}
+            />
           )}
         </div>
       </main>

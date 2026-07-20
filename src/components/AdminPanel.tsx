@@ -57,6 +57,7 @@ interface FirestoreUserDoc {
 
 interface AdminPanelProps {
   words: VocabularyWord[];
+  onCoursesUpdated?: (updatedCourses: Course[]) => void;
 }
 
 enum OperationType {
@@ -98,7 +99,7 @@ function getProgressEntries(progObj: Record<string, UserProgress> | undefined): 
   return Object.entries(progObj || {}) as [string, UserProgress][];
 }
 
-export default function AdminPanel({ words }: AdminPanelProps) {
+export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps) {
   const [users, setUsers] = useState<FirestoreUserDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +114,13 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
+  const [hasFetchedCourses, setHasFetchedCourses] = useState(false);
+
+  useEffect(() => {
+    if (onCoursesUpdated && hasFetchedCourses) {
+      onCoursesUpdated(customCourses);
+    }
+  }, [customCourses, hasFetchedCourses, onCoursesUpdated]);
 
   // New course form states
   const [newCourseTitle, setNewCourseTitle] = useState('');
@@ -434,6 +442,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         list.push(docSnap.data() as Course);
       });
       setCustomCourses(list);
+      setHasFetchedCourses(true);
     } catch (err) {
       console.error('Error fetching custom courses:', err);
       setCoursesError('Failed to load courses list from Cloud Firestore.');
