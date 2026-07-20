@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Course, VocabularyWord } from '../types';
+import { Course, VocabularyWord, BlankQuestion } from '../types';
 import { 
   X, 
   CheckCircle, 
@@ -28,7 +28,7 @@ import {
   UserCheck,
   ShieldCheck
 } from 'lucide-react';
-import { doc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { read, utils } from 'xlsx';
 
@@ -44,7 +44,21 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   onSaveSuccess,
 }) => {
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions'>('general');
+
+  // --- BLANK QUESTIONS STATES ---
+  const [courseBlankQuestions, setCourseBlankQuestions] = useState<BlankQuestion[]>([]);
+  const [blankQuestionsLoading, setBlankQuestionsLoading] = useState(false);
+  const [newSentence, setNewSentence] = useState('');
+  const [newOpt1, setNewOpt1] = useState('');
+  const [newOpt2, setNewOpt2] = useState('');
+  const [newOpt3, setNewOpt3] = useState('');
+  const [newOpt4, setNewOpt4] = useState('');
+  const [newCorrectIndex, setNewCorrectIndex] = useState<number>(0);
+
+  const [excelQuestionsPreview, setExcelQuestionsPreview] = useState<BlankQuestion[]>([]);
+  const [excelUploadError, setExcelUploadError] = useState<string | null>(null);
+  const [excelSaveStatus, setExcelSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(course.title);
@@ -188,6 +202,172 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       runAutoApprovals(courseRequests, allowedUsers, verifiedPayments);
     }
   }, [courseRequests, verifiedPayments]);
+
+  const fetchBlankQuestions = async () => {
+    setBlankQuestionsLoading(true);
+    try {
+      const qSnap = await getDocs(collection(db, 'blank_questions'));
+      const list: BlankQuestion[] = [];
+      qSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.courseId === course.id) {
+          list.push({ id: docSnap.id, ...data } as BlankQuestion);
+        }
+      });
+      setCourseBlankQuestions(list);
+    } catch (err) {
+      console.error('Error fetching course blank questions:', err);
+    } finally {
+      setBlankQuestionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'blank-questions') {
+      fetchBlankQuestions();
+    }
+  }, [activeTab, course.id]);
+
+  const handleUploadBlankExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setExcelUploadError(null);
+    setExcelQuestionsPreview([]);
+    
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawRows = utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+
+        if (rawRows.length === 0) {
+          setExcelUploadError('No data found in the selected Excel sheet.');
+          return;
+        }
+
+        const questionsList: BlankQuestion[] = [];
+
+        for (let idx = 0; idx < rawRows.length; idx++) {
+          const row = rawRows[idx];
+          if (!row || row.length < 2) continue;
+
+          const sentence = row[0] ? String(row[0]).trim() : '';
+          if (!sentence) continue;
+
+          // If it's the first row and lacks '#' anywhere, assume it's headers and skip
+          if (idx === 0) {
+            const hasHash = row.slice(1, 5).some(cell => cell && String(cell).includes('#'));
+            if (!hasHash && (sentence.toLowerCase().includes('sentence') || sentence.toLowerCase().includes('blank'))) {
+              continue;
+            }
+          }
+
+          const opts: string[] = [];
+          let answer = '';
+
+          for (let col = 1; col <= 4; col++) {
+            const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
+            if (val) {
+              if (val.includes('#')) {
+                const cleanVal = val.replace('#', '').trim();
+                opts.push(cleanVal);
+                answer = cleanVal;
+              } else {
+                opts.push(val);
+              }
+            }
+          }
+
+          if (opts.length > 0 && answer) {
+            questionsList.push({
+              id: `bq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              sentence,
+              options: opts,
+              answer,
+              courseId: course.id,
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+
+        if (questionsList.length === 0) {
+          setExcelUploadError('No valid questions found. Ensure one of the option columns contains a "#" to indicate the correct answer.');
+        } else {
+          setExcelQuestionsPreview(questionsList);
+        }
+      } catch (err) {
+        console.error('Error parsing blank excel:', err);
+        setExcelUploadError('Failed to parse Excel file. Make sure it is a valid .xlsx or .xls file.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleSaveBlankExcelQuestions = async () => {
+    if (excelQuestionsPreview.length === 0) return;
+    setExcelSaveStatus('saving');
+    try {
+      for (const q of excelQuestionsPreview) {
+        const updatedQ = { ...q, courseId: course.id };
+        await setDoc(doc(db, 'blank_questions', q.id), updatedQ);
+      }
+      setExcelSaveStatus('saved');
+      setExcelQuestionsPreview([]);
+      fetchBlankQuestions();
+      setTimeout(() => setExcelSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error('Error saving blank questions:', err);
+      setExcelSaveStatus('error');
+    }
+  };
+
+  const handleManualAddBlankQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSentence.trim() || !newOpt1.trim() || !newOpt2.trim() || !newOpt3.trim() || !newOpt4.trim()) {
+      alert('Please fill out the sentence and all 4 options.');
+      return;
+    }
+    const rawOpts = [newOpt1.trim(), newOpt2.trim(), newOpt3.trim(), newOpt4.trim()];
+    const answer = rawOpts[newCorrectIndex];
+    const newQ: BlankQuestion = {
+      id: `bq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      sentence: newSentence.trim(),
+      options: rawOpts,
+      answer,
+      courseId: course.id,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'blank_questions', newQ.id), newQ);
+      setNewSentence('');
+      setNewOpt1('');
+      setNewOpt2('');
+      setNewOpt3('');
+      setNewOpt4('');
+      setNewCorrectIndex(0);
+      fetchBlankQuestions();
+      alert('Question added successfully!');
+    } catch (err) {
+      console.error('Error adding question manually:', err);
+      alert('Failed to add question.');
+    }
+  };
+
+  const handleDeleteBlankQuestion = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      await deleteDoc(doc(db, 'blank_questions', id));
+      setCourseBlankQuestions(prev => prev.filter(q => q.id !== id));
+    } catch (err) {
+      console.error('Error deleting blank question:', err);
+      alert('Failed to delete question.');
+    }
+  };
 
   // --- FEATURE & VARIABLE TOGGLES ---
   const [toggles, setToggles] = useState<Record<string, boolean>>({
@@ -888,6 +1068,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     { id: 'verification' as const, label: 'Auto-Verification', icon: ShieldCheck, badge: verifiedPayments.length },
     { id: 'wordlist' as const, label: 'Word List & Editing', icon: BookOpen, badge: localWords.length },
     { id: 'addwords' as const, label: 'Add & Upload Words', icon: PlusCircle },
+    { id: 'blank-questions' as const, label: 'Blank Questions', icon: FileSpreadsheet, badge: courseBlankQuestions.length },
   ];
 
   return (
@@ -2027,6 +2208,248 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </div>
                   </div>
 
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'blank-questions' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="border-b border-slate-100 pb-3 mb-2">
+                  <h4 className="font-extrabold text-slate-900 text-sm">Course Blank Filling Practice</h4>
+                  <p className="text-xs text-slate-400 mt-1 font-medium">
+                    Manage blank-filling questions specifically for this course. You can upload an Excel spreadsheet or add questions manually.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Excel Upload Card */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <FileSpreadsheet className="w-4.5 h-4.5 text-emerald-600" />
+                      <span className="text-xs font-black text-slate-800">Upload via Excel</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      <strong>Format:</strong> Column 1: Sentence with blank (e.g. "Success is not ___."). Cols 2-5: Options. Mark the correct option with a trailing "#" (e.g., "final#").
+                    </p>
+
+                    {/* Drag & Drop Zone */}
+                    <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 rounded-xl p-6 text-center transition cursor-pointer relative bg-white">
+                      <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv" 
+                        onChange={handleUploadBlankExcel}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer font-sans"
+                      />
+                      <UploadCloud className="w-8 h-8 text-slate-450 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-700">Click or drag Excel/CSV file here</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Supports .xlsx, .xls, .csv</p>
+                    </div>
+
+                    {excelUploadError && (
+                      <div className="p-3 bg-rose-50 text-rose-700 rounded-xl flex items-start gap-2 border border-rose-100 text-xs font-semibold">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{excelUploadError}</span>
+                      </div>
+                    )}
+
+                    {excelQuestionsPreview.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                            {excelQuestionsPreview.length} questions parsed
+                          </span>
+                          <button
+                            onClick={handleSaveBlankExcelQuestions}
+                            disabled={excelSaveStatus === 'saving'}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-400 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
+                          >
+                            {excelSaveStatus === 'saving' ? 'Saving...' : 'Save to Cloud'}
+                          </button>
+                        </div>
+
+                        {/* Excel Preview Panel */}
+                        <div className="max-h-[180px] overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 bg-white text-xs">
+                          {excelQuestionsPreview.map((q, idx) => (
+                            <div key={idx} className="p-3">
+                              <p className="font-bold text-slate-800"><span className="text-slate-400 mr-1">#{idx + 1}</span> {q.sentence}</p>
+                              <div className="grid grid-cols-2 gap-1.5 mt-1.5 font-mono text-[11px] text-slate-500">
+                                {q.options.map((opt, oIdx) => (
+                                  <span key={oIdx} className={opt === q.answer ? 'text-emerald-600 font-extrabold bg-emerald-50/50 px-1 rounded' : ''}>
+                                    {opt} {opt === q.answer ? '✓' : ''}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {excelSaveStatus === 'saved' && (
+                      <div className="p-3 bg-emerald-50 text-emerald-700 rounded-xl flex items-center gap-2 border border-emerald-100 text-xs font-semibold">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Questions imported successfully!</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Manual Question Form */}
+                  <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                      <PlusCircle className="w-4.5 h-4.5 text-indigo-600" />
+                      <span className="text-xs font-black text-slate-800">Add Manually</span>
+                    </div>
+
+                    <form onSubmit={handleManualAddBlankQuestion} className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Sentence with Blank</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g., The journey begins with a single ___."
+                          value={newSentence}
+                          onChange={(e) => setNewSentence(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Option 1</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Option 1"
+                            value={newOpt1}
+                            onChange={(e) => setNewOpt1(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Option 2</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Option 2"
+                            value={newOpt2}
+                            onChange={(e) => setNewOpt2(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Option 3</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Option 3"
+                            value={newOpt3}
+                            onChange={(e) => setNewOpt3(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Option 4</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Option 4"
+                            value={newOpt4}
+                            onChange={(e) => setNewOpt4(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Correct Answer Option</label>
+                        <select
+                          value={newCorrectIndex}
+                          onChange={(e) => setNewCorrectIndex(Number(e.target.value))}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                        >
+                          <option value={0}>Option 1: {newOpt1 || '(empty)'}</option>
+                          <option value={1}>Option 2: {newOpt2 || '(empty)'}</option>
+                          <option value={2}>Option 3: {newOpt3 || '(empty)'}</option>
+                          <option value={3}>Option 4: {newOpt4 || '(empty)'}</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow transition cursor-pointer"
+                      >
+                        Add Question
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Existing Questions list */}
+                <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-slate-800 text-xs">Existing Blank Questions ({courseBlankQuestions.length})</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
+                    </div>
+                    <button
+                      onClick={fetchBlankQuestions}
+                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${blankQuestionsLoading ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {blankQuestionsLoading ? (
+                    <div className="flex items-center justify-center py-8 text-slate-400">
+                      <RefreshCw className="w-5 h-5 animate-spin mr-2" />
+                      <span className="text-xs font-bold font-mono">Loading questions...</span>
+                    </div>
+                  ) : courseBlankQuestions.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl bg-white text-xs text-slate-400">
+                      No questions found. Add questions manually or upload an Excel sheet to get started!
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-[10px] font-extrabold text-slate-450 uppercase tracking-wider border-b border-slate-150">
+                            <th className="px-4 py-2.5">Sentence</th>
+                            <th className="px-4 py-2.5">Options</th>
+                            <th className="px-4 py-2.5">Answer</th>
+                            <th className="px-4 py-2.5 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                          {courseBlankQuestions.map((q) => (
+                            <tr key={q.id} className="hover:bg-slate-50/50">
+                              <td className="px-4 py-2.5 font-medium max-w-xs truncate" title={q.sentence}>
+                                {q.sentence}
+                              </td>
+                              <td className="px-4 py-2.5 font-mono text-[10px] text-slate-500">
+                                {q.options.join(', ')}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold rounded text-[10px]">
+                                  {q.answer}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right">
+                                <button
+                                  onClick={() => handleDeleteBlankQuestion(q.id)}
+                                  className="p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-lg transition cursor-pointer"
+                                  title="Delete question"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

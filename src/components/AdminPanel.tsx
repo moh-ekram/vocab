@@ -108,7 +108,7 @@ export default function AdminPanel({ words }: AdminPanelProps) {
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests' | 'blank-questions'>('users');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests'>('users');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -1026,20 +1026,6 @@ export default function AdminPanel({ words }: AdminPanelProps) {
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Pending Requests ({accessRequests.filter(r => r.status === 'pending').length})</span>
-        </button>
-        <button
-          onClick={() => {
-            setActiveAdminTab('blank-questions');
-            fetchBlankQuestions();
-          }}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
-            activeAdminTab === 'blank-questions'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Blank Questions (শূন্যস্থান পূরণ) ({blankQuestions.length})</span>
         </button>
       </div>
 

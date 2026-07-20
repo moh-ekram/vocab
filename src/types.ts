@@ -101,6 +101,7 @@ export interface BlankQuestion {
   sentence: string;
   options: string[];
   answer: string;
+  courseId?: string;
   createdAt?: string;
 }
 
