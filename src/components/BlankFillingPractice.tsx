@@ -62,13 +62,33 @@ export default function BlankFillingPractice({
   activeCourseId,
   words
 }: BlankFillingPracticeProps) {
+  const [allQuestions, setAllQuestions] = useState<BlankQuestion[]>([]);
   const [questions, setQuestions] = useState<BlankQuestion[]>([]);
+  const [activeFilter, setActiveFilter] = useState<'yet_to_try' | 'incorrect' | 'done'>('yet_to_try');
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+
+  // Compute question counts for each category
+  const counts = React.useMemo(() => {
+    let yetToTry = 0;
+    let incorrect = 0;
+    let done = 0;
+    allQuestions.forEach(q => {
+      const prog = blankProgress[q.id];
+      if (!prog) {
+        yetToTry++;
+      } else if (!prog.correct) {
+        incorrect++;
+      } else {
+        done++;
+      }
+    });
+    return { yet_to_try: yetToTry, incorrect, done };
+  }, [allQuestions, blankProgress]);
 
   // Fetch blank questions from Firestore on mount/activeCourseId change
   useEffect(() => {
@@ -89,11 +109,11 @@ export default function BlankFillingPractice({
         });
         
         if (loaded.length > 0) {
-          setQuestions(loaded);
+          setAllQuestions(loaded);
         } else {
           // Fallback to default high-quality questions for default GRE or if none uploaded yet
           if (activeCourseId === 'gre') {
-            setQuestions(DEFAULT_QUESTIONS);
+            setAllQuestions(DEFAULT_QUESTIONS);
           } else if (words && words.length > 0) {
             // Auto-generate high-quality practice questions from vocabulary words
             const generated: BlankQuestion[] = [];
@@ -162,17 +182,17 @@ export default function BlankFillingPractice({
 
             // Shuffle the complete generated list and select up to 20 for a bite-sized practice session
             const randomized = [...generated].sort(() => 0.5 - Math.random()).slice(0, 20);
-            setQuestions(randomized);
+            setAllQuestions(randomized);
           } else {
-            setQuestions([]);
+            setAllQuestions([]);
           }
         }
       } catch (err) {
         console.error('Error fetching blank questions:', err);
         if (activeCourseId === 'gre') {
-          setQuestions(DEFAULT_QUESTIONS);
+          setAllQuestions(DEFAULT_QUESTIONS);
         } else {
-          setQuestions([]);
+          setAllQuestions([]);
         }
       } finally {
         setLoading(false);
@@ -180,6 +200,58 @@ export default function BlankFillingPractice({
     };
     fetchQuestions();
   }, [activeCourseId, words]);
+
+  // Function to apply a filter on allQuestions
+  const applyFilter = (filterType: 'yet_to_try' | 'incorrect' | 'done', pool = allQuestions) => {
+    setActiveFilter(filterType);
+    const filtered = pool.filter(q => {
+      const prog = blankProgress[q.id];
+      if (filterType === 'yet_to_try') {
+        return !prog;
+      } else if (filterType === 'incorrect') {
+        return prog && !prog.correct;
+      } else {
+        return prog && prog.correct;
+      }
+    });
+    setQuestions(filtered);
+    setCurrentIndex(0);
+    setSelectedOption(null);
+    setIsAnswered(false);
+    setScore(0);
+    setSessionCompleted(false);
+  };
+
+  // Auto-select filter priority on load or course change
+  useEffect(() => {
+    if (allQuestions.length === 0) {
+      setQuestions([]);
+      return;
+    }
+
+    let yetToTryCount = 0;
+    let incorrectCount = 0;
+    
+    allQuestions.forEach(q => {
+      const prog = blankProgress[q.id];
+      if (!prog) {
+        yetToTryCount++;
+      } else if (!prog.correct) {
+        incorrectCount++;
+      }
+    });
+
+    let targetFilter: 'yet_to_try' | 'incorrect' | 'done' = 'yet_to_try';
+    if (yetToTryCount > 0) {
+      targetFilter = 'yet_to_try';
+    } else if (incorrectCount > 0) {
+      targetFilter = 'incorrect';
+    } else {
+      targetFilter = 'done';
+    }
+
+    applyFilter(targetFilter, allQuestions);
+  }, [allQuestions]);
 
   if (loading) {
     return (
@@ -190,7 +262,7 @@ export default function BlankFillingPractice({
     );
   }
 
-  if (questions.length === 0) {
+  if (allQuestions.length === 0) {
     return (
       <div className="bg-white p-12 rounded-3xl border border-slate-200/60 shadow-xs text-center space-y-4">
         <HelpCircle className="w-12 h-12 text-slate-300 mx-auto" />
@@ -206,7 +278,7 @@ export default function BlankFillingPractice({
   
   // Calculate total progress stats based on current database
   const totalCorrectInHistory = Object.values(blankProgress).filter(p => p.correct).length;
-  const totalQuestionsInDatabase = questions.length;
+  const totalQuestionsInDatabase = allQuestions.length;
 
   const handleSelectOption = (option: string) => {
     if (isAnswered) return;
@@ -234,66 +306,10 @@ export default function BlankFillingPractice({
   };
 
   const handleRestart = () => {
-    setCurrentIndex(0);
-    setSelectedOption(null);
-    setIsAnswered(false);
-    setScore(0);
-    setSessionCompleted(false);
+    applyFilter(activeFilter);
   };
 
-  // Render Completion Screen
-  if (sessionCompleted) {
-    const accuracy = Math.round((score / questions.length) * 100);
-    return (
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/60 shadow-md text-center space-y-8 max-w-lg mx-auto"
-      >
-        <div className="w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100 shadow-sm">
-          <Trophy className="w-10 h-10 text-indigo-500" />
-        </div>
-
-        <div className="space-y-2">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800">Practice Completed!</h3>
-          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Session Summary</p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <span className="text-2xl font-black text-slate-850">{score} / {questions.length}</span>
-            <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Correct Answers</p>
-          </div>
-          <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-            <span className="text-2xl font-black text-indigo-600">{accuracy}%</span>
-            <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Accuracy Level</p>
-          </div>
-        </div>
-
-        {/* Total stats progress */}
-        <div className="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50 flex items-center gap-3 justify-center text-left">
-          <Activity className="w-5 h-5 text-indigo-500" />
-          <div>
-            <p className="text-xs font-black text-slate-800">Total Progress</p>
-            <p className="text-[11px] text-slate-500 font-medium">
-              You have successfully answered {totalCorrectInHistory} of {totalQuestionsInDatabase} total questions in the database.
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleRestart}
-          className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm rounded-xl transition cursor-pointer shadow-sm shadow-indigo-500/10 flex items-center justify-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Restart Session</span>
-        </button>
-      </motion.div>
-    );
-  }
-
-  const sentenceParts = currentQuestion.sentence.split('___');
+  const sentenceParts = currentQuestion ? currentQuestion.sentence.split('___') : ['', ''];
 
   return (
     <div className="max-w-2xl mx-auto space-y-6" id="blank-practice-container">
@@ -305,96 +321,197 @@ export default function BlankFillingPractice({
         </div>
         <div className="text-right">
           <span className="text-xs font-bold text-slate-400">Question: </span>
-          <span className="text-xs font-black text-indigo-600 font-mono">{currentIndex + 1} / {questions.length}</span>
-        </div>
-      </div>
-
-      {/* Main Question Card */}
-      <div className="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/60 shadow-sm space-y-8 relative overflow-hidden">
-        {/* Absolute Background Accent */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
-
-        {/* Sentence display with styled blank */}
-        <div className="text-base sm:text-lg font-extrabold text-slate-800 leading-relaxed text-center py-4">
-          {sentenceParts[0]}
-          <span className={`inline-block px-3 py-1 mx-1.5 rounded-xl border-2 font-mono text-xs sm:text-sm transition-all duration-300 ${
-            isAnswered 
-            ? (selectedOption === currentQuestion.answer 
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
-                : 'bg-rose-50 text-rose-700 border-rose-300')
-            : 'bg-indigo-50/50 text-indigo-600 border-dashed border-indigo-200 min-w-[70px] text-center'
-          }`}>
-            {isAnswered ? selectedOption : '___'}
+          <span className="text-xs font-black text-indigo-600 font-mono">
+            {questions.length > 0 ? `${currentIndex + 1} / ${questions.length}` : '0 / 0'}
           </span>
-          {sentenceParts[1]}
         </div>
-
-        {/* Options Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {currentQuestion.options.map((option, index) => {
-            const isSelected = selectedOption === option;
-            const isCorrect = option === currentQuestion.answer;
-            
-            let btnClass = "bg-slate-50 hover:bg-slate-100/70 border-slate-200 text-slate-700 hover:border-indigo-200";
-            if (isAnswered) {
-              if (isCorrect) {
-                btnClass = "bg-emerald-50 border-emerald-300 text-emerald-700 font-black";
-              } else if (isSelected) {
-                btnClass = "bg-rose-50 border-rose-300 text-rose-700 font-black";
-              } else {
-                btnClass = "bg-slate-50/50 border-slate-100 text-slate-400 opacity-60";
-              }
-            }
-
-            return (
-              <button
-                key={index}
-                onClick={() => handleSelectOption(option)}
-                disabled={isAnswered}
-                className={`p-4 rounded-xl border-2 text-left text-xs font-bold transition duration-200 flex items-center justify-between cursor-pointer ${btnClass}`}
-              >
-                <span>{option}</span>
-                {isAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-emerald-600" />}
-                {isAnswered && !isCorrect && isSelected && <XCircle className="w-4 h-4 text-rose-600" />}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Answer feedback / Next Button */}
-        <AnimatePresence>
-          {isAnswered && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100"
-            >
-              <div className="flex items-center gap-2.5 text-xs">
-                {selectedOption === currentQuestion.answer ? (
-                  <span className="flex items-center gap-1 text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
-                    <Check className="w-3.5 h-3.5" />
-                    Correct Answer
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-rose-600 font-extrabold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
-                    <X className="w-3.5 h-3.5" />
-                    Incorrect! Correct answer is: {currentQuestion.answer}
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={handleNext}
-                className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-              >
-                <span>{currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Segmented Filter Control */}
+      <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/55 flex gap-1 w-full" id="blank-practice-filters">
+        <button
+          onClick={() => applyFilter('yet_to_try')}
+          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            activeFilter === 'yet_to_try'
+              ? 'bg-white text-indigo-600 shadow-xs font-extrabold border border-indigo-100/30'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
+          }`}
+        >
+          <HelpCircle className={`w-3.5 h-3.5 ${activeFilter === 'yet_to_try' ? 'text-indigo-600' : 'text-slate-400'}`} />
+          <span>Yet to Try ({counts.yet_to_try})</span>
+        </button>
+
+        <button
+          onClick={() => applyFilter('incorrect')}
+          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            activeFilter === 'incorrect'
+              ? 'bg-white text-rose-600 shadow-xs font-extrabold border border-rose-100/30'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
+          }`}
+        >
+          <XCircle className={`w-3.5 h-3.5 ${activeFilter === 'incorrect' ? 'text-rose-500' : 'text-slate-400'}`} />
+          <span>Incorrect ({counts.incorrect})</span>
+        </button>
+
+        <button
+          onClick={() => applyFilter('done')}
+          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            activeFilter === 'done'
+              ? 'bg-white text-emerald-600 shadow-xs font-extrabold border border-emerald-100/30'
+              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
+          }`}
+        >
+          <CheckCircle className={`w-3.5 h-3.5 ${activeFilter === 'done' ? 'text-emerald-500' : 'text-slate-400'}`} />
+          <span>Done ({counts.done})</span>
+        </button>
+      </div>
+
+      {questions.length === 0 ? (
+        <div className="bg-white p-12 rounded-3xl border border-slate-200/60 shadow-xs text-center space-y-4">
+          <HelpCircle className="w-12 h-12 text-slate-300 mx-auto" />
+          <div>
+            <h4 className="text-sm font-extrabold text-slate-700">No questions found in this category</h4>
+            <p className="text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed">
+              {activeFilter === 'yet_to_try' && "You have tried all the blank-filling questions in this course! Excellent job! Check out 'Done' or practice your 'Incorrect' words."}
+              {activeFilter === 'incorrect' && "Fantastic! You don't have any incorrect questions. Keep up the high accuracy!"}
+              {activeFilter === 'done' && "You haven't completed any blank-filling questions correctly yet. Start with 'Yet to Try' to build your progress!"}
+            </p>
+          </div>
+        </div>
+      ) : sessionCompleted ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/60 shadow-md text-center space-y-8 max-w-lg mx-auto"
+        >
+          <div className="w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100 shadow-sm">
+            <Trophy className="w-10 h-10 text-indigo-500" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-800 font-sans tracking-tight">Practice Completed!</h3>
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider font-mono">Session Summary</p>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+              <span className="text-2xl font-black text-slate-800 font-sans">{score} / {questions.length}</span>
+              <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Correct Answers</p>
+            </div>
+            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+              <span className="text-2xl font-black text-indigo-600 font-sans">{Math.round((score / questions.length) * 100)}%</span>
+              <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Accuracy Level</p>
+            </div>
+          </div>
+
+          {/* Total stats progress */}
+          <div className="bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50 flex items-center gap-3 justify-center text-left">
+            <Activity className="w-5 h-5 text-indigo-500" />
+            <div>
+              <p className="text-xs font-black text-slate-800">Total Progress</p>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                You have successfully answered {totalCorrectInHistory} of {totalQuestionsInDatabase} total questions in the database.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleRestart}
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm rounded-xl transition cursor-pointer shadow-sm shadow-indigo-500/10 flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Restart Session</span>
+          </button>
+        </motion.div>
+      ) : (
+        /* Main Question Card */
+        <div className="bg-white p-8 sm:p-10 rounded-3xl border border-slate-200/60 shadow-sm space-y-8 relative overflow-hidden">
+          {/* Absolute Background Accent */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Sentence display with styled blank */}
+          <div className="text-base sm:text-lg font-extrabold text-slate-800 leading-relaxed text-center py-4">
+            {sentenceParts[0]}
+            <span className={`inline-block px-3 py-1 mx-1.5 rounded-xl border-2 font-mono text-xs sm:text-sm transition-all duration-300 ${
+              isAnswered 
+              ? (selectedOption === currentQuestion.answer 
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300' 
+                  : 'bg-rose-50 text-rose-700 border-rose-300')
+              : 'bg-indigo-50/50 text-indigo-600 border-dashed border-indigo-200 min-w-[70px] text-center'
+            }`}>
+              {isAnswered ? selectedOption : '___'}
+            </span>
+            {sentenceParts[1]}
+          </div>
+
+          {/* Options Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {currentQuestion.options.map((option, index) => {
+              const isSelected = selectedOption === option;
+              const isCorrect = option === currentQuestion.answer;
+              
+              let btnClass = "bg-slate-50 hover:bg-slate-100/70 border-slate-200 text-slate-700 hover:border-indigo-200";
+              if (isAnswered) {
+                if (isCorrect) {
+                  btnClass = "bg-emerald-50 border-emerald-300 text-emerald-700 font-black";
+                } else if (isSelected) {
+                  btnClass = "bg-rose-50 border-rose-300 text-rose-700 font-black";
+                } else {
+                  btnClass = "bg-slate-50/50 border-slate-100 text-slate-400 opacity-60";
+                }
+              }
+
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleSelectOption(option)}
+                  disabled={isAnswered}
+                  className={`p-4 rounded-xl border-2 text-left text-xs font-bold transition duration-200 flex items-center justify-between cursor-pointer ${btnClass}`}
+                >
+                  <span>{option}</span>
+                  {isAnswered && isCorrect && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+                  {isAnswered && !isCorrect && isSelected && <XCircle className="w-4 h-4 text-rose-600" />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Answer feedback / Next Button */}
+          <AnimatePresence>
+            {isAnswered && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100"
+              >
+                <div className="flex items-center gap-2.5 text-xs">
+                  {selectedOption === currentQuestion.answer ? (
+                    <span className="flex items-center gap-1 text-emerald-600 font-extrabold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                      <Check className="w-3.5 h-3.5" />
+                      Correct Answer
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-rose-600 font-extrabold bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+                      <X className="w-3.5 h-3.5" />
+                      Incorrect! Correct answer is: {currentQuestion.answer}
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  onClick={handleNext}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <span>{currentIndex === questions.length - 1 ? 'Finish' : 'Next Question'}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Progress Counter Recording */}
       <div className="bg-slate-50 border border-slate-200/50 p-4 rounded-2xl flex items-center justify-between text-xs">
