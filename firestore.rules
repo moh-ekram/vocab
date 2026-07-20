@@ -38,7 +38,10 @@ service cloud.firestore {
         && (data.progress == null || data.progress is map)
         && (data.settings == null || data.settings is map)
         && (data.goal == null || data.goal is map)
-        && (data.synonymProgress == null || data.synonymProgress is map);
+        && (data.synonymProgress == null || data.synonymProgress is map)
+        && (data.blankProgress == null || data.blankProgress is map)
+        && (data.oooProgress == null || data.oooProgress is map)
+        && (data.analogyProgress == null || data.analogyProgress is map);
     }
 
     function isValidCourse(data) {
@@ -95,7 +98,7 @@ service cloud.firestore {
         && (request.resource.data.email == null || resource.data.email == null || request.resource.data.email == resource.data.email)
         // strict field changes (Pillar 4 & 5)
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-             'progress', 'folders', 'goal', 'synonymProgress', 'settings',
+             'progress', 'folders', 'goal', 'synonymProgress', 'blankProgress', 'oooProgress', 'analogyProgress', 'settings',
              'enrolledCourseIds', 'activeCourseId', 'quizScore', 'quizTaken',
              'updatedAt'
            ]);
@@ -145,6 +148,18 @@ service cloud.firestore {
 
     // 5. Blank Questions Collection
     match /blank_questions/{questionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 6. Odd One Out Questions Collection
+    match /odd_one_out_questions/{questionId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 7. Word Analogy Questions Collection
+    match /word_analogy_questions/{questionId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
