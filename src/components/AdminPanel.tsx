@@ -125,6 +125,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   // New course form states
   const [newCourseTitle, setNewCourseTitle] = useState('');
   const [newCourseId, setNewCourseId] = useState('');
+  const [isSlugTouched, setIsSlugTouched] = useState(false);
   const [newCourseDesc, setNewCourseDesc] = useState('');
   const [uploadedWords, setUploadedWords] = useState<VocabularyWord[]>([]);
   const [parsedPlaceLabels, setParsedPlaceLabels] = useState<Record<string, string>>({});
@@ -464,14 +465,21 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
 
   // Sync slug from title
   useEffect(() => {
-    const slug = newCourseTitle
+    if (isSlugTouched) return;
+    let slug = newCourseTitle
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, '') // remove special chars
       .replace(/[\s_]+/g, '-')  // replace spaces with hyphen
       .replace(/^-+|-+$/g, ''); // trim outer hyphens
+    
+    // If slug is empty (due to Bangla/unicode characters), auto-generate a fallback ID
+    if (!slug && newCourseTitle.trim()) {
+      const hash = Math.random().toString(36).substring(2, 8);
+      slug = `course-${hash}`;
+    }
     setNewCourseId(slug);
-  }, [newCourseTitle]);
+  }, [newCourseTitle, isSlugTouched]);
 
   const fetchUsersData = async () => {
     setLoading(true);
@@ -895,11 +903,12 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
       setNewCourseIsDefault(false);
       setNewCourseIsRestricted(false);
       setNewCourseAllowedUsersText('');
+      setIsSlugTouched(false);
       fetchCustomCourses();
     } catch (err) {
       console.error('Error saving course to Firestore:', err);
       setSaveStatus('error');
-      setSaveError(err instanceof Error ? err.message : String(err));
+      setSaveError(`${err instanceof Error ? err.message : String(err)} (Course ID: ${newCourseId})`);
     }
   };
 
@@ -1384,12 +1393,16 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   <label className="text-xs font-bold text-slate-600 block">Course Identifier (ID / Slug)</label>
                   <input
                     type="text"
-                    disabled
                     value={newCourseId}
-                    placeholder="Auto-generated from title"
-                    className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl outline-none text-xs font-mono font-bold text-slate-500 cursor-not-allowed"
+                    onChange={(e) => {
+                      setIsSlugTouched(true);
+                      // Only allow simple ASCII alphanumeric, hyphen and underscore
+                      setNewCourseId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''));
+                    }}
+                    placeholder="Auto-generated or type a custom English ID"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono font-bold text-slate-800 transition"
                   />
-                  <span className="text-[9px] text-slate-400 block font-semibold leading-relaxed">This slug will be used as the central database identifier.</span>
+                  <span className="text-[9px] text-slate-400 block font-semibold leading-relaxed">This slug will be used as the central database identifier. (If your title is in Bangla, you can write a unique English ID here!)</span>
                 </div>
 
                 <div className="space-y-1.5">
