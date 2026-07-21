@@ -10,7 +10,8 @@ import {
   Trophy,
   Activity,
   Check,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -21,6 +22,7 @@ interface BlankFillingPracticeProps {
   onUpdateBlankProgress: (questionId: string, correct: boolean) => void;
   activeCourseId: string;
   words?: VocabularyWord[];
+  onBack: () => void;
 }
 
 const DEFAULT_QUESTIONS: BlankQuestion[] = [
@@ -60,7 +62,8 @@ export default function BlankFillingPractice({
   blankProgress,
   onUpdateBlankProgress,
   activeCourseId,
-  words
+  words,
+  onBack
 }: BlankFillingPracticeProps) {
   const [allQuestions, setAllQuestions] = useState<BlankQuestion[]>([]);
   const [questions, setQuestions] = useState<BlankQuestion[]>([]);
@@ -312,58 +315,66 @@ export default function BlankFillingPractice({
   const sentenceParts = currentQuestion ? currentQuestion.sentence.split('___') : ['', ''];
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6" id="blank-practice-container">
-      {/* Session Progress Header */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-widest font-mono">Active Game Mode</span>
-          <h4 className="text-sm font-extrabold text-slate-800">Blank Filling Practice</h4>
+    <div className="max-w-2xl mx-auto space-y-4" id="blank-practice-container">
+      {/* Unified Compact Header */}
+      <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onBack}
+            className="p-1.5 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-850 transition cursor-pointer flex items-center justify-center"
+            title="Back to Hub"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="h-4 w-[1px] bg-slate-200" />
+          <div>
+            <h4 className="text-xs font-black text-slate-800 flex items-center gap-2">
+              <span>Blank Filling</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-md font-mono font-bold">
+                {questions.length > 0 ? `${currentIndex + 1} / ${questions.length}` : '0 / 0'}
+              </span>
+            </h4>
+          </div>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-bold text-slate-400">Question: </span>
-          <span className="text-xs font-black text-indigo-600 font-mono">
-            {questions.length > 0 ? `${currentIndex + 1} / ${questions.length}` : '0 / 0'}
-          </span>
+
+        {/* Slim Segmented Filter Row */}
+        <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/55">
+          <button
+            onClick={() => applyFilter('yet_to_try')}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
+              activeFilter === 'yet_to_try'
+                ? 'bg-white text-indigo-600 shadow-xs border border-indigo-100/30'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <HelpCircle className="w-3 h-3" />
+            <span>Yet to Try ({counts.yet_to_try})</span>
+          </button>
+
+          <button
+            onClick={() => applyFilter('incorrect')}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
+              activeFilter === 'incorrect'
+                ? 'bg-white text-rose-600 shadow-xs border border-rose-100/30'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <XCircle className="w-3 h-3 text-rose-500" />
+            <span>Incorrect ({counts.incorrect})</span>
+          </button>
+
+          <button
+            onClick={() => applyFilter('done')}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition flex items-center gap-1 cursor-pointer ${
+              activeFilter === 'done'
+                ? 'bg-white text-emerald-600 shadow-xs border border-emerald-100/30'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <CheckCircle className="w-3 h-3 text-emerald-500" />
+            <span>Done ({counts.done})</span>
+          </button>
         </div>
-      </div>
-
-      {/* Segmented Filter Control */}
-      <div className="bg-slate-100 p-1 rounded-2xl border border-slate-200/55 flex gap-1 w-full" id="blank-practice-filters">
-        <button
-          onClick={() => applyFilter('yet_to_try')}
-          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-            activeFilter === 'yet_to_try'
-              ? 'bg-white text-indigo-600 shadow-xs font-extrabold border border-indigo-100/30'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
-          }`}
-        >
-          <HelpCircle className={`w-3.5 h-3.5 ${activeFilter === 'yet_to_try' ? 'text-indigo-600' : 'text-slate-400'}`} />
-          <span>Yet to Try ({counts.yet_to_try})</span>
-        </button>
-
-        <button
-          onClick={() => applyFilter('incorrect')}
-          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-            activeFilter === 'incorrect'
-              ? 'bg-white text-rose-600 shadow-xs font-extrabold border border-rose-100/30'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
-          }`}
-        >
-          <XCircle className={`w-3.5 h-3.5 ${activeFilter === 'incorrect' ? 'text-rose-500' : 'text-slate-400'}`} />
-          <span>Incorrect ({counts.incorrect})</span>
-        </button>
-
-        <button
-          onClick={() => applyFilter('done')}
-          className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-            activeFilter === 'done'
-              ? 'bg-white text-emerald-600 shadow-xs font-extrabold border border-emerald-100/30'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'
-          }`}
-        >
-          <CheckCircle className={`w-3.5 h-3.5 ${activeFilter === 'done' ? 'text-emerald-500' : 'text-slate-400'}`} />
-          <span>Done ({counts.done})</span>
-        </button>
       </div>
 
       {questions.length === 0 ? (

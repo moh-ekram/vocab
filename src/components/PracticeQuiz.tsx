@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, AppSettings } from '../types';
-import { CheckCircle2, XCircle, RefreshCw, HelpCircle, AlertCircle, Award, Sparkles, ChevronRight, HelpCircle as HelpIcon, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCw, HelpCircle, AlertCircle, Award, Sparkles, ChevronRight, HelpCircle as HelpIcon, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface PracticeQuizProps {
   words: VocabularyWord[];
@@ -9,6 +9,7 @@ interface PracticeQuizProps {
   activeGroup: number | string | null;
   settings?: AppSettings;
   onQuizComplete?: (score: number, totalQuestions: number) => void;
+  onBack?: () => void;
 }
 
 type QuizType = 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
@@ -19,7 +20,7 @@ interface Question {
   correctAnswer: string;
 }
 
-export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings, onQuizComplete }: PracticeQuizProps) {
+export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings, onQuizComplete, onBack }: PracticeQuizProps) {
   // Quiz states
   const [quizType, setQuizType] = useState<QuizType>(() => {
     return settings?.defaultQuizType || 'mcq_en_bn';
@@ -229,7 +230,22 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
   const progressPercent = questions.length > 0 ? Math.round(((currentQuestionIndex) / questions.length) * 100) : 0;
 
   return (
-    <div className="bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 shadow-xs max-w-3xl mx-auto" id="quiz-container">
+    <div className="bg-white border border-slate-200/60 rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs max-w-3xl mx-auto space-y-4 sm:space-y-6" id="quiz-container">
+      {/* Mini top row for back */}
+      {onBack && (
+        <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+          <button 
+            onClick={onBack}
+            className="p-1.5 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-850 transition cursor-pointer flex items-center justify-center"
+            title="Back to Hub"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="h-4 w-[1px] bg-slate-200" />
+          <span className="text-xs font-black text-slate-600 font-sans">Practice Vocabulary Exam</span>
+        </div>
+      )}
+
       {/* 1. SETUP GAME */}
       {gameState === 'setup' && (
         <div className="space-y-8 animate-fadeIn">

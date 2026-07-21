@@ -9,6 +9,7 @@ import {
   ChevronRight, 
   ChevronLeft,
   ArrowRight, 
+  ArrowLeft,
   Volume2, 
   BookOpen, 
   HelpCircle as HelpIcon, 
@@ -34,6 +35,7 @@ interface SynonymCheckProps {
   onUpdateNotes: (wordId: string, notes: string) => void;
   onToggleBookmark: (wordId: string, folderId: string) => void;
   settings?: AppSettings;
+  onBack?: () => void;
 }
 
 export default function SynonymCheck({ 
@@ -46,7 +48,8 @@ export default function SynonymCheck({
   onRateWord,
   onUpdateNotes,
   onToggleBookmark,
-  settings
+  settings,
+  onBack
 }: SynonymCheckProps) {
   
   // Filter States - Dynamic unique groups from words list
@@ -475,10 +478,22 @@ export default function SynonymCheck({
   const activeStatus = synonymProgress[currentActiveWord.id];
 
   return (
-    <div className="space-y-6" id="synonym-check-container">
+    <div className="space-y-4" id="synonym-check-container">
       {/* Top Filter and Customization Bar (Identical to FlashcardViewer) */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-xs flex flex-wrap gap-4 items-center justify-between" id="synonym-filters">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/60 shadow-xs flex flex-wrap gap-4 items-center justify-between" id="synonym-filters">
+        <div className="flex flex-wrap items-center gap-3">
+          {onBack && (
+            <>
+              <button 
+                onClick={onBack}
+                className="p-1.5 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-850 transition cursor-pointer flex items-center justify-center"
+                title="Back to Hub"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="h-5 w-[1px] bg-slate-250" />
+            </>
+          )}
           
           {/* Select Group (Multi-select) */}
           <div className="space-y-1 relative" id="synonym-group-multi-selector">

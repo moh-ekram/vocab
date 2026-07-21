@@ -89,101 +89,6 @@ export default function PracticeCenter({
 
   return (
     <div className="space-y-6" id="practice-center-wrapper">
-      {/* Top Bar when inside a specific tool */}
-      {subTab !== 'hub' && (
-        <div className="bg-white p-4 rounded-2xl border border-slate-250/60 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
-          <button
-            onClick={() => setSubTab('hub')}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer self-start"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Hub</span>
-          </button>
-
-          {/* Sub Navigation Capsules */}
-          <div className="flex items-center gap-1.5 overflow-x-auto p-0.5 scrollbar-none">
-            {isQuizEnabled && (
-              <button
-                onClick={() => setSubTab('quiz')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'quiz'
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <GraduationCap className="w-3.5 h-3.5" />
-                <span>MCQ Quiz</span>
-              </button>
-            )}
-            {isMatchEnabled && (
-              <button
-                onClick={() => setSubTab('match')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'match'
-                    ? 'bg-pink-50 text-pink-700 border border-pink-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <Gamepad2 className="w-3.5 h-3.5 text-pink-650" />
-                <span>Word Match</span>
-              </button>
-            )}
-            {isSynonymEnabled && (
-              <button
-                onClick={() => setSubTab('synonym')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'synonym'
-                    ? 'bg-amber-50 text-amber-700 border border-amber-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <Sparkle className="w-3.5 h-3.5 text-amber-500" />
-                <span>Synonym Check</span>
-              </button>
-            )}
-            {isBlankEnabled && (
-              <button
-                onClick={() => setSubTab('blank')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'blank'
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Blank Filling</span>
-              </button>
-            )}
-            {isOddOneOutEnabled && (
-              <button
-                onClick={() => setSubTab('odd_one_out')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'odd_one_out'
-                    ? 'bg-sky-50 text-sky-700 border border-sky-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-sky-650" />
-                <span>Odd One Out</span>
-              </button>
-            )}
-            {isAnalogyEnabled && (
-              <button
-                onClick={() => setSubTab('analogy')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex-shrink-0 ${
-                  subTab === 'analogy'
-                    ? 'bg-purple-50 text-purple-700 border border-purple-150'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 border border-transparent'
-                }`}
-              >
-                <Shuffle className="w-3.5 h-3.5 text-purple-600" />
-                <span>Word Analogy</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* RENDER ACTIVE MODE */}
       {subTab === 'hub' && (
         <div className="space-y-6">
@@ -402,6 +307,7 @@ export default function PracticeCenter({
           activeGroup={activeGroup}
           settings={settings}
           onQuizComplete={onQuizComplete}
+          onBack={() => setSubTab('hub')}
         />
       )}
 
@@ -410,6 +316,7 @@ export default function PracticeCenter({
           words={words}
           activeGroup={typeof activeGroup === 'number' ? activeGroup : (typeof activeGroup === 'string' ? parseInt(activeGroup, 10) || null : null)}
           settings={settings}
+          onBack={() => setSubTab('hub')}
         />
       )}
 
@@ -425,6 +332,7 @@ export default function PracticeCenter({
           onUpdateNotes={onUpdateNotes}
           onToggleBookmark={onToggleBookmark}
           settings={settings}
+          onBack={() => setSubTab('hub')}
         />
       )}
 
@@ -434,6 +342,7 @@ export default function PracticeCenter({
           onUpdateBlankProgress={onUpdateBlankProgress}
           activeCourseId={activeCourseId}
           words={words}
+          onBack={() => setSubTab('hub')}
         />
       )}
 
@@ -443,6 +352,7 @@ export default function PracticeCenter({
           onUpdateProgress={onUpdateOooProgress}
           activeCourseId={activeCourseId}
           words={words}
+          onBack={() => setSubTab('hub')}
         />
       )}
 
@@ -452,6 +362,7 @@ export default function PracticeCenter({
           onUpdateProgress={onUpdateAnalogyProgress}
           activeCourseId={activeCourseId}
           words={words}
+          onBack={() => setSubTab('hub')}
         />
       )}
     </div>

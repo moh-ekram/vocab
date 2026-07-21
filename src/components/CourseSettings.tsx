@@ -324,23 +324,27 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
         for (let idx = 0; idx < rawRows.length; idx++) {
           const row = rawRows[idx];
-          if (!row || row.length < 2) continue;
+          if (!row || row.length < 3) continue;
 
-          const sentence = row[0] ? String(row[0]).trim() : '';
-          if (!sentence) continue;
+          const rawId = row[0] ? String(row[0]).trim() : '';
+          const sentence = row[1] ? String(row[1]).trim() : '';
 
-          // If it's the first row and lacks '#' anywhere, assume it's headers and skip
-          if (idx === 0) {
-            const hasHash = row.slice(1, 5).some(cell => cell && String(cell).includes('#'));
-            if (!hasHash && (sentence.toLowerCase().includes('sentence') || sentence.toLowerCase().includes('blank'))) {
-              continue;
-            }
+          // Skip header row
+          if (idx === 0 && (rawId.toLowerCase() === 'id' || rawId.toLowerCase() === 'unique id' || rawId.toLowerCase() === 'uid' || sentence.toLowerCase().includes('sentence') || sentence.toLowerCase().includes('blank'))) {
+            continue;
           }
+
+          if (!rawId) {
+            setExcelUploadError(`Error at Row ${idx + 1}: The first column must contain a mandatory unique ID.`);
+            return;
+          }
+
+          if (!sentence) continue;
 
           const opts: string[] = [];
           let answer = '';
 
-          for (let col = 1; col <= 4; col++) {
+          for (let col = 2; col <= 5; col++) {
             const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
             if (val) {
               if (val.includes('#')) {
@@ -353,11 +357,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
-          const explanation = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
+          const explanation = row[6] ? String(row[6]).trim() : '';
 
           if (opts.length > 0 && answer) {
             questionsList.push({
-              id: `bq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              id: rawId,
               sentence,
               options: opts,
               answer,
@@ -443,6 +447,28 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
   };
 
+  const handleBulkDeleteBlankQuestions = async () => {
+    if (courseBlankQuestions.length === 0) {
+      alert('No blank questions to delete.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete all ${courseBlankQuestions.length} Blank Filling questions for this course? This action is permanent and cannot be undone.`)) return;
+    setBlankQuestionsLoading(true);
+    try {
+      for (const q of courseBlankQuestions) {
+        await deleteDoc(doc(db, 'blank_questions', q.id));
+      }
+      setCourseBlankQuestions([]);
+      alert('All Blank Filling questions deleted successfully!');
+    } catch (err) {
+      console.error('Error bulk deleting blank questions:', err);
+      alert('Failed to delete some or all questions.');
+    } finally {
+      setBlankQuestionsLoading(false);
+      fetchBlankQuestions();
+    }
+  };
+
   // --- OOO QUESTIONS EXCEL & MANUAL HANDLERS ---
   const handleUploadOooExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -469,17 +495,24 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
         for (let idx = 0; idx < rawRows.length; idx++) {
           const row = rawRows[idx];
-          if (!row || row.length < 4) continue;
+          if (!row || row.length < 5) continue;
 
-          if (idx === 0) {
-            const hasHash = row.slice(0, 4).some(cell => cell && String(cell).includes('#'));
-            if (!hasHash) continue;
+          const rawId = row[0] ? String(row[0]).trim() : '';
+
+          // Skip header row
+          if (idx === 0 && (rawId.toLowerCase() === 'id' || rawId.toLowerCase() === 'unique id' || rawId.toLowerCase() === 'uid')) {
+            continue;
+          }
+
+          if (!rawId) {
+            setExcelOooUploadError(`Error at Row ${idx + 1}: The first column must contain a mandatory unique ID.`);
+            return;
           }
 
           const wordsOpts: string[] = [];
           let answer = '';
 
-          for (let col = 0; col < 4; col++) {
+          for (let col = 1; col <= 4; col++) {
             const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
             if (val) {
               if (val.includes('#')) {
@@ -492,11 +525,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
-          const reason = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
+          const reason = row[5] ? String(row[5]).trim() : '';
 
           if (wordsOpts.length === 4 && answer) {
             questionsList.push({
-              id: `ooo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              id: rawId,
               words: wordsOpts,
               answer,
               reason,
@@ -578,6 +611,28 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
   };
 
+  const handleBulkDeleteOooQuestions = async () => {
+    if (courseOooQuestions.length === 0) {
+      alert('No Odd One Out questions to delete.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete all ${courseOooQuestions.length} Odd One Out questions for this course? This action is permanent and cannot be undone.`)) return;
+    setOooQuestionsLoading(true);
+    try {
+      for (const q of courseOooQuestions) {
+        await deleteDoc(doc(db, 'odd_one_out_questions', q.id));
+      }
+      setCourseOooQuestions([]);
+      alert('All Odd One Out questions deleted successfully!');
+    } catch (err) {
+      console.error('Error bulk deleting OOO questions:', err);
+      alert('Failed to delete some or all questions.');
+    } finally {
+      setOooQuestionsLoading(false);
+      fetchOooQuestions();
+    }
+  };
+
   // --- ANALOGY QUESTIONS EXCEL & MANUAL HANDLERS ---
   const handleUploadAnalogyExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -604,20 +659,27 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
         for (let idx = 0; idx < rawRows.length; idx++) {
           const row = rawRows[idx];
-          if (!row || row.length < 5) continue;
+          if (!row || row.length < 6) continue;
 
-          if (idx === 0) {
-            const hasHash = row.slice(1, 5).some(cell => cell && String(cell).includes('#'));
-            if (!hasHash) continue;
+          const rawId = row[0] ? String(row[0]).trim() : '';
+          const analogy = row[1] ? String(row[1]).trim() : '';
+
+          // Skip header row
+          if (idx === 0 && (rawId.toLowerCase() === 'id' || rawId.toLowerCase() === 'unique id' || rawId.toLowerCase() === 'uid' || analogy.toLowerCase().includes('analogy') || analogy.toLowerCase().includes('question'))) {
+            continue;
           }
 
-          const analogy = row[0] ? String(row[0]).trim() : '';
+          if (!rawId) {
+            setExcelAnalogyUploadError(`Error at Row ${idx + 1}: The first column must contain a mandatory unique ID.`);
+            return;
+          }
+
           if (!analogy) continue;
 
           const opts: string[] = [];
           let answer = '';
 
-          for (let col = 1; col <= 4; col++) {
+          for (let col = 2; col <= 5; col++) {
             const val = row[col] !== undefined && row[col] !== null ? String(row[col]).trim() : '';
             if (val) {
               if (val.includes('#')) {
@@ -630,11 +692,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
           }
 
-          const explanation = row[5] ? String(row[5]).trim() : (row[4] ? String(row[4]).trim() : '');
+          const explanation = row[6] ? String(row[6]).trim() : '';
 
           if (analogy && opts.length === 4 && answer) {
             questionsList.push({
-              id: `ana-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              id: rawId,
               analogy,
               options: opts,
               answer,
@@ -719,6 +781,28 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
   };
 
+  const handleBulkDeleteAnalogyQuestions = async () => {
+    if (courseAnalogyQuestions.length === 0) {
+      alert('No Word Analogy questions to delete.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete all ${courseAnalogyQuestions.length} Word Analogy questions for this course? This action is permanent and cannot be undone.`)) return;
+    setAnalogyQuestionsLoading(true);
+    try {
+      for (const q of courseAnalogyQuestions) {
+        await deleteDoc(doc(db, 'word_analogy_questions', q.id));
+      }
+      setCourseAnalogyQuestions([]);
+      alert('All Word Analogy questions deleted successfully!');
+    } catch (err) {
+      console.error('Error bulk deleting analogy questions:', err);
+      alert('Failed to delete some or all questions.');
+    } finally {
+      setAnalogyQuestionsLoading(false);
+      fetchAnalogyQuestions();
+    }
+  };
+
   // --- FEATURE & VARIABLE TOGGLES ---
   const [toggles, setToggles] = useState<Record<string, boolean>>({
     meaning: true,
@@ -739,13 +823,26 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   });
 
   // --- WORDS LIST STATES ---
-  const [localWords, setLocalWords] = useState<VocabularyWord[]>(course.words || []);
+  const sanitizeWordsList = (wordsList: VocabularyWord[]) => {
+    return (wordsList || []).map((w, idx) => {
+      if (!w.id) {
+        return {
+          ...w,
+          id: `w-${course.id}-${w.group || 'all'}-${idx}-${Math.random().toString(36).substr(2, 5)}`
+        };
+      }
+      return w;
+    });
+  };
+
+  const [localWords, setLocalWords] = useState<VocabularyWord[]>(sanitizeWordsList(course.words || []));
   const [wordSearchQuery, setWordSearchQuery] = useState('');
   const [wordGroupFilter, setWordGroupFilter] = useState<string>('all');
   const [selectedWordIds, setSelectedWordIds] = useState<Set<string>>(new Set());
   
   // Word editing states
   const [editingWord, setEditingWord] = useState<VocabularyWord | null>(null);
+  const [editedWordId, setEditedWordId] = useState('');
   const [editedWord, setEditedWord] = useState('');
   const [editedMeaning, setEditedMeaning] = useState('');
   const [editedGroup, setEditedGroup] = useState<string>('1');
@@ -759,6 +856,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const wordsPerPage = 10;
 
   // Form: Single word addition
+  const [singleWordId, setSingleWordId] = useState('');
   const [singleWord, setSingleWord] = useState('');
   const [singleMeaning, setSingleMeaning] = useState('');
   const [singleGroup, setSingleGroup] = useState<string>('1');
@@ -791,7 +889,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setAllowedUsers(course.allowedUsers || []);
     setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
-    setLocalWords(course.words || []);
+    setLocalWords(sanitizeWordsList(course.words || []));
     setVerifiedPayments(course.verifiedPayments || []);
     setToggles({
       meaning: true,
@@ -1059,6 +1157,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   // --- INDIVIDUAL WORD EDITING ACTION ---
   const handleStartEditWord = (w: VocabularyWord) => {
     setEditingWord(w);
+    setEditedWordId(w.id || '');
     setEditedWord(w.word || '');
     setEditedMeaning(w.meaning || '');
     setEditedGroup(String(w.group || '1'));
@@ -1075,6 +1174,19 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       return;
     }
 
+    const newId = editedWordId.trim();
+    if (!newId) {
+      alert('Word Unique ID cannot be empty.');
+      return;
+    }
+
+    // Check for duplicate ID in other words
+    const hasDuplicate = localWords.some(w => w.id === newId && w.id !== editingWord.id);
+    if (hasDuplicate) {
+      alert(`The ID "${newId}" is already used by another word in this course.`);
+      return;
+    }
+
     let groupVal: string | number = editedGroup.trim();
     const numGrp = parseInt(editedGroup.trim(), 10);
     if (!isNaN(numGrp) && String(numGrp) === editedGroup.trim()) {
@@ -1085,6 +1197,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       if (w.id === editingWord.id) {
         return {
           ...w,
+          id: newId,
           word: editedWord.trim(),
           meaning: editedMeaning.trim(),
           group: groupVal,
@@ -1117,8 +1230,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     }
 
     const uniqueIndexSuffix = localWords.length + 1;
+    const finalId = singleWordId.trim() || `${course.id}_g${groupVal}_w_${Date.now()}_${uniqueIndexSuffix}`;
+
+    // Check duplicate
+    const hasDuplicate = localWords.some(w => w.id === finalId);
+    if (hasDuplicate) {
+      setAddFormMessage({ type: 'error', text: `The ID "${finalId}" is already in use.` });
+      return;
+    }
+
     const newWordItem: VocabularyWord = {
-      id: `${course.id}_g${groupVal}_w_${Date.now()}_${uniqueIndexSuffix}`,
+      id: finalId,
       word: singleWord.trim(),
       meaning: singleMeaning.trim(),
       group: groupVal,
@@ -1131,6 +1253,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setLocalWords(prev => [...prev, newWordItem]);
 
     // Reset single word inputs
+    setSingleWordId('');
     setSingleWord('');
     setSingleMeaning('');
     setSingleSynonyms('');
@@ -1140,7 +1263,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
     setAddFormMessage({ 
       type: 'success', 
-      text: `"${newWordItem.word}" has been successfully added to the local list! Click "Update Settings" below to save changes permanently.` 
+      text: `"${newWordItem.word}" has been successfully added to the local list with ID "${finalId}"! Click "Update Settings" below to save changes permanently.` 
     });
   };
 
@@ -1210,6 +1333,18 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const extraWordKey = findKey(['extra word']);
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example']);
+          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
+
+          if (!idKey) {
+            setExcelError('The spreadsheet is missing the mandatory "ID" column. Please make sure your spreadsheet has an "ID" column.');
+            return;
+          }
+
+          const rawId = row[idKey] ? String(row[idKey]).trim() : '';
+          if (!rawId) {
+            setExcelError('Error parsing: A row is missing a unique ID in the mandatory "ID" column.');
+            return;
+          }
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
@@ -1246,7 +1381,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
 
           wordsList.push({
-            id: `${course.id}_g${group}_w_${Date.now()}_${index}`,
+            id: rawId,
             group,
             word: baseWord,
             meaning: banglaMeaning,
@@ -2513,6 +2648,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
                     )}
 
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-slate-500 block">Unique ID (Optional - auto-generated if left blank)</label>
+                      <input 
+                        type="text" 
+                        value={singleWordId}
+                        onChange={(e) => setSingleWordId(e.target.value)}
+                        placeholder="e.g. word-101 (leave blank for auto-generation)" 
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[10px] font-extrabold text-slate-500 block">Word (English) <span className="text-rose-500">*</span></label>
@@ -2839,13 +2985,23 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       <h4 className="font-extrabold text-slate-800 text-xs">Existing Blank Questions ({courseBlankQuestions.length})</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
                     </div>
-                    <button
-                      onClick={fetchBlankQuestions}
-                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${blankQuestionsLoading ? 'animate-spin' : ''}`} />
-                      <span>Refresh</span>
-                    </button>
+                    <div className="flex gap-2">
+                      {courseBlankQuestions.length > 0 && (
+                        <button
+                          onClick={handleBulkDeleteBlankQuestions}
+                          className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-750 text-xs font-black rounded-xl transition cursor-pointer"
+                        >
+                          <span>Bulk Delete All</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={fetchBlankQuestions}
+                        className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${blankQuestionsLoading ? 'animate-spin' : ''}`} />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
                   </div>
 
                   {blankQuestionsLoading ? (
@@ -3048,13 +3204,23 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       <h4 className="font-extrabold text-slate-800 text-xs">Existing Odd One Out Questions ({courseOooQuestions.length})</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
                     </div>
-                    <button
-                      onClick={fetchOooQuestions}
-                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${oooQuestionsLoading ? 'animate-spin' : ''}`} />
-                      <span>Refresh</span>
-                    </button>
+                    <div className="flex gap-2">
+                      {courseOooQuestions.length > 0 && (
+                        <button
+                          onClick={handleBulkDeleteOooQuestions}
+                          className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-750 text-xs font-black rounded-xl transition cursor-pointer"
+                        >
+                          <span>Bulk Delete All</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={fetchOooQuestions}
+                        className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${oooQuestionsLoading ? 'animate-spin' : ''}`} />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
                   </div>
 
                   {oooQuestionsLoading ? (
@@ -3274,13 +3440,23 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       <h4 className="font-extrabold text-slate-800 text-xs">Existing Word Analogy Questions ({courseAnalogyQuestions.length})</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5">Questions currently available for this specific course</p>
                     </div>
-                    <button
-                      onClick={fetchAnalogyQuestions}
-                      className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${analogyQuestionsLoading ? 'animate-spin' : ''}`} />
-                      <span>Refresh</span>
-                    </button>
+                    <div className="flex gap-2">
+                      {courseAnalogyQuestions.length > 0 && (
+                        <button
+                          onClick={handleBulkDeleteAnalogyQuestions}
+                          className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-750 text-xs font-black rounded-xl transition cursor-pointer"
+                        >
+                          <span>Bulk Delete All</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={fetchAnalogyQuestions}
+                        className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${analogyQuestionsLoading ? 'animate-spin' : ''}`} />
+                        <span>Refresh</span>
+                      </button>
+                    </div>
                   </div>
 
                   {analogyQuestionsLoading ? (
@@ -3351,6 +3527,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 <button onClick={() => setEditingWord(null)} className="p-1 hover:bg-slate-100 rounded text-slate-450 hover:text-slate-650 cursor-pointer">
                   <X className="w-4.5 h-4.5" />
                 </button>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Word Unique ID (Mandatory)</label>
+                <input 
+                  type="text" 
+                  value={editedWordId}
+                  onChange={(e) => setEditedWordId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-850"
+                  placeholder="Unique ID"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3.5">

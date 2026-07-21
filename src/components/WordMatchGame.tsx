@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VocabularyWord, AppSettings } from '../types';
-import { Sparkles, Trophy, RotateCw, Play, Timer, Flame, Check } from 'lucide-react';
+import { Sparkles, Trophy, RotateCw, Play, Timer, Flame, Check, ArrowLeft } from 'lucide-react';
 
 interface WordMatchGameProps {
   words: VocabularyWord[];
   activeGroup: number | null;
   settings?: AppSettings;
+  onBack: () => void;
 }
 
 interface MatchCard {
@@ -16,7 +17,7 @@ interface MatchCard {
   isMatched: boolean;
 }
 
-export default function WordMatchGame({ words, activeGroup, settings }: WordMatchGameProps) {
+export default function WordMatchGame({ words, activeGroup, settings, onBack }: WordMatchGameProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [cards, setCards] = useState<MatchCard[]>([]);
   const [selectedLeft, setSelectedLeft] = useState<MatchCard | null>(null);
@@ -156,7 +157,20 @@ export default function WordMatchGame({ words, activeGroup, settings }: WordMatc
   const rightColumn = cards.filter(c => c.type === 'bengali');
 
   return (
-    <div className="bg-white border border-slate-200/60 rounded-3xl p-6 md:p-8 shadow-xs max-w-2xl mx-auto space-y-6" id="match-game-container">
+    <div className="bg-white border border-slate-200/60 rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs max-w-2xl mx-auto space-y-4 sm:space-y-6" id="match-game-container">
+      {/* Mini top row for back */}
+      <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+        <button 
+          onClick={onBack}
+          className="p-1.5 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-850 transition cursor-pointer flex items-center justify-center"
+          title="Back to Hub"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="h-4 w-[1px] bg-slate-200" />
+        <span className="text-xs font-black text-slate-600 font-sans">Practice Match Game</span>
+      </div>
+
       {/* 1. SETUP GAME */}
       {!isPlaying ? (
         <div className="text-center space-y-6 py-6 animate-fadeIn">
