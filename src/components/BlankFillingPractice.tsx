@@ -74,6 +74,7 @@ export default function BlankFillingPractice({
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
 
   // Compute question counts for each category
   const counts = React.useMemo(() => {
@@ -223,6 +224,7 @@ export default function BlankFillingPractice({
     setIsAnswered(false);
     setScore(0);
     setSessionCompleted(false);
+    setShowFeedbackPopup(false);
   };
 
   // Auto-select filter priority on load or course change
@@ -296,6 +298,7 @@ export default function BlankFillingPractice({
 
     // Save to Firestore and state via parent handler
     onUpdateBlankProgress(currentQuestion.id, isCorrect);
+    setShowFeedbackPopup(true);
   };
 
   const handleNext = () => {
@@ -547,6 +550,76 @@ export default function BlankFillingPractice({
           Correct Solutions: {totalCorrectInHistory} / {totalQuestionsInDatabase}
         </span>
       </div>
+
+      {/* Feedback Popup Modal */}
+      <AnimatePresence>
+        {showFeedbackPopup && currentQuestion && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden relative"
+            >
+              {/* Top Banner indicating success/fail */}
+              <div className={`p-6 text-center relative ${
+                selectedOption === currentQuestion.answer 
+                  ? 'bg-emerald-50 text-emerald-850 border-b border-emerald-100' 
+                  : 'bg-rose-50 text-rose-800 border-b border-rose-100'
+              }`}>
+                {/* Close Button top-right */}
+                <button
+                  onClick={() => setShowFeedbackPopup(false)}
+                  className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-black/5 text-slate-450 hover:text-slate-750 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="flex justify-center mb-3">
+                  {selectedOption === currentQuestion.answer ? (
+                    <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md">
+                      <Check className="w-6 h-6 stroke-[3]" />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-md">
+                      <X className="w-6 h-6 stroke-[3]" />
+                    </div>
+                  )}
+                </div>
+
+                <h4 className="text-lg font-black tracking-tight">
+                  {selectedOption === currentQuestion.answer ? 'সঠিক উত্তর! (Correct)' : 'ভুল উত্তর! (Incorrect)'}
+                </h4>
+                <p className="text-xs font-bold mt-1 opacity-90">
+                  সঠিক উত্তরটি হলো: <span className="underline decoration-wavy font-extrabold">{currentQuestion.answer}</span>
+                </p>
+              </div>
+
+              {/* Middle Explanation */}
+              <div className="p-6 space-y-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">ব্যাখ্যা (Explanation)</span>
+                <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl text-xs font-semibold text-slate-600 leading-relaxed max-h-[200px] overflow-y-auto">
+                  {currentQuestion.explanation ? currentQuestion.explanation : "এই প্রশ্নের জন্য কোনো ব্যাখ্যা পাওয়া যায়নি।"}
+                </div>
+              </div>
+
+              {/* Bottom Next Button */}
+              <div className="p-6 pt-0 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowFeedbackPopup(false);
+                    handleNext();
+                  }}
+                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm rounded-xl transition cursor-pointer shadow-sm shadow-indigo-500/10 flex items-center justify-center gap-2"
+                >
+                  <span>{currentIndex === questions.length - 1 ? 'সব শেষ (Finish)' : 'পরবর্তী প্রশ্ন (Next Question)'}</span>
+                  <ChevronRight className="w-4 h-4 stroke-[3]" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

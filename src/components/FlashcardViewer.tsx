@@ -1105,16 +1105,16 @@ export default function FlashcardViewer({
                         {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
                           <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1 font-sans">
                             {currentActiveWord.example ? (
-                              <div className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
-                                <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
+                              <div className="flex items-start gap-1.5 text-sm sm:text-[15px] font-medium text-slate-700 leading-relaxed font-sans">
+                                <span className="text-indigo-500 mt-1.5 flex-shrink-0 text-sm leading-none">•</span>
                                 <p className="flex-1">
                                   {renderSentence(currentActiveWord.example)}
                                 </p>
                               </div>
                             ) : (
-                              sentencesData[currentActiveWord.id].slice(0, 2).map((sent, index) => (
-                                <div key={index} className="flex items-start gap-1.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">
-                                  <span className="text-indigo-500 mt-1 flex-shrink-0 text-sm leading-none">•</span>
+                              sentencesData[currentActiveWord.id].slice(0, 1).map((sent, index) => (
+                                <div key={index} className="flex items-start gap-1.5 text-sm sm:text-[15px] font-medium text-slate-700 leading-relaxed font-sans">
+                                  <span className="text-indigo-500 mt-1.5 flex-shrink-0 text-sm leading-none">•</span>
                                   <p className="flex-1">
                                     {renderSentence(sent)}
                                   </p>

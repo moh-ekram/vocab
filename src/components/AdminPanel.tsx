@@ -572,6 +572,17 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             });
           };
 
+          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
+          if (!idKey) {
+            setUploadError('The spreadsheet is missing the mandatory "id" column. Please make sure your spreadsheet has an "id" column.');
+            return;
+          }
+          const rawId = row[idKey] ? String(row[idKey]).trim() : '';
+          if (!rawId) {
+            setUploadError('Error parsing: A row is missing a unique ID in the mandatory "id" column.');
+            return;
+          }
+
           const wordKey = findKey(['word', 'main word']);
           const meaningKey = findKey(['meaning', 'bangla meaning']);
           const groupKey = findKey(['group']);
@@ -618,7 +629,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
 
           wordsList.push({
-            id: `${newCourseId}_g${group}_w${index}`,
+            id: rawId,
             group,
             word: baseWord,
             meaning: banglaMeaning,
@@ -666,22 +677,24 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
       // Check if first line has headers like 'word', 'meaning'
       let startIdx = 0;
       let colIdxs = {
-        word: 0,
-        meaning: 1,
-        group: 2,
+        id: 0,
+        word: 1,
+        meaning: 2,
+        group: 3,
         synonym1: -1,
         synonym2: -1,
-        synonyms: 3,
-        extraWord: 4,
-        extraMeaning: 5,
-        example: 6
+        synonyms: 4,
+        extraWord: 5,
+        extraMeaning: 6,
+        example: 7
       };
 
       if (lines.length > 0) {
         const firstLineCells = lines[0].split('\t').map(c => c.toLowerCase().trim());
-        const hasHeader = firstLineCells.some(c => c === 'word' || c === 'main word' || c === 'meaning' || c === 'bangla meaning');
+        const hasHeader = firstLineCells.some(c => c === 'word' || c === 'main word' || c === 'meaning' || c === 'bangla meaning' || c === 'id' || c === 'unique id' || c === 'word id' || c === 'uid');
         if (hasHeader) {
           startIdx = 1; // skip header row
+          const idPos = firstLineCells.findIndex(c => c === 'id' || c === 'unique id' || c === 'word id' || c === 'uid');
           const wordPos = firstLineCells.findIndex(c => c === 'word' || c === 'main word');
           const meaningPos = firstLineCells.findIndex(c => c === 'meaning' || c === 'bangla meaning');
           const groupPos = firstLineCells.findIndex(c => c === 'group');
@@ -692,6 +705,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const extraMPos = firstLineCells.findIndex(c => c === 'extra meaning');
           const exPos = firstLineCells.findIndex(c => c === 'example');
 
+          if (idPos !== -1) colIdxs.id = idPos;
           if (wordPos !== -1) colIdxs.word = wordPos;
           if (meaningPos !== -1) colIdxs.meaning = meaningPos;
           colIdxs.group = groupPos !== -1 ? groupPos : -1;
@@ -717,8 +731,14 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           }
         }
 
+        const rawId = colIdxs.id !== -1 && cells[colIdxs.id] ? cells[colIdxs.id].trim() : '';
         const baseWord = cells[colIdxs.word]?.trim() || '';
         const banglaMeaning = cells[colIdxs.meaning]?.trim() || '';
+
+        if (!rawId) {
+          setUploadError(`Error at line ${i + 1}: Unique ID is missing or empty in the mandatory "id" column.`);
+          return;
+        }
 
         if (!baseWord || !banglaMeaning) {
           continue; // Skip invalid rows
@@ -753,7 +773,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         const example = colIdxs.example !== -1 ? cells[colIdxs.example]?.trim() || '' : '';
 
         parsedWords.push({
-          id: `${newCourseId}_g${group}_w${index}`,
+          id: rawId,
           group,
           word: baseWord,
           meaning: banglaMeaning,
@@ -1410,7 +1430,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                     <button
                       type="button"
                       onClick={() => {
-                        const sample = `word\tmeaning\tgroup\tsynonyms\textraWord\textraMeaning\texample\nApple\tA sweet red round fruit\t1\tMalus domestica\t\t\tAn apple a day keeps the doctor away.\nBanana\tA long curved yellow fruit\t1\tMusa sapientum\t\t\tBananas are rich in potassium.`;
+                        const sample = `id\tword\tmeaning\tgroup\tsynonyms\textraWord\textraMeaning\texample\napple-101\tApple\tA sweet red round fruit\t1\tMalus domestica\t\t\tAn apple a day keeps the doctor away.\nbanana-101\tBanana\tA long curved yellow fruit\t1\tMusa sapientum\t\t\tBananas are rich in potassium.`;
                         setPasteInputText(sample);
                         processPastedText(sample);
                       }}
@@ -1426,7 +1446,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                       setPasteInputText(e.target.value);
                       processPastedText(e.target.value);
                     }}
-                    placeholder="Word[Tab]Meaning[Tab]Group[Tab]Synonyms&#10;e.g.:&#10;Abate&#09;subside or decrease&#09;1&#09;subside, decrease&#10;Banal&#09;trite or commonplace&#09;1&#09;hackneyed, trite"
+                    placeholder="ID[Tab]Word[Tab]Meaning[Tab]Group[Tab]Synonyms&#10;e.g.:&#10;word-101&#09;Abate&#09;subside or decrease&#09;1&#09;subside, decrease&#10;word-102&#09;Banal&#09;trite or commonplace&#09;1&#09;hackneyed, trite"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono transition text-slate-700"
                   />
                   <p className="text-[9px] text-slate-400 leading-relaxed font-semibold">
@@ -1439,6 +1459,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 text-xs text-slate-600">
                 <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
                 <div className="flex flex-col space-y-1.5 text-[11px] font-bold">
+                  <span className="text-rose-600 flex items-center gap-1.5">• [id] (or [unique id], [word id], [uid]) (Required)</span>
                   <span className="text-indigo-600 flex items-center gap-1.5">• [word] (or [main word]) (Required)</span>
                   <span className="text-indigo-600 flex items-center gap-1.5">• [meaning] (or [bangla meaning]) (Required)</span>
                   <span className="text-slate-600 flex items-center gap-1.5">• [group] (Optional)</span>
