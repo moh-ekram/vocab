@@ -2757,7 +2757,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
 
                       <p className="text-[11px] text-slate-450 leading-relaxed mt-2 font-medium">
-                        Your spreadsheet must contain <strong className="text-slate-700 font-extrabold">word</strong> (or <strong className="text-slate-700 font-extrabold">main word</strong>) and <strong className="text-slate-700 font-extrabold">meaning</strong> (or <strong className="text-slate-700 font-extrabold">bangla meaning</strong>) columns. You can optionally include <strong className="text-slate-700 font-extrabold">group, synonyms, extra word, extra meaning, example</strong> columns.
+                        Your spreadsheet must contain a mandatory <strong className="text-rose-600 font-extrabold">id</strong> (or <strong className="text-rose-600 font-extrabold">unique id</strong>, <strong className="text-rose-600 font-extrabold">word id</strong>, <strong className="text-rose-600 font-extrabold">uid</strong>) column for each word, plus <strong className="text-slate-700 font-extrabold">word</strong> (or <strong className="text-slate-700 font-extrabold">main word</strong>) and <strong className="text-slate-700 font-extrabold">meaning</strong> (or <strong className="text-slate-700 font-extrabold">bangla meaning</strong>) columns. You can optionally include <strong className="text-slate-700 font-extrabold">group, synonyms, extra word, extra meaning, example</strong> columns.
                       </p>
 
                       {excelError && (
@@ -2823,7 +2823,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </div>
 
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      <strong>Format:</strong> Column 1: Sentence with blank (e.g. "Success is not ___."). Cols 2-5: Options. Mark the correct option with a trailing "#" (e.g., "final#").
+                      <strong>Format:</strong> Column 1: Mandatory Unique ID (e.g. <code>bq-101</code>). Column 2: Sentence with blank (e.g. "Success is not ___."). Columns 3-6: Options. Mark the correct option with a trailing "#" (e.g., "final#"). Column 7 (optional): Explanation.
                     </p>
 
                     {/* Drag & Drop Zone */}
@@ -3075,7 +3075,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </div>
 
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      <strong>Format:</strong> Column 1 to 4: 4 Words (synonyms). Mark the odd-one-out word with a trailing "#" (e.g. "harmful#"). Column 5 (optional): Reason / explanation.
+                      <strong>Format:</strong> Column 1: Mandatory Unique ID (e.g. <code>ooo-101</code>). Columns 2-5: 4 Words. Mark the odd-one-out word with a trailing "#" (e.g. "harmful#"). Column 6 (optional): Reason / explanation.
                     </p>
 
                     {/* Drag & Drop Zone */}
@@ -3294,7 +3294,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </div>
 
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      <strong>Format:</strong> Column 1: Base analogy (e.g. "hot : cold"). Cols 2-5: Pairs options. Mark the correct answer option pair with a trailing "#" (e.g. "up : down#"). Column 6 (optional): Explanation.
+                      <strong>Format:</strong> Column 1: Mandatory Unique ID (e.g. <code>ana-101</code>). Column 2: Base analogy (e.g. "hot : cold"). Columns 3-6: Pair options. Mark the correct answer option pair with a trailing "#" (e.g. "up : down#"). Column 7 (optional): Explanation.
                     </p>
 
                     {/* Drag & Drop Zone */}
