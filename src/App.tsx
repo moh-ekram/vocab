@@ -1215,23 +1215,25 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800" id="main-layout-stage">
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 w-full max-w-full overflow-x-hidden" id="main-layout-stage">
       {/* Top Header / Main Banner (Unified for Mobile & Desktop) */}
       <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 md:px-8 md:py-5 flex items-center justify-between shadow-md flex-shrink-0" id="main-header-banner">
-        <div className="flex items-center gap-2.5 md:gap-3.5">
-          <div className="p-2 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20">
+        <div className="flex items-center gap-2.5 md:gap-3.5 min-w-0">
+          <div className="p-2 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20 flex-shrink-0">
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
-          <div>
-            <h1 className="text-sm md:text-lg font-black tracking-tight font-sans flex items-center gap-2">
-              <span>Memorizer:</span>
-              <span className="text-emerald-400 font-extrabold">{activeCourse?.title}</span>
+          <div className="min-w-0">
+            <h1 className="text-lg md:text-2xl font-black tracking-tight font-sans text-white uppercase leading-none">
+              Memorizer
             </h1>
+            <p className="text-[10px] md:text-xs font-semibold text-emerald-400 mt-1 truncate max-w-[120px] sm:max-w-xs md:max-w-md" title={activeCourse?.title}>
+              {activeCourse?.title || 'Default Course'}
+            </p>
           </div>
         </div>
 
         {/* User Stats & Auth (Unified Header UI) */}
-        <div className="flex items-center gap-2 md:gap-3.5">
+        <div className="flex items-center gap-1.5 md:gap-3.5 flex-shrink-0">
           {/* Connection Status Badge (Visible for both logged in and anonymous users) */}
           <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-bold">
             <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
@@ -1421,7 +1423,7 @@ export default function App() {
       </div>
 
       {/* 2. Main Workspace Layout */}
-      <main className="flex-1 overflow-y-auto p-6 md:p-8" id="main-content-display">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 w-full max-w-full" id="main-content-display">
         <div className="max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <StatsDashboard
