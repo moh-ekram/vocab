@@ -20,7 +20,10 @@ service cloud.firestore {
       return isSignedIn() 
         && request.auth.token != null 
         && request.auth.token.email != null 
-        && request.auth.token.email.lower() == 'mohammad.001ekram@gmail.com';
+        && (
+          request.auth.token.email == 'mohammad.001ekram@gmail.com'
+          || request.auth.token.email.matches('(?i)^mohammad\\.001ekram@gmail\\.com$')
+        );
     }
 
     function isValidId(id) {
@@ -31,51 +34,51 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.email is string && data.email.size() <= 256
-        && (data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 128))
-        && (data.updatedAt == null || (data.updatedAt is string && data.updatedAt.size() <= 128))
-        && (data.activeCourseId == null || (data.activeCourseId is string && data.activeCourseId.size() <= 128))
-        && (data.quizScore == null || data.quizScore is int)
-        && (data.quizTaken == null || data.quizTaken is int)
-        && (data.folders == null || data.folders is list)
-        && (data.enrolledCourseIds == null || data.enrolledCourseIds is list)
-        && (data.progress == null || data.progress is map)
-        && (data.settings == null || data.settings is map)
-        && (data.goal == null || data.goal is map)
-        && (data.synonymProgress == null || data.synonymProgress is map)
-        && (data.blankProgress == null || data.blankProgress is map)
-        && (data.oooProgress == null || data.oooProgress is map)
-        && (data.analogyProgress == null || data.analogyProgress is map);
+        && (data.get('createdAt', null) == null || (data.createdAt is string && data.createdAt.size() <= 128))
+        && (data.get('updatedAt', null) == null || (data.updatedAt is string && data.updatedAt.size() <= 128))
+        && (data.get('activeCourseId', null) == null || (data.activeCourseId is string && data.activeCourseId.size() <= 128))
+        && (data.get('quizScore', null) == null || data.quizScore is int)
+        && (data.get('quizTaken', null) == null || data.quizTaken is int)
+        && (data.get('folders', null) == null || data.folders is list)
+        && (data.get('enrolledCourseIds', null) == null || data.enrolledCourseIds is list)
+        && (data.get('progress', null) == null || data.progress is map)
+        && (data.get('settings', null) == null || data.settings is map)
+        && (data.get('goal', null) == null || data.goal is map)
+        && (data.get('synonymProgress', null) == null || data.synonymProgress is map)
+        && (data.get('blankProgress', null) == null || data.blankProgress is map)
+        && (data.get('oooProgress', null) == null || data.oooProgress is map)
+        && (data.get('analogyProgress', null) == null || data.analogyProgress is map);
     }
 
     function isValidCourse(data) {
       return data.title is string && data.title.size() <= 1000
-        && (data.description == null || (data.description is string && data.description.size() <= 10000))
-        && (data.totalGroups == null || data.totalGroups is int)
-        && (data.words == null || data.words is list)
-        && (data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 128))
-        && (data.createdBy == null || (data.createdBy is string && data.createdBy.size() <= 256))
-        && (data.isDefault == null || data.isDefault is bool)
-        && (data.isRestricted == null || data.isRestricted is bool)
-        && (data.allowedUsers == null || data.allowedUsers is list)
-        && (data.variableToggles == null || data.variableToggles is map)
-        && (data.price == null || data.price is int || data.price is float)
-        && (data.bkashNumber == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64))
-        && (data.verifiedPayments == null || data.verifiedPayments is list)
-        && (data.placeLabels == null || data.placeLabels is map)
-        && (data.allowedUsersExpiry == null || data.allowedUsersExpiry is map)
-        && (data.enabledGames == null || data.enabledGames is map);
+        && (data.get('description', null) == null || (data.description is string && data.description.size() <= 10000))
+        && (data.get('totalGroups', null) == null || data.totalGroups is int || data.totalGroups is float)
+        && (data.get('words', null) == null || data.words is list)
+        && (data.get('createdAt', null) == null || (data.createdAt is string && data.createdAt.size() <= 128))
+        && (data.get('createdBy', null) == null || (data.createdBy is string && data.createdBy.size() <= 256))
+        && (data.get('isDefault', null) == null || data.isDefault is bool)
+        && (data.get('isRestricted', null) == null || data.isRestricted is bool)
+        && (data.get('allowedUsers', null) == null || data.allowedUsers is list)
+        && (data.get('variableToggles', null) == null || data.variableToggles is map)
+        && (data.get('price', null) == null || data.price is int || data.price is float)
+        && (data.get('bkashNumber', null) == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64))
+        && (data.get('verifiedPayments', null) == null || data.verifiedPayments is list)
+        && (data.get('placeLabels', null) == null || data.placeLabels is map)
+        && (data.get('allowedUsersExpiry', null) == null || data.allowedUsersExpiry is map)
+        && (data.get('enabledGames', null) == null || data.enabledGames is map);
     }
 
     function isValidAccessRequest(data) {
       return data.courseId is string && data.courseId.size() <= 128
-        && (data.courseTitle == null || (data.courseTitle is string && data.courseTitle.size() <= 1000))
+        && (data.get('courseTitle', null) == null || (data.courseTitle is string && data.courseTitle.size() <= 1000))
         && data.bkashNumber is string && data.bkashNumber.size() <= 64
         && data.email is string && data.email.size() <= 256
         && data.trxId is string && data.trxId.size() <= 128
         && data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected')
-        && (data.price == null || data.price is int || data.price is float)
+        && (data.get('price', null) == null || data.price is int || data.price is float)
         && (data.createdAt is string && data.createdAt.size() <= 128)
-        && (data.requestedBy == null || (data.requestedBy is string && data.requestedBy.size() <= 256));
+        && (data.get('requestedBy', null) == null || (data.requestedBy is string && data.requestedBy.size() <= 256));
     }
 
     // --- COLLECTION RULES ---
