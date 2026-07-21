@@ -269,11 +269,6 @@ export default function MyCoursesView({
             }
           }
 
-          // Hide courses that the user does not have access to ("যেগুলো নাই")
-          if (!isUserAllowed) {
-            return null;
-          }
-
           const isEnrolled = enrolledCourseIds.includes(course.id);
           const isActive = activeCourseId === course.id;
           const courseWords = course.words || [];
@@ -318,7 +313,11 @@ export default function MyCoursesView({
                 {/* Upper row: Status badge */}
                 <div className="flex justify-between items-center gap-1.5 mb-2">
                   <div className="flex gap-1 flex-wrap">
-                    {isActive ? (
+                    {!isUserAllowed ? (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-500 text-white font-black text-[8px] rounded-md uppercase tracking-wider">
+                        <Lock className="w-2 h-2" /> Locked (৳{course.price || 0})
+                      </span>
+                    ) : isActive ? (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500 text-white font-black text-[8px] rounded-md uppercase tracking-wider">
                         <Check className="w-2 h-2" /> Active
                       </span>
@@ -408,7 +407,15 @@ export default function MyCoursesView({
 
               {/* Card Footer Actions */}
               <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-2">
-                {isActive ? (
+                {!isUserAllowed ? (
+                  <button
+                    onClick={() => setSelectedBuyCourse(course)}
+                    className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-700 text-white text-[10px] font-extrabold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>কোর্সটি কিনুন (Buy Course - ৳{course.price || 0})</span>
+                  </button>
+                ) : isActive ? (
                   <div className="flex-1 text-center py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-extrabold rounded-lg border border-emerald-100 select-none">
                     ✓ Currently Active Course
                   </div>
@@ -428,7 +435,7 @@ export default function MyCoursesView({
                   </button>
                 )}
 
-                {isEnrolled && !course.isDefault && (
+                {isUserAllowed && isEnrolled && !course.isDefault && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

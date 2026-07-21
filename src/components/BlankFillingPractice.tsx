@@ -587,12 +587,15 @@ export default function BlankFillingPractice({
                   )}
                 </div>
 
-                <h4 className="text-lg font-black tracking-tight">
-                  {selectedOption === currentQuestion.answer ? 'সঠিক উত্তর! (Correct)' : 'ভুল উত্তর! (Incorrect)'}
+                <h4 className="text-3xl font-extrabold tracking-tight font-sans">
+                  {selectedOption === currentQuestion.answer ? 'Correct' : 'Incorrect'}
                 </h4>
-                <p className="text-xs font-bold mt-1 opacity-90">
-                  সঠিক উত্তরটি হলো: <span className="underline decoration-wavy font-extrabold">{currentQuestion.answer}</span>
-                </p>
+                <div className="mt-4 px-6 py-2.5 bg-white/60 dark:bg-black/25 rounded-2xl inline-block border border-white/50 dark:border-white/5 shadow-inner">
+                  <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 font-sans">Correct Answer</div>
+                  <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-850 dark:text-white font-sans select-all">
+                    {currentQuestion.answer}
+                  </div>
+                </div>
               </div>
 
               {/* Middle Explanation */}
