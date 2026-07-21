@@ -563,7 +563,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         let detectedLabels: Record<string, string> = {};
         const firstRowKeys = Object.keys(rawRows[0]);
         firstRowKeys.forEach(k => {
-          const match = k.match(/^place(1|2|3|4):(.*)$/i);
+          const match = k.match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
@@ -603,9 +603,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const wordKey = findKey(['word', 'main word'], 'place1');
           const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
           const groupKey = findKey(['group']);
-          const synonym1Key = findKey(['synonym1', 'synonm1', 'syn1']);
-          const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2']);
-          const synonymsKey = findKey(['synonyms'], 'place4');
+          const synonym1Key = findKey(['synonym1', 'synonm1', 'syn1'], 'place5');
+          const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2'], 'place6');
+          const synonymsKey = findKey(['synonyms']);
           const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example'], 'place3');
@@ -713,7 +713,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         // Extract place labels from headers
         let detectedLabels: Record<string, string> = {};
         firstLineRawCells.forEach(cell => {
-          const match = cell.trim().match(/^place(1|2|3|4):(.*)$/i);
+          const match = cell.trim().match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
@@ -742,9 +742,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const wordPos = findPos(['word', 'main word'], 'place1');
           const meaningPos = findPos(['meaning', 'bangla meaning'], 'place2');
           const groupPos = findPos(['group']);
-          const syn1Pos = findPos(['synonym1', 'synonm1', 'syn1']);
-          const syn2Pos = findPos(['synonym2', 'synonm2', 'syn2']);
-          const synsPos = findPos(['synonyms'], 'place4');
+          const syn1Pos = findPos(['synonym1', 'synonm1', 'syn1'], 'place5');
+          const syn2Pos = findPos(['synonym2', 'synonm2', 'syn2'], 'place6');
+          const synsPos = findPos(['synonyms']);
           const extraWPos = findPos(['extra word'], 'place4');
           const extraMPos = findPos(['extra meaning']);
           const exPos = findPos(['example'], 'place3');
@@ -1504,23 +1504,21 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               {/* Requirement guidelines column checker */}
               <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 text-xs text-slate-600">
                 <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
-                <div className="flex flex-col space-y-1.5 text-[11px] font-bold">
-                  <span className="text-rose-600 flex items-center gap-1.5">• [id] (or [unique id], [word id], [uid]) (Required)</span>
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [place1:###] (or [word], [main word]) (Required) — Represents the Main Word</span>
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [place2:###] (or [meaning], [bangla meaning]) (Required) — Represents the Meaning</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [place3:###] (or [example]) (Optional) — Represents the Example Sentence</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [place4:###] (or [synonyms], [extra word]) (Optional) — Represents the Extra Info under the Main Word</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [group] (Optional)</span>
+                <div className="flex flex-col space-y-1 text-[11px] font-bold">
+                  <span className="text-rose-600 flex items-center gap-1.5">* <strong className="text-rose-600 font-black">id</strong> (Unique ID)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place1:###</strong> — মেইন ওয়ার্ড বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place2:###</strong> — ফ্ল্যাশ কার্ড ফ্লিপ করলে যেখানে মিনিং বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place3:###</strong> — যেখানে এক্সাম্পল সেন্টেন্স বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place4:###</strong> — মেইন ওয়ার্ডের নিচে এক্সট্রা ইনফো বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place5:###</strong> — যেখানে প্রথম সিনোনিম বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place6:###</strong> — যেখানে ২য় সিনোনিম বসে</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</span>
                 </div>
                 
                 <div className="border-t border-slate-200/80 pt-3 space-y-2 text-[11px] leading-relaxed font-semibold text-slate-500">
                   <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Dynamic Placement (place1-place4):</span>
-                    <span>You can name your column headings as <b>place1:###</b>, <b>place2:###</b>, <b>place3:###</b>, and <b>place4:###</b> (where ### can be any name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.</span>
-                  </p>
-                  <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Synonyms / Extra Info:</span>
-                    <span>Values in <b>place4:###</b> will be mapped to the synonyms and the extra word section below the main word.</span>
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Dynamic Placement (place1-place6):</span>
+                    <span>You can name your column headings as <b>place1:###</b>, <b>place2:###</b>, <b>place3:###</b>, <b>place4:###</b>, <b>place5:###</b>, and <b>place6:###</b> (where ### can be any name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.</span>
                   </p>
                   <p className="flex gap-1.5 items-start">
                     <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Group Name Mapping:</span>

@@ -1316,7 +1316,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         let detectedLabels: Record<string, string> = {};
         const firstRowKeys = Object.keys(rawRows[0]);
         firstRowKeys.forEach(k => {
-          const match = k.match(/^place(1|2|3|4):(.*)$/i);
+          const match = k.match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
@@ -1346,9 +1346,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const wordKey = findKey(['word', 'main word'], 'place1');
           const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
           const groupKey = findKey(['group']);
-          const synonym1Key = findKey(['synonym1', 'syn1']);
-          const synonym2Key = findKey(['synonym2', 'syn2']);
-          const synonymsKey = findKey(['synonyms'], 'place4');
+          const synonym1Key = findKey(['synonym1', 'syn1'], 'place5');
+          const synonym2Key = findKey(['synonym2', 'syn2'], 'place6');
+          const synonymsKey = findKey(['synonyms']);
           const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example'], 'place3');
@@ -2776,17 +2776,20 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         <span className="text-xs font-black text-slate-800">2. Bulk Import Excel</span>
                       </div>
 
-                      <p className="text-[11px] text-slate-450 leading-relaxed mt-2 font-medium">
-                        Your spreadsheet must contain a mandatory <strong className="text-rose-600 font-extrabold">id</strong> column for each word. For word content, you can use traditional headers (<strong className="text-slate-700 font-extrabold">word, meaning, example, synonyms</strong>) or dynamic placement headers:
-                        <br />
-                        • <strong className="text-indigo-600 font-extrabold">place1:###</strong> — Main Word
-                        <br />
-                        • <strong className="text-indigo-600 font-extrabold">place2:###</strong> — Meaning
-                        <br />
-                        • <strong className="text-indigo-600 font-extrabold">place3:###</strong> — Example Sentence
-                        <br />
-                        • <strong className="text-indigo-600 font-extrabold">place4:###</strong> — Extra Info under Main Word
-                      </p>
+                      <div className="text-[11px] text-slate-500 leading-relaxed mt-2 font-medium space-y-1">
+                        <p className="font-extrabold text-slate-700">Excel Column Guidelines:</p>
+                        <p>* <strong className="text-rose-600 font-extrabold">id</strong> (Unique ID)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place1:###</strong> — মেইন ওয়ার্ড বসে (Main Word)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place2:###</strong> — ফ্ল্যাশ কার্ড ফ্লিপ করলে যেখানে মিনিং বসে (Meaning)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — যেখানে এক্সাম্পল সেন্টেন্স বসে (Example Sentence)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — মেইন ওয়ার্ডের নিচে এক্সট্রা ইনফো বসে (Extra Info)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — যেখানে প্রথম সিনোনিম বসে (First Synonym)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place6:###</strong> — যেখানে ২য় সিনোনিম বসে (Second Synonym)</p>
+                        <p>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</p>
+                        <p className="mt-2 text-slate-400 text-[10px] italic">
+                          📌 <strong>Dynamic Placement (place1-place6):</strong> You can name your column headings as place1:###, place2:###, place3:###, place4:###, place5:###, and place6:### (where ### can be any custom name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.
+                        </p>
+                      </div>
 
                       {excelError && (
                         <div className="p-3 mt-3 bg-rose-50 border border-rose-100 text-rose-700 font-bold text-xs rounded-xl">

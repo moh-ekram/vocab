@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'mohammad.001ekram@gmail.com';
+      return isSignedIn() && request.auth.token.email.lower() == 'mohammad.001ekram@gmail.com';
     }
 
     function isValidId(id) {
@@ -57,7 +57,10 @@ service cloud.firestore {
         && (data.variableToggles == null || data.variableToggles is map)
         && (data.price == null || data.price is int || data.price is float)
         && (data.bkashNumber == null || (data.bkashNumber is string && data.bkashNumber.size() <= 64))
-        && (data.verifiedPayments == null || data.verifiedPayments is list);
+        && (data.verifiedPayments == null || data.verifiedPayments is list)
+        && (data.placeLabels == null || data.placeLabels is map)
+        && (data.allowedUsersExpiry == null || data.allowedUsersExpiry is map)
+        && (data.enabledGames == null || data.enabledGames is map);
     }
 
     function isValidAccessRequest(data) {

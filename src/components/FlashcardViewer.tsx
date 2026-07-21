@@ -40,6 +40,8 @@ interface FlashcardViewerProps {
     place2?: string;
     place3?: string;
     place4?: string;
+    place5?: string;
+    place6?: string;
   };
 }
 
@@ -1100,7 +1102,7 @@ export default function FlashcardViewer({
 
                         {/* Synonyms */}
                         <div className="space-y-0 text-center py-2.5 border-t border-slate-100/40 w-full max-w-full overflow-hidden px-1">
-                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">{placeLabels?.place4 || 'Synonyms'}</p>
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">{placeLabels?.place5 || 'Synonyms'}</p>
                           <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words font-sans`}>{currentActiveWord.synonyms || 'N/A'}</p>
                         </div>
                       </>

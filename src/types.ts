@@ -87,6 +87,8 @@ export interface Course {
     place2?: string;
     place3?: string;
     place4?: string;
+    place5?: string;
+    place6?: string;
   };
 }
 
