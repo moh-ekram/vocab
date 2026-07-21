@@ -20,11 +20,11 @@ service cloud.firestore {
       return isSignedIn() 
         && request.auth.token != null 
         && request.auth.token.email != null 
-        && request.auth.token.email.matches('(?i)^mohammad\\.001ekram@gmail\\.com$');
+        && request.auth.token.email.lower() == 'mohammad.001ekram@gmail.com';
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
 
     // --- ENTITY VALIDATION BLUEPRINTS (Pillar 2) ---
@@ -48,8 +48,8 @@ service cloud.firestore {
     }
 
     function isValidCourse(data) {
-      return data.title is string && data.title.size() <= 256
-        && (data.description == null || (data.description is string && data.description.size() <= 1024))
+      return data.title is string && data.title.size() <= 1000
+        && (data.description == null || (data.description is string && data.description.size() <= 10000))
         && (data.totalGroups == null || data.totalGroups is int)
         && (data.words == null || data.words is list)
         && (data.createdAt == null || (data.createdAt is string && data.createdAt.size() <= 128))
@@ -68,7 +68,7 @@ service cloud.firestore {
 
     function isValidAccessRequest(data) {
       return data.courseId is string && data.courseId.size() <= 128
-        && (data.courseTitle == null || (data.courseTitle is string && data.courseTitle.size() <= 256))
+        && (data.courseTitle == null || (data.courseTitle is string && data.courseTitle.size() <= 1000))
         && data.bkashNumber is string && data.bkashNumber.size() <= 64
         && data.email is string && data.email.size() <= 256
         && data.trxId is string && data.trxId.size() <= 128
