@@ -92,6 +92,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description);
+  const [localPlaceLabels, setLocalPlaceLabels] = useState<Record<string, string>>(course.placeLabels || {});
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
   const [isRestricted, setIsRestricted] = useState(!!course.isRestricted);
   const [price, setPrice] = useState<number>(course.price || 0);
@@ -1311,28 +1312,46 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           return;
         }
 
+        // Extract place labels from headers
+        let detectedLabels: Record<string, string> = {};
+        const firstRowKeys = Object.keys(rawRows[0]);
+        firstRowKeys.forEach(k => {
+          const match = k.match(/^place(1|2|3|4):(.*)$/i);
+          if (match) {
+            const num = match[1];
+            detectedLabels[`place${num}`] = match[2].trim();
+          }
+        });
+        if (Object.keys(detectedLabels).length > 0) {
+          setLocalPlaceLabels(detectedLabels);
+        }
+
         const wordsList: VocabularyWord[] = [];
         let index = localWords.length + 1;
 
         for (const row of rawRows) {
           const rowKeys = Object.keys(row);
           
-          const findKey = (candidates: string[]) => {
+          const findKey = (candidates: string[], placePrefix?: string) => {
+            if (placePrefix) {
+              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':'));
+              if (placeKey) return placeKey;
+            }
             return rowKeys.find(k => {
               const cleanK = k.toLowerCase().trim();
               return candidates.some(c => cleanK === c);
             });
           };
 
-          const wordKey = findKey(['word', 'main word']);
-          const meaningKey = findKey(['meaning', 'bangla meaning']);
+          const wordKey = findKey(['word', 'main word'], 'place1');
+          const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
           const groupKey = findKey(['group']);
           const synonym1Key = findKey(['synonym1', 'syn1']);
           const synonym2Key = findKey(['synonym2', 'syn2']);
-          const synonymsKey = findKey(['synonyms']);
-          const extraWordKey = findKey(['extra word']);
+          const synonymsKey = findKey(['synonyms'], 'place4');
+          const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
-          const exampleKey = findKey(['example']);
+          const exampleKey = findKey(['example'], 'place3');
           const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
 
           if (!idKey) {
@@ -1385,7 +1404,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             group,
             word: baseWord,
             meaning: banglaMeaning,
-            synonyms,
+            synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
             extraWord,
             extraMeaning,
             example
@@ -1550,6 +1569,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         price: Number(price) || 0,
         bkashNumber: bkashNumber.trim(),
         verifiedPayments: verifiedPayments,
+        placeLabels: localPlaceLabels,
       };
 
       await setDoc(doc(db, 'courses', course.id), updatedCourse);
@@ -2757,7 +2777,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
 
                       <p className="text-[11px] text-slate-450 leading-relaxed mt-2 font-medium">
-                        Your spreadsheet must contain a mandatory <strong className="text-rose-600 font-extrabold">id</strong> (or <strong className="text-rose-600 font-extrabold">unique id</strong>, <strong className="text-rose-600 font-extrabold">word id</strong>, <strong className="text-rose-600 font-extrabold">uid</strong>) column for each word, plus <strong className="text-slate-700 font-extrabold">word</strong> (or <strong className="text-slate-700 font-extrabold">main word</strong>) and <strong className="text-slate-700 font-extrabold">meaning</strong> (or <strong className="text-slate-700 font-extrabold">bangla meaning</strong>) columns. You can optionally include <strong className="text-slate-700 font-extrabold">group, synonyms, extra word, extra meaning, example</strong> columns.
+                        Your spreadsheet must contain a mandatory <strong className="text-rose-600 font-extrabold">id</strong> column for each word. For word content, you can use traditional headers (<strong className="text-slate-700 font-extrabold">word, meaning, example, synonyms</strong>) or dynamic placement headers:
+                        <br />
+                        • <strong className="text-indigo-600 font-extrabold">place1:###</strong> — Main Word
+                        <br />
+                        • <strong className="text-indigo-600 font-extrabold">place2:###</strong> — Meaning
+                        <br />
+                        • <strong className="text-indigo-600 font-extrabold">place3:###</strong> — Example Sentence
+                        <br />
+                        • <strong className="text-indigo-600 font-extrabold">place4:###</strong> — Extra Info under Main Word
                       </p>
 
                       {excelError && (

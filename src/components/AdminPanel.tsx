@@ -127,6 +127,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   const [newCourseId, setNewCourseId] = useState('');
   const [newCourseDesc, setNewCourseDesc] = useState('');
   const [uploadedWords, setUploadedWords] = useState<VocabularyWord[]>([]);
+  const [parsedPlaceLabels, setParsedPlaceLabels] = useState<Record<string, string>>({});
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -558,6 +559,18 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           return;
         }
 
+        // Extract place labels from headers
+        let detectedLabels: Record<string, string> = {};
+        const firstRowKeys = Object.keys(rawRows[0]);
+        firstRowKeys.forEach(k => {
+          const match = k.match(/^place(1|2|3|4):(.*)$/i);
+          if (match) {
+            const num = match[1];
+            detectedLabels[`place${num}`] = match[2].trim();
+          }
+        });
+        setParsedPlaceLabels(detectedLabels);
+
         const wordsList: VocabularyWord[] = [];
         let index = 1;
 
@@ -565,7 +578,11 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           // Normalise keys to lowercase, trimming whitespaces
           const rowKeys = Object.keys(row);
           
-          const findKey = (candidates: string[]) => {
+          const findKey = (candidates: string[], placePrefix?: string) => {
+            if (placePrefix) {
+              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':'));
+              if (placeKey) return placeKey;
+            }
             return rowKeys.find(k => {
               const cleanK = k.toLowerCase().trim();
               return candidates.some(c => cleanK === c);
@@ -583,15 +600,15 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             return;
           }
 
-          const wordKey = findKey(['word', 'main word']);
-          const meaningKey = findKey(['meaning', 'bangla meaning']);
+          const wordKey = findKey(['word', 'main word'], 'place1');
+          const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
           const groupKey = findKey(['group']);
           const synonym1Key = findKey(['synonym1', 'synonm1', 'syn1']);
           const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2']);
-          const synonymsKey = findKey(['synonyms']);
-          const extraWordKey = findKey(['extra word']);
+          const synonymsKey = findKey(['synonyms'], 'place4');
+          const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
-          const exampleKey = findKey(['example']);
+          const exampleKey = findKey(['example'], 'place3');
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
@@ -633,9 +650,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             group,
             word: baseWord,
             meaning: banglaMeaning,
-            synonyms,
-            extraWord,
-            extraMeaning,
+            synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
+            extraWord: extraWord,
+            extraMeaning: extraMeaning,
             example
           });
 
@@ -690,20 +707,47 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
       };
 
       if (lines.length > 0) {
-        const firstLineCells = lines[0].split('\t').map(c => c.toLowerCase().trim());
-        const hasHeader = firstLineCells.some(c => c === 'word' || c === 'main word' || c === 'meaning' || c === 'bangla meaning' || c === 'id' || c === 'unique id' || c === 'word id' || c === 'uid');
+        const firstLineRawCells = lines[0].split('\t');
+        const firstLineCells = firstLineRawCells.map(c => c.toLowerCase().trim());
+        
+        // Extract place labels from headers
+        let detectedLabels: Record<string, string> = {};
+        firstLineRawCells.forEach(cell => {
+          const match = cell.trim().match(/^place(1|2|3|4):(.*)$/i);
+          if (match) {
+            const num = match[1];
+            detectedLabels[`place${num}`] = match[2].trim();
+          }
+        });
+        setParsedPlaceLabels(detectedLabels);
+
+        const hasHeader = firstLineCells.some(c => 
+          c === 'word' || c === 'main word' || c.startsWith('place1:') ||
+          c === 'meaning' || c === 'bangla meaning' || c.startsWith('place2:') ||
+          c === 'id' || c === 'unique id' || c === 'word id' || c === 'uid'
+        );
+
         if (hasHeader) {
           startIdx = 1; // skip header row
-          const idPos = firstLineCells.findIndex(c => c === 'id' || c === 'unique id' || c === 'word id' || c === 'uid');
-          const wordPos = firstLineCells.findIndex(c => c === 'word' || c === 'main word');
-          const meaningPos = firstLineCells.findIndex(c => c === 'meaning' || c === 'bangla meaning');
-          const groupPos = firstLineCells.findIndex(c => c === 'group');
-          const syn1Pos = firstLineCells.findIndex(c => c === 'synonym1' || c === 'synonm1' || c === 'syn1');
-          const syn2Pos = firstLineCells.findIndex(c => c === 'synonym2' || c === 'synonm2' || c === 'syn2');
-          const synsPos = firstLineCells.findIndex(c => c === 'synonyms');
-          const extraWPos = firstLineCells.findIndex(c => c === 'extra word');
-          const extraMPos = firstLineCells.findIndex(c => c === 'extra meaning');
-          const exPos = firstLineCells.findIndex(c => c === 'example');
+          
+          const findPos = (candidates: string[], placePrefix?: string) => {
+            if (placePrefix) {
+              const placeIdx = firstLineCells.findIndex(c => c.startsWith(placePrefix.toLowerCase() + ':'));
+              if (placeIdx !== -1) return placeIdx;
+            }
+            return firstLineCells.findIndex(c => candidates.some(cand => c === cand));
+          };
+
+          const idPos = findPos(['id', 'unique id', 'word id', 'uid']);
+          const wordPos = findPos(['word', 'main word'], 'place1');
+          const meaningPos = findPos(['meaning', 'bangla meaning'], 'place2');
+          const groupPos = findPos(['group']);
+          const syn1Pos = findPos(['synonym1', 'synonm1', 'syn1']);
+          const syn2Pos = findPos(['synonym2', 'synonm2', 'syn2']);
+          const synsPos = findPos(['synonyms'], 'place4');
+          const extraWPos = findPos(['extra word'], 'place4');
+          const extraMPos = findPos(['extra meaning']);
+          const exPos = findPos(['example'], 'place3');
 
           if (idPos !== -1) colIdxs.id = idPos;
           if (wordPos !== -1) colIdxs.word = wordPos;
@@ -777,7 +821,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           group,
           word: baseWord,
           meaning: banglaMeaning,
-          synonyms,
+          synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
           extraWord,
           extraMeaning,
           example
@@ -836,7 +880,8 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         isRestricted: newCourseIsRestricted,
         allowedUsers: allowedUsers,
         createdAt: new Date().toISOString(),
-        createdBy: auth.currentUser?.email || 'admin@gmail.com'
+        createdBy: auth.currentUser?.email || 'admin@gmail.com',
+        placeLabels: parsedPlaceLabels
       };
 
       await setDoc(doc(db, 'courses', newCourseId), courseData);
@@ -845,6 +890,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
       setNewCourseTitle('');
       setNewCourseDesc('');
       setUploadedWords([]);
+      setParsedPlaceLabels({});
       setPasteInputText('');
       setNewCourseIsDefault(false);
       setNewCourseIsRestricted(false);
@@ -1460,20 +1506,21 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                 <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
                 <div className="flex flex-col space-y-1.5 text-[11px] font-bold">
                   <span className="text-rose-600 flex items-center gap-1.5">• [id] (or [unique id], [word id], [uid]) (Required)</span>
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [word] (or [main word]) (Required)</span>
-                  <span className="text-indigo-600 flex items-center gap-1.5">• [meaning] (or [bangla meaning]) (Required)</span>
+                  <span className="text-indigo-600 flex items-center gap-1.5">• [place1:###] (or [word], [main word]) (Required) — Represents the Main Word</span>
+                  <span className="text-indigo-600 flex items-center gap-1.5">• [place2:###] (or [meaning], [bangla meaning]) (Required) — Represents the Meaning</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [place3:###] (or [example]) (Optional) — Represents the Example Sentence</span>
+                  <span className="text-slate-600 flex items-center gap-1.5">• [place4:###] (or [synonyms], [extra word]) (Optional) — Represents the Extra Info under the Main Word</span>
                   <span className="text-slate-600 flex items-center gap-1.5">• [group] (Optional)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm1] (or [synonym1]) (Optional)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [synonm2] (or [synonym2]) (Optional)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [extra word] (Optional)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [extra meaning] (Optional)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">• [example] (Optional)</span>
                 </div>
                 
                 <div className="border-t border-slate-200/80 pt-3 space-y-2 text-[11px] leading-relaxed font-semibold text-slate-500">
                   <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Synonyms Requirement:</span>
-                    <span>To include 2 synonyms for each flashcard, use separate columns 'synonm1' and 'synonm2' in your Excel file (or write them separated by a comma in the 'synonyms' column, e.g., subside, decrease).</span>
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Dynamic Placement (place1-place4):</span>
+                    <span>You can name your column headings as <b>place1:###</b>, <b>place2:###</b>, <b>place3:###</b>, and <b>place4:###</b> (where ### can be any name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.</span>
+                  </p>
+                  <p className="flex gap-1.5 items-start">
+                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Synonyms / Extra Info:</span>
+                    <span>Values in <b>place4:###</b> will be mapped to the synonyms and the extra word section below the main word.</span>
                   </p>
                   <p className="flex gap-1.5 items-start">
                     <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Group Name Mapping:</span>

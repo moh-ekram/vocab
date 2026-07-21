@@ -35,6 +35,12 @@ interface FlashcardViewerProps {
   initialGroup?: number | string | null;
   settings?: AppSettings;
   variableToggles?: Record<string, boolean>;
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+  };
 }
 
 export default function FlashcardViewer({
@@ -46,7 +52,8 @@ export default function FlashcardViewer({
   onToggleBookmark,
   initialGroup = null,
   settings,
-  variableToggles
+  variableToggles,
+  placeLabels
 }: FlashcardViewerProps) {
   // Filter States - Dynamic unique groups from words list
   const uniqueGroups = React.useMemo(() => {
@@ -1093,7 +1100,7 @@ export default function FlashcardViewer({
 
                         {/* Synonyms */}
                         <div className="space-y-0 text-center py-2.5 border-t border-slate-100/40 w-full max-w-full overflow-hidden px-1">
-                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">Synonyms</p>
+                          <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">{placeLabels?.place4 || 'Synonyms'}</p>
                           <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words font-sans`}>{currentActiveWord.synonyms || 'N/A'}</p>
                         </div>
                       </>
@@ -1102,6 +1109,7 @@ export default function FlashcardViewer({
                     {/* Example Sentences */}
                     {variableToggles?.example !== false && (
                       <div className="pt-2 border-t border-slate-100 space-y-1.5 text-left max-w-xl mx-auto">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans text-center md:text-left">{placeLabels?.place3 || 'Example Sentence'}</p>
                         {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
                           <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-1 font-sans">
                             {currentActiveWord.example ? (

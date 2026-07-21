@@ -82,6 +82,12 @@ export interface Course {
   price?: number;
   bkashNumber?: string;
   verifiedPayments?: { bkashNumber: string; trxId: string }[];
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+  };
 }
 
 export interface AccessRequest {

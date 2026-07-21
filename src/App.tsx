@@ -1471,6 +1471,7 @@ export default function App() {
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
               settings={settings}
+              placeLabels={activeCourse?.placeLabels}
             />
           )}
 
