@@ -973,7 +973,11 @@ export default function FlashcardViewer({
               className="group cursor-pointer perspective h-[28rem] relative w-full animate-card-float"
               id="vocabulary-card-stage"
             >
-              <div className={outerWrapperClass}>
+              {/* Stacked background cards below to show a pile */}
+              <div className="absolute inset-x-4 bottom-[-14px] h-full bg-slate-100/70 border border-slate-200/50 rounded-3xl shadow-sm rotate-2 pointer-events-none z-0"></div>
+              <div className="absolute inset-x-2 bottom-[-7px] h-full bg-slate-50 border border-slate-200/80 rounded-3xl shadow-md -rotate-1 pointer-events-none z-0"></div>
+
+              <div className={`${outerWrapperClass} z-10 relative`}>
                 {/* FRONT FACE (Word) */}
                 <div className={frontFaceClass}>
                   {/* Spacer to keep layout centered */}

@@ -8,6 +8,7 @@ import StudyToolsCenter from './components/StudyToolsCenter';
 import AppSettingsView from './components/AppSettingsView';
 import AdminPanel from './components/AdminPanel';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
+import MyCoursesView from './components/MyCoursesView';
 
 import {
   LayoutDashboard,
@@ -133,6 +134,16 @@ export default function App() {
 
   const [blankProgress, setBlankProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_BLANK_PROGRESS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [oooProgress, setOooProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_ooo_progress');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const [analogyProgress, setAnalogyProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
+    const saved = localStorage.getItem('vocab_memorizer_analogy_progress');
     return saved ? JSON.parse(saved) : {};
   });
 
@@ -389,6 +400,14 @@ export default function App() {
   }, [blankProgress]);
 
   useEffect(() => {
+    localStorage.setItem('vocab_memorizer_ooo_progress', JSON.stringify(oooProgress));
+  }, [oooProgress]);
+
+  useEffect(() => {
+    localStorage.setItem('vocab_memorizer_analogy_progress', JSON.stringify(analogyProgress));
+  }, [analogyProgress]);
+
+  useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
   }, [settings]);
 
@@ -607,6 +626,44 @@ export default function App() {
                 return merged;
               });
             }
+            if (data.oooProgress) {
+              setOooProgress(prev => {
+                const merged = { ...data.oooProgress };
+                Object.keys(prev).forEach(key => {
+                  const localItem = prev[key];
+                  const cloudItem = data.oooProgress[key];
+                  if (!cloudItem) {
+                    merged[key] = localItem;
+                  } else {
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
+                    if (localTime > cloudTime) {
+                      merged[key] = localItem;
+                    }
+                  }
+                });
+                return merged;
+              });
+            }
+            if (data.analogyProgress) {
+              setAnalogyProgress(prev => {
+                const merged = { ...data.analogyProgress };
+                Object.keys(prev).forEach(key => {
+                  const localItem = prev[key];
+                  const cloudItem = data.analogyProgress[key];
+                  if (!cloudItem) {
+                    merged[key] = localItem;
+                  } else {
+                    const localTime = new Date(localItem.updatedAt || 0).getTime();
+                    const cloudTime = new Date(cloudItem.updatedAt || 0).getTime();
+                    if (localTime > cloudTime) {
+                      merged[key] = localItem;
+                    }
+                  }
+                });
+                return merged;
+              });
+            }
             if (data.settings) {
               setSettings(prev => ({ ...prev, ...data.settings }));
             }
@@ -632,6 +689,8 @@ export default function App() {
               goal,
               synonymProgress,
               blankProgress,
+              oooProgress,
+              analogyProgress,
               settings,
               enrolledCourseIds,
               activeCourseId,
@@ -687,6 +746,8 @@ export default function App() {
           goal,
           synonymProgress,
           blankProgress,
+          oooProgress,
+          analogyProgress,
           settings,
           enrolledCourseIds,
           activeCourseId,
@@ -707,7 +768,7 @@ export default function App() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [progress, folders, goal, synonymProgress, blankProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user, hasLoadedFromCloud]);
+  }, [progress, folders, goal, synonymProgress, blankProgress, oooProgress, analogyProgress, settings, enrolledCourseIds, activeCourseId, quizScore, quizTaken, user, hasLoadedFromCloud]);
 
   const forceSyncToCloud = async () => {
     if (!user || !hasLoadedFromCloud) return;
@@ -719,6 +780,8 @@ export default function App() {
         goal,
         synonymProgress,
         blankProgress,
+        oooProgress,
+        analogyProgress,
         settings,
         enrolledCourseIds,
         activeCourseId,
@@ -1107,6 +1170,32 @@ export default function App() {
     });
   };
 
+  // Update Odd One Out progress
+  const handleUpdateOooProgress = (questionId: string, correct: boolean) => {
+    setOooProgress(prev => {
+      return {
+        ...prev,
+        [questionId]: {
+          correct,
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+  };
+
+  // Update Word Analogy progress
+  const handleUpdateAnalogyProgress = (questionId: string, correct: boolean) => {
+    setAnalogyProgress(prev => {
+      return {
+        ...prev,
+        [questionId]: {
+          correct,
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+  };
+
   // Clear data function for reset/refresh study
   const handleClearAllProgress = () => {
     if (confirm('Are you sure you want to delete all your study progress and streaks? This action cannot be undone.')) {
@@ -1118,6 +1207,9 @@ export default function App() {
         history: {}
       });
       setSynonymProgress({});
+      setBlankProgress({});
+      setOooProgress({});
+      setAnalogyProgress({});
       alert('All progress has been successfully deleted.');
     }
   };
@@ -1235,6 +1327,18 @@ export default function App() {
         </button>
 
         <button
+          onClick={() => setActiveTab('my_courses')}
+          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+            activeTab === 'my_courses'
+              ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
+              : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-emerald-500" />
+          <span className="hidden md:inline">My Courses</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('flashcard')}
           className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'flashcard'
@@ -1340,6 +1444,19 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'my_courses' && (
+            <MyCoursesView
+              user={user}
+              allCourses={allAvailableCourses}
+              enrolledCourseIds={enrolledCourseIds}
+              activeCourseId={activeCourseId}
+              setActiveCourseId={setActiveCourseId}
+              setEnrolledCourseIds={setEnrolledCourseIds}
+              progress={progress}
+              onImportCourse={handleImportCourse}
+            />
+          )}
+
           {activeTab === 'leaderboard' && (
             <GlobalLeaderboard />
           )}
@@ -1369,6 +1486,10 @@ export default function App() {
               onUpdateSynonymProgress={handleUpdateSynonymProgress}
               blankProgress={blankProgress}
               onUpdateBlankProgress={handleUpdateBlankProgress}
+              oooProgress={oooProgress}
+              onUpdateOooProgress={handleUpdateOooProgress}
+              analogyProgress={analogyProgress}
+              onUpdateAnalogyProgress={handleUpdateAnalogyProgress}
               activeGroup={selectedGroupFromDash}
               settings={settings}
               onQuizComplete={(score, totalQuestions) => {

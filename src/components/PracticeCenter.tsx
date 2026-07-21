@@ -30,6 +30,10 @@ interface PracticeCenterProps {
   onUpdateSynonymProgress: (wordId: string, correct: boolean) => void;
   blankProgress: Record<string, { correct: boolean; updatedAt: string }>;
   onUpdateBlankProgress: (questionId: string, correct: boolean) => void;
+  oooProgress: Record<string, { correct: boolean; updatedAt: string }>;
+  onUpdateOooProgress: (questionId: string, correct: boolean) => void;
+  analogyProgress: Record<string, { correct: boolean; updatedAt: string }>;
+  onUpdateAnalogyProgress: (questionId: string, correct: boolean) => void;
   activeGroup: number | string | null;
   settings: AppSettings;
   onQuizComplete: (score: number, totalQuestions: number) => void;
@@ -48,6 +52,10 @@ export default function PracticeCenter({
   onUpdateSynonymProgress,
   blankProgress,
   onUpdateBlankProgress,
+  oooProgress,
+  onUpdateOooProgress,
+  analogyProgress,
+  onUpdateAnalogyProgress,
   activeGroup,
   settings,
   onQuizComplete,
@@ -62,38 +70,6 @@ export default function PracticeCenter({
   const isBlankEnabled = !enabledGames || enabledGames.blank !== false;
   const isOddOneOutEnabled = !enabledGames || enabledGames.odd_one_out !== false;
   const isAnalogyEnabled = !enabledGames || enabledGames.analogy !== false;
-
-  const [oooProgress, setOooProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
-    const saved = localStorage.getItem('vocab_memorizer_ooo_progress');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const [analogyProgress, setAnalogyProgress] = useState<Record<string, { correct: boolean; updatedAt: string }>>(() => {
-    const saved = localStorage.getItem('vocab_memorizer_analogy_progress');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const handleUpdateOooProgress = (questionId: string, correct: boolean) => {
-    setOooProgress(prev => {
-      const next = {
-        ...prev,
-        [questionId]: { correct, updatedAt: new Date().toISOString() }
-      };
-      localStorage.setItem('vocab_memorizer_ooo_progress', JSON.stringify(next));
-      return next;
-    });
-  };
-
-  const handleUpdateAnalogyProgress = (questionId: string, correct: boolean) => {
-    setAnalogyProgress(prev => {
-      const next = {
-        ...prev,
-        [questionId]: { correct, updatedAt: new Date().toISOString() }
-      };
-      localStorage.setItem('vocab_memorizer_analogy_progress', JSON.stringify(next));
-      return next;
-    });
-  };
 
   // Stagger animation variants for cards
   const containerVariants = {
@@ -464,7 +440,7 @@ export default function PracticeCenter({
       {subTab === 'odd_one_out' && (
         <OddOneOutGame
           progress={oooProgress}
-          onUpdateProgress={handleUpdateOooProgress}
+          onUpdateProgress={onUpdateOooProgress}
           activeCourseId={activeCourseId}
           words={words}
         />
@@ -473,7 +449,7 @@ export default function PracticeCenter({
       {subTab === 'analogy' && (
         <WordAnalogyGame
           progress={analogyProgress}
-          onUpdateProgress={handleUpdateAnalogyProgress}
+          onUpdateProgress={onUpdateAnalogyProgress}
           activeCourseId={activeCourseId}
           words={words}
         />
