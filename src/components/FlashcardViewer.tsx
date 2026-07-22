@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, CustomFolder, AppSettings } from '../types';
 import { getGoogleSearchUrl } from '../lib/searchUtils';
+import { 
+  getWordSizeClass, 
+  getWordPosClass, 
+  getWordVerticalPosClass, 
+  getMeaningSizeClass, 
+  getBorderStyleClass, 
+  getShadowStyleClass 
+} from '../lib/flashcardPresets';
 import sentencesDataRaw from '../data/sentences.json';
 const sentencesData = sentencesDataRaw as Record<string, string[]>;
 import { auth, db } from '../lib/firebase';
@@ -25,7 +33,13 @@ import {
   Search,
   HelpCircle,
   Brain,
-  SkipForward
+  SkipForward,
+  MoveHorizontal,
+  MoveVertical,
+  ArrowLeftRight,
+  Eye,
+  ZoomIn,
+  Shuffle
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -37,6 +51,7 @@ interface FlashcardViewerProps {
   onToggleBookmark: (wordId: string, folderId: string) => void;
   initialGroup?: number | string | null;
   settings?: AppSettings;
+  onUpdateSettings?: React.Dispatch<React.SetStateAction<AppSettings>>;
   variableToggles?: Record<string, boolean>;
   placeLabels?: {
     place1?: string;
@@ -78,6 +93,7 @@ export default function FlashcardViewer({
   onToggleBookmark,
   initialGroup = null,
   settings,
+  onUpdateSettings,
   variableToggles,
   placeLabels,
   googleSearchQuery
@@ -728,6 +744,53 @@ export default function FlashcardViewer({
               </div>
             </div>
           </div>
+
+          {/* Card Flip Animation Selection */}
+          <div className="pt-3 border-t border-slate-100 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-slate-800 font-bengali">
+                Card Flip Animation (কার্ড এনিমেশন)
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium capitalize">
+                Selected: {settings?.flashcardAnimation || 'shuffle'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+              {[
+                { key: 'flip-h' as const, icon: MoveHorizontal, label: 'Flip (H)' },
+                { key: 'flip-v' as const, icon: MoveVertical, label: 'Flip (V)' },
+                { key: 'slide' as const, icon: ArrowLeftRight, label: 'Slide' },
+                { key: 'fade' as const, icon: Eye, label: 'Fade' },
+                { key: 'zoom' as const, icon: ZoomIn, label: 'Zoom' },
+                { key: 'shuffle' as const, icon: Shuffle, label: 'Shuffle' }
+              ].map(item => {
+                const currentAnim = settings?.flashcardAnimation || 'shuffle';
+                const isSelected = currentAnim === item.key;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      if (onUpdateSettings) {
+                        onUpdateSettings(prev => ({ ...prev, flashcardAnimation: item.key }));
+                      }
+                    }}
+                    className={`flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border transition-all duration-150 cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-3xs font-bold'
+                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
+                    <span className="text-[11px] font-sans tracking-tight">
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -847,9 +910,21 @@ export default function FlashcardViewer({
             transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)'
           };
 
-          const faceBaseClass = `absolute inset-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border flex flex-col justify-between z-10 transition-all duration-300 ${statusTheme.borderClass}`;
+          const customStyle = settings?.flashcardCustomStyle;
+
+          const cardCustomBgStyle: React.CSSProperties = customStyle?.cardBgColor ? {
+            backgroundColor: customStyle.cardBgColor,
+            borderRadius: customStyle.borderRadius || '24px',
+            color: customStyle.cardTextColor || undefined
+          } : {};
+
+          const borderStyleClass = customStyle ? getBorderStyleClass(customStyle.borderStyle) : statusTheme.borderClass;
+          const shadowStyleClass = customStyle ? getShadowStyleClass(customStyle.shadowStyle) : 'shadow-[0_20px_50px_rgba(0,0,0,0.3)]';
+
+          const faceBaseClass = `absolute inset-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-5 sm:p-7 border flex flex-col justify-between z-10 transition-all duration-300 ${borderStyleClass} ${shadowStyleClass}`;
 
           const frontFaceStyle: React.CSSProperties = {
+            ...cardCustomBgStyle,
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: frontTransform,
@@ -859,6 +934,7 @@ export default function FlashcardViewer({
           };
 
           const backFaceStyle: React.CSSProperties = {
+            ...cardCustomBgStyle,
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: backTransform,
@@ -866,6 +942,14 @@ export default function FlashcardViewer({
             pointerEvents: !isFlipped ? 'none' : 'auto',
             transition: animStyle === 'fade' ? 'opacity 0.3s ease-in-out' : undefined
           };
+
+          const wordFontSizeClass = customStyle ? getWordSizeClass(customStyle.wordFontSize) : getWordFontSize(currentActiveWord.word || (currentActiveWord as any).place1);
+          const wordPosClass = customStyle ? getWordPosClass(customStyle.wordPosition) : 'text-center items-center';
+          const wordVPosClass = customStyle ? getWordVerticalPosClass(customStyle.wordVerticalPos) : 'justify-center my-auto';
+          const customWordStyle: React.CSSProperties = customStyle?.wordColor ? { color: customStyle.wordColor } : {};
+
+          const meaningSizeClass = customStyle ? getMeaningSizeClass(customStyle.meaningFontSize) : 'text-2xl sm:text-4xl';
+          const customMeaningStyle: React.CSSProperties = customStyle?.meaningColor ? { color: customStyle.meaningColor } : {};
 
           return (
             <div className="w-full h-full flex-1 relative perspective my-auto min-h-0 flex flex-col justify-center">
@@ -915,12 +999,15 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Middle: Main Word Centered + Pronounce & Search Minimal Icons */}
-                    <div className="my-auto flex-1 min-h-0 text-center space-y-4 py-4 w-full overflow-y-auto flex flex-col items-center justify-center">
+                    <div className={`flex-1 min-h-0 space-y-4 py-4 w-full overflow-y-auto flex flex-col ${wordVPosClass} ${wordPosClass}`}>
                       <span className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold font-sans">
                         {getPlaceLabel('place1', 'Vocabulary Word')}
                       </span>
 
-                      <h1 className={`font-extrabold tracking-tight font-sans text-center px-2 transition-colors duration-300 ${getWordFontSize(currentActiveWord.word || (currentActiveWord as any).place1)} ${statusTheme.wordColor}`}>
+                      <h1 
+                        className={`font-extrabold tracking-tight font-sans px-2 transition-colors duration-300 ${wordFontSizeClass} ${!customStyle?.wordColor ? statusTheme.wordColor : ''}`}
+                        style={customWordStyle}
+                      >
                         {currentActiveWord.word || (currentActiveWord as any).place1}
                       </h1>
 
@@ -1082,7 +1169,10 @@ export default function FlashcardViewer({
                           <span className="text-xs text-slate-400 dark:text-slate-500 font-medium block font-bengali">
                             {getPlaceLabel('place2', 'Meaning')}
                           </span>
-                          <h2 className="text-2xl sm:text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 font-bengali leading-tight tracking-tight text-center">
+                          <h2 
+                            className={`font-extrabold font-bengali leading-tight tracking-tight text-center ${meaningSizeClass} ${!customStyle?.meaningColor ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
+                            style={customMeaningStyle}
+                          >
                             {currentActiveWord.meaning || (currentActiveWord as any).place2}
                           </h2>
                         </div>

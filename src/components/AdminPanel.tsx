@@ -9,6 +9,7 @@ import { collection, getDocs, deleteDoc, updateDoc, getDoc } from 'firebase/fire
 import { VocabularyWord, UserProgress, Course, AccessRequest, BlankQuestion } from '../types';
 import { read, utils } from 'xlsx';
 import { CourseSettings } from './CourseSettings';
+import { AdminFlashcardEditor } from './AdminFlashcardEditor';
 import { 
   Users, 
   ShieldCheck, 
@@ -36,7 +37,8 @@ import {
   Trash2,
   PlusCircle,
   BookOpen,
-  Edit
+  Edit,
+  Palette
 } from 'lucide-react';
 
 interface FirestoreUserDoc {
@@ -110,7 +112,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests'>('courses');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests' | 'flashcard-design'>('courses');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -1148,6 +1150,17 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Pending Requests ({accessRequests.filter(r => r.status === 'pending').length})</span>
+        </button>
+        <button
+          onClick={() => setActiveAdminTab('flashcard-design')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+            activeAdminTab === 'flashcard-design'
+              ? 'border-indigo-600 text-indigo-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Palette className="w-4 h-4 text-amber-500" />
+          <span>ফ্ল্যাশকার্ড ডিজাইন সেটআপ (Flashcard Design)</span>
         </button>
       </div>
 
@@ -2205,6 +2218,10 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             )}
           </div>
         </div>
+      )}
+
+      {activeAdminTab === 'flashcard-design' && (
+        <AdminFlashcardEditor />
       )}
 
       {/* User Details Slideover / Modal */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
 import { DEFAULT_SAMPLE_COURSE, SAMPLE_100_WORDS } from './data/sample100';
-import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
+import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings, FlashcardCustomStyle } from './types';
+import { DEFAULT_FLASHCARD_STYLE } from './lib/flashcardPresets';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
 import PracticeCenter from './components/PracticeCenter';
@@ -34,7 +35,8 @@ import {
   Moon,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 
 import {
@@ -331,6 +333,8 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
     const parsed = saved ? JSON.parse(saved) : {};
+    const cachedCustomStyle = localStorage.getItem('vocab_flashcard_custom_style');
+    const parsedCustomStyle = cachedCustomStyle ? JSON.parse(cachedCustomStyle) : undefined;
     return {
       defaultFlashcardTags: parsed.defaultFlashcardTags || ['know', 'confusion', 'dont_know', 'unrated'],
       defaultFlashcardOrder: parsed.defaultFlashcardOrder || 'random',
@@ -357,9 +361,30 @@ export default function App() {
       flashcardAnimation: (parsed.flashcardAnimation && parsed.flashcardAnimation !== 'flip-h') ? parsed.flashcardAnimation : 'shuffle',
 
       // Default colorize main word setting
-      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true
+      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true,
+
+      // Global Flashcard Custom Style from Admin
+      flashcardCustomStyle: parsed.flashcardCustomStyle || parsedCustomStyle || DEFAULT_FLASHCARD_STYLE
     };
   });
+
+  // Real-time listener for global admin flashcard design settings
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(doc(db, 'system_settings', 'flashcard_design'), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as FlashcardCustomStyle;
+          setSettings(prev => ({ ...prev, flashcardCustomStyle: data }));
+          localStorage.setItem('vocab_flashcard_custom_style', JSON.stringify(data));
+        }
+      }, (err) => {
+        console.warn("Could not listen to system_settings/flashcard_design:", err);
+      });
+      return () => unsub();
+    } catch (e) {
+      console.warn("Firestore flashcard design listener error:", e);
+    }
+  }, []);
 
   const [quizScore, setQuizScore] = useState<number>(() => {
     const saved = localStorage.getItem('vocab_memorizer_quiz_score');
@@ -1425,25 +1450,32 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 w-full max-w-full overflow-x-hidden" id="main-layout-stage">
       {/* Top Header / Main Banner (Unified for Mobile & Desktop) */}
-      <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 md:px-8 md:py-5 flex items-center justify-between shadow-md flex-shrink-0" id="main-header-banner">
-        <div className="flex items-center gap-2.5 md:gap-3.5 min-w-0">
-          <div className="p-2 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20 flex-shrink-0">
+      <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white px-3 py-2 md:px-8 md:py-4 flex items-center justify-between shadow-md flex-shrink-0 z-20 gap-2 w-full max-w-full overflow-hidden" id="main-header-banner">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 sm:flex-initial">
+          <div className="p-1.5 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20 flex-shrink-0">
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-lg md:text-2xl font-black tracking-tight font-sans text-white uppercase leading-none">
-              Memorizer
-            </h1>
-            <p className="text-[10px] md:text-xs font-semibold text-emerald-400 mt-1 truncate max-w-[120px] sm:max-w-xs md:max-w-md" title={activeCourse?.title}>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-xs sm:text-sm md:text-xl font-black tracking-tight font-sans text-white uppercase leading-none truncate">
+                Memorizer
+              </h1>
+              {/* Mobile status indicator dot */}
+              <div 
+                className={`sm:hidden w-2 h-2 rounded-full flex-shrink-0 ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} 
+                title={isOnline ? 'Online' : 'Offline'} 
+              />
+            </div>
+            <p className="text-[9px] md:text-xs font-semibold text-emerald-400 mt-0.5 truncate max-w-[85px] sm:max-w-xs md:max-w-md" title={activeCourse?.title}>
               {activeCourse?.title || 'Default Course'}
             </p>
           </div>
         </div>
 
         {/* User Stats & Auth (Unified Header UI) */}
-        <div className="flex items-center gap-1.5 md:gap-3.5 flex-shrink-0">
-          {/* Connection Status Badge (Visible for both logged in and anonymous users) */}
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-bold">
+        <div className="flex items-center gap-1 md:gap-2.5 flex-shrink-0">
+          {/* Connection Status Badge (Visible on sm+ screens) */}
+          <div className="hidden sm:flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-xl text-[10px] font-bold">
             <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
             <span className={isOnline ? 'text-emerald-300' : 'text-amber-300'}>
               {isOnline ? 'Online' : 'Offline'}
@@ -1454,7 +1486,7 @@ export default function App() {
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setDarkMode(prev => !prev)}
-            className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
+            className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-lg md:rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
             title={darkMode ? "Switch to Light Mode" : "Switch to Night Mode"}
             id="dark-mode-toggle"
           >
@@ -1464,7 +1496,7 @@ export default function App() {
           {/* Install PWA App Button */}
           <button
             onClick={handleInstallApp}
-            className="flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 rounded-xl transition cursor-pointer text-[10px] md:text-xs font-bold shadow-xs"
+            className="p-1.5 md:px-2.5 md:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 rounded-lg md:rounded-xl transition cursor-pointer text-[10px] md:text-xs font-bold shadow-xs flex items-center gap-1"
             title="Install App / Add to Home Screen"
             id="pwa-install-btn"
           >
@@ -1473,11 +1505,11 @@ export default function App() {
           </button>
 
           {user ? (
-            <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
-              <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/15 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
+            <div className="flex items-center gap-1 md:gap-2.5 bg-white/5 border border-white/10 px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl">
+              <div className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
                 {user.email ? user.email[0].toUpperCase() : 'U'}
               </div>
-              <div className="hidden sm:block text-left max-w-[120px] md:max-w-[150px]">
+              <div className="hidden md:block text-left max-w-[120px] lg:max-w-[150px]">
                 <p className="text-[11px] md:text-xs font-extrabold text-white truncate">
                   {user.displayName || user.email?.split('@')[0]}
                 </p>
@@ -1486,8 +1518,8 @@ export default function App() {
                 </span>
               </div>
               
-              {/* Sync Status Info */}
-              <div className="hidden md:flex items-center gap-1.5 bg-indigo-950/45 border border-indigo-500/15 px-2 py-1 rounded-lg text-[9px]">
+              {/* Sync Status Info (Desktop) */}
+              <div className="hidden lg:flex items-center gap-1.5 bg-indigo-950/45 border border-indigo-500/15 px-2 py-1 rounded-lg text-[9px]">
                 <div className={`w-1.5 h-1.5 rounded-full ${
                   syncStatus === 'synced' ? 'bg-emerald-400 animate-pulse' :
                   syncStatus === 'syncing' ? 'bg-indigo-400 animate-spin' :
@@ -1504,11 +1536,12 @@ export default function App() {
               {/* Force Sync button */}
               <button
                 onClick={forceSyncToCloud}
-                className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md transition"
+                className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 p-1 md:px-2 md:py-0.5 rounded-md transition flex items-center gap-1"
                 disabled={syncStatus === 'syncing' || !isOnline}
                 title="Force Sync"
               >
-                {syncStatus === 'syncing' ? '...' : 'Sync'}
+                <RefreshCw className={`w-3 h-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{syncStatus === 'syncing' ? 'Syncing...' : 'Sync'}</span>
               </button>
 
               <button
@@ -1522,9 +1555,9 @@ export default function App() {
           ) : (
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="text-[10px] md:text-xs font-extrabold px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20"
+              className="text-[10px] md:text-xs font-extrabold px-2 py-1 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg md:rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20 whitespace-nowrap"
             >
-              Cloud Backup (Login)
+              Login
             </button>
           )}
         </div>
@@ -1533,7 +1566,7 @@ export default function App() {
       {/* Unified Horizontal Menu Bar (Sits directly under the main banner) */}
       <div 
         ref={navContainerRef}
-        className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center justify-center gap-1.5 md:gap-2.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" 
+        className="bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 overflow-x-auto flex items-center justify-start md:justify-center gap-1.5 md:gap-2.5 p-1.5 sm:p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" 
         id="horizontal-menu-navigation"
       >
         <button
@@ -1723,6 +1756,7 @@ export default function App() {
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
               settings={settings}
+              onUpdateSettings={setSettings}
               variableToggles={activeCourse?.variableToggles}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}

@@ -30,6 +30,26 @@ export interface CustomFolder {
 
 export type ActiveTab = 'dashboard' | 'my_courses' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner' | 'settings' | 'admin' | 'leaderboard' | 'practice' | 'study_tools';
 
+export interface FlashcardCustomStyle {
+  presetId?: 'preset-1' | 'preset-2' | 'preset-3' | 'preset-4' | 'preset-5' | 'custom';
+  // Main Word Styling
+  wordFontSize: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  wordColor: string;
+  wordPosition: 'left' | 'center' | 'right';
+  wordVerticalPos: 'top' | 'center' | 'bottom';
+  // Meaning / Secondary Text Styling
+  meaningFontSize: 'sm' | 'md' | 'lg' | 'xl';
+  meaningColor: string;
+  // Card Styling
+  cardBgColor: string;
+  cardTextColor: string;
+  borderRadius: '12px' | '16px' | '20px' | '24px' | '32px';
+  borderStyle: 'none' | 'subtle' | 'bold' | 'accent' | 'neon';
+  shadowStyle: 'none' | 'soft' | 'diffused' | 'glow' | 'deep';
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 export interface AppSettings {
   defaultFlashcardTags: WordStatus[];
   defaultFlashcardOrder: 'serial' | 'alphabetical' | 'random';
@@ -50,6 +70,9 @@ export interface AppSettings {
 
   // Option to colorize main words on flashcards based on their status (Green for Learned/know, Red for Unlearned/dont_know, Amber for Confused/confusion)
   colorizeMainWord?: boolean;
+
+  // Global admin flashcard custom design style
+  flashcardCustomStyle?: FlashcardCustomStyle;
 }
 
 export interface StudySession {

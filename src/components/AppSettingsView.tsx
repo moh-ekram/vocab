@@ -290,41 +290,7 @@ export default function AppSettingsView({
                 </div>
               </div>
 
-              {/* Card Flip Animation */}
-              <div className="space-y-2 pt-3.5 border-t border-slate-100">
-                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Card Flip Animation</label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                  {[
-                    { key: 'flip-h' as const, icon: MoveHorizontal, label: 'Flip (H)' },
-                    { key: 'flip-v' as const, icon: MoveVertical, label: 'Flip (V)' },
-                    { key: 'slide' as const, icon: ArrowLeftRight, label: 'Slide' },
-                    { key: 'fade' as const, icon: Eye, label: 'Fade' },
-                    { key: 'zoom' as const, icon: ZoomIn, label: 'Zoom' },
-                    { key: 'shuffle' as const, icon: Shuffle, label: 'Shuffle' }
-                  ].map(item => {
-                    const currentAnim = settings.flashcardAnimation || 'shuffle';
-                    const isSelected = currentAnim === item.key;
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => handleAnimationChange(item.key)}
-                        className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
-                          isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-2xs font-semibold'
-                            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-500'
-                        }`}
-                      >
-                        <Icon className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[10px] tracking-tight">
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+
 
               {/* Colorize Main Words Option */}
               <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between gap-4">
