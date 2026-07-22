@@ -737,35 +737,36 @@ export default function FlashcardViewer({
   // RENDER STAGE 2: IMMERSIVE FULL-SCREEN FLASHCARD FOCUS MODE (isSessionActive = true)
   // =========================================================================
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col h-[100dvh] w-full overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
-      {/* 1. Fullscreen Top Header Bar */}
-      <header className="h-12 sm:h-14 px-3 sm:px-4 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-900/90 backdrop-blur-md z-30">
+    <div className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col h-[100dvh] w-full overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
+      {/* 1. Fullscreen Top Header Bar - Minimalist Navigation & Progress */}
+      <header className="h-14 px-4 sm:px-6 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-950/80 backdrop-blur-xl z-30">
         <button
           onClick={() => setIsSessionActive(false)}
-          className="p-1.5 sm:p-2 text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition cursor-pointer border border-white/10"
-          title="Back"
+          className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer active:scale-95"
+          title="Exit Session"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
-        <div className="text-center">
-          <span className="text-xs sm:text-sm font-extrabold text-white font-mono tracking-wider bg-white/10 border border-white/10 px-3.5 py-1 rounded-full">
-            {currentIndex + 1} / {filteredWords.length}
+        {/* Minimalist Progress Indicator */}
+        <div className="flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+          <span className="text-xs font-semibold tracking-wider text-slate-300 font-mono">
+            {currentIndex + 1} <span className="text-slate-500">/</span> {filteredWords.length}
           </span>
         </div>
 
         <button
           onClick={() => setIsSessionActive(false)}
-          className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer border border-white/10"
-          title="Close Session"
+          className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all cursor-pointer active:scale-95"
+          title="Close"
         >
-          <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          <X className="w-5 h-5" />
         </button>
       </header>
 
-      {/* 2. Main Flashcard Canvas Area - Occupies full available space */}
+      {/* 2. Main Flashcard Canvas Area */}
       <main 
-        className="flex-1 px-3 py-2 sm:p-5 pb-3 sm:pb-6 flex flex-col items-center justify-between max-w-2xl mx-auto w-full relative h-full min-h-0 overflow-hidden"
+        className="flex-1 px-4 py-3 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full relative h-full min-h-0 overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -773,56 +774,56 @@ export default function FlashcardViewer({
         <div className="hidden md:flex items-center justify-between absolute -inset-x-16 top-1/2 -translate-y-1/2 pointer-events-none z-20">
           <button
             onClick={handlePrev}
-            className="p-3 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-110 active:scale-95"
+            className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-105 active:scale-95"
             title="Previous Card"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={handleNext}
-            className="p-3 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-110 active:scale-95"
+            className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-105 active:scale-95"
             title="Next Card"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Flashcard Stack Stage with Dynamic Animation */}
+        {/* Flashcard Stack Stage */}
         {(() => {
           const animStyle = settings?.flashcardAnimation || 'shuffle';
           const statusTheme = (() => {
             switch (activeStatus) {
               case 'dont_know':
                 return {
-                  wordColor: 'text-[#f43f5e]',
-                  borderClass: 'border-[#f43f5e] ring-2 ring-rose-400/30 shadow-rose-100/50',
-                  badgeBg: 'bg-rose-50 border-rose-300 text-rose-700',
+                  wordColor: 'text-rose-600 dark:text-rose-400',
+                  borderClass: 'border-rose-200 dark:border-rose-900/50',
+                  badgeBg: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40',
                   dotBg: 'bg-rose-500',
                   label: 'Not Learned'
                 };
               case 'confusion':
                 return {
-                  wordColor: 'text-[#a855f7]',
-                  borderClass: 'border-[#a855f7] ring-2 ring-purple-400/30 shadow-purple-100/50',
-                  badgeBg: 'bg-purple-50 border-purple-300 text-purple-700',
+                  wordColor: 'text-purple-600 dark:text-purple-400',
+                  borderClass: 'border-purple-200 dark:border-purple-900/50',
+                  badgeBg: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40',
                   dotBg: 'bg-purple-500',
-                  label: 'Confusion'
+                  label: 'Confused'
                 };
               case 'know':
                 return {
-                  wordColor: 'text-[#0d9488]',
-                  borderClass: 'border-[#0d9488] ring-2 ring-teal-400/30 shadow-teal-100/50',
-                  badgeBg: 'bg-teal-50 border-teal-300 text-teal-700',
-                  dotBg: 'bg-teal-500',
+                  wordColor: 'text-emerald-600 dark:text-emerald-400',
+                  borderClass: 'border-emerald-200 dark:border-emerald-900/50',
+                  badgeBg: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40',
+                  dotBg: 'bg-emerald-500',
                   label: 'Learned'
                 };
               default:
                 return {
-                  wordColor: 'text-slate-950',
-                  borderClass: 'border-indigo-200/90 shadow-indigo-100/50',
-                  badgeBg: '',
-                  dotBg: '',
-                  label: ''
+                  wordColor: 'text-slate-900 dark:text-white',
+                  borderClass: 'border-slate-200/80 dark:border-slate-800/80',
+                  badgeBg: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+                  dotBg: 'bg-slate-400',
+                  label: 'Unrated'
                 };
             }
           })();
@@ -837,22 +838,16 @@ export default function FlashcardViewer({
             containerTransform = isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)';
             frontTransform = 'rotateX(0deg)';
             backTransform = 'rotateX(180deg)';
-          } else if (animStyle === 'slide') {
-            containerTransform = isFlipped ? 'rotateY(180deg) translateX(8px)' : 'rotateY(0deg)';
-          } else if (animStyle === 'zoom') {
-            containerTransform = isFlipped ? 'rotateY(180deg) scale(1.02)' : 'rotateY(0deg) scale(1.0)';
-          } else if (animStyle === 'shuffle') {
-            containerTransform = isFlipped ? 'rotateY(180deg) translateY(-4px)' : 'rotateY(0deg)';
           }
 
           const containerStyle: React.CSSProperties = {
             transformStyle: 'preserve-3d',
             WebkitTransformStyle: 'preserve-3d',
             transform: containerTransform,
-            transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+            transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)'
           };
 
-          const faceBaseClass = `absolute inset-0 bg-white text-slate-900 rounded-[24px] sm:rounded-[36px] p-3.5 sm:p-6 shadow-xl border flex flex-col justify-between z-10 transition-colors duration-300 ${statusTheme.borderClass}`;
+          const faceBaseClass = `absolute inset-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-5 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border flex flex-col justify-between z-10 transition-all duration-300 ${statusTheme.borderClass}`;
 
           const frontFaceStyle: React.CSSProperties = {
             backfaceVisibility: 'hidden',
@@ -873,12 +868,12 @@ export default function FlashcardViewer({
           };
 
           return (
-            <div className="w-full h-full flex-1 relative perspective my-auto">
-              {/* Stacked Cards depth effect - Straight Cards without rotation */}
-              <div className="absolute inset-x-5 sm:inset-x-8 bottom-[-10px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-[28px] sm:rounded-[36px] pointer-events-none z-0"></div>
-              <div className="absolute inset-x-2.5 sm:inset-x-4 bottom-[-5px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-[28px] sm:rounded-[36px] pointer-events-none z-0"></div>
+            <div className="w-full h-full flex-1 relative perspective my-auto min-h-0 flex flex-col justify-center">
+              {/* Stacked Cards Background Depth Layers */}
+              <div className="absolute inset-x-6 bottom-[-10px] top-[10px] bg-slate-900/60 border border-white/5 rounded-3xl pointer-events-none z-0 transform scale-[0.96] opacity-60" />
+              <div className="absolute inset-x-3 bottom-[-5px] top-[5px] bg-slate-800/80 border border-white/10 rounded-3xl pointer-events-none z-0 transform scale-[0.98] opacity-80" />
 
-              {/* Active Flip Card Container */}
+              {/* Active Tap-to-Flip 3D Flashcard Container */}
               <div
                 onClick={() => {
                   if (touchHandled.current) {
@@ -887,21 +882,21 @@ export default function FlashcardViewer({
                   }
                   setIsFlipped(prev => !prev);
                 }}
-                className="relative w-full h-full flex-1 cursor-pointer"
+                className="relative w-full h-full flex-1 cursor-pointer select-none"
                 style={containerStyle}
               >
                 {/* FRONT FACE */}
                 <div className={faceBaseClass} style={frontFaceStyle}>
                   <div className="w-full h-full flex flex-col justify-between overflow-hidden">
-                    {/* Top Row: Group Pill Badge & Status Badge on Left, Report Button on Right */}
-                    <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                    {/* Top Row: Group Badge & Status on Left, Minimal Report on Right */}
+                    <div className="flex items-center justify-between w-full flex-shrink-0">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
-                          G-{currentIndex + 1}/{filteredWords.length}
+                        <span className="px-3 py-1 text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
+                          Group {currentActiveWord.group || 1}
                         </span>
                         {statusTheme.label && (
-                          <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border flex items-center gap-1.5 shadow-2xs ${statusTheme.badgeBg}`}>
-                            <span className={`w-2 h-2 rounded-full ${statusTheme.dotBg}`} />
+                          <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dotBg}`} />
                             <span>{statusTheme.label}</span>
                           </span>
                         )}
@@ -912,35 +907,35 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           handleOpenReportModal(currentActiveWord);
                         }}
-                        className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
+                        className="text-slate-400 hover:text-rose-500 p-1 rounded-full transition cursor-pointer active:scale-95"
                         title="Report Issue"
                       >
-                        Report
+                        <AlertTriangle className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {/* Middle: Main Word + Pronounce & Google Buttons directly under */}
-                    <div className="my-auto flex-1 min-h-0 text-center space-y-2 sm:space-y-4 py-2 sm:py-4 w-full overflow-y-auto flex flex-col items-center justify-center">
-                      <span className="text-xs text-slate-800 font-medium font-bengali tracking-wide">
-                        {getPlaceLabel('place1', 'Word')}
+                    {/* Middle: Main Word Centered + Pronounce & Search Minimal Icons */}
+                    <div className="my-auto flex-1 min-h-0 text-center space-y-4 py-4 w-full overflow-y-auto flex flex-col items-center justify-center">
+                      <span className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold font-sans">
+                        {getPlaceLabel('place1', 'Vocabulary Word')}
                       </span>
 
-                      <h1 className={`font-black tracking-tight font-bengali text-center text-3xl sm:text-5xl md:text-6xl leading-none px-1 transition-colors duration-300 ${statusTheme.wordColor}`}>
+                      <h1 className={`font-extrabold tracking-tight font-sans text-center px-2 transition-colors duration-300 ${getWordFontSize(currentActiveWord.word || (currentActiveWord as any).place1)} ${statusTheme.wordColor}`}>
                         {currentActiveWord.word || (currentActiveWord as any).place1}
                       </h1>
 
-                      {/* Pronunciation & Google search circular buttons directly under main word */}
-                      <div className="flex items-center justify-center gap-3 pt-1 sm:pt-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Minimalist Outline Icons for Audio & Google Search */}
+                      <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
                         {variableToggles?.audio !== false && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               speakWord();
                             }}
-                            className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
-                            title="Speak / Pronounce Word"
+                            className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700"
+                            title="Listen Pronunciation"
                           >
-                            <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
+                            <Volume2 className="w-4 h-4" />
                           </button>
                         )}
 
@@ -950,49 +945,54 @@ export default function FlashcardViewer({
                             const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
                             window.open(googleUrl, '_blank');
                           }}
-                          className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
-                          title="Google Search Word"
+                          className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700"
+                          title="Search on Google"
                         >
-                          <GoogleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                          <GoogleIcon className="w-4 h-4" />
                         </button>
                       </div>
 
-                      {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
+                      {/* Extra Word / Derivatives if toggled */}
                       {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
-                        <div className="pt-0.5 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-[11px] text-slate-500 font-medium font-bengali">
+                        <div className="pt-2 flex flex-col items-center justify-center space-y-1" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[11px] text-slate-400 font-medium">
                             {getPlaceLabel('place4', 'Derivatives')}:
                           </span>
-                          <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-0.5 sm:py-1 rounded-full font-bengali max-w-xs truncate">
+                          <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full max-w-xs truncate">
                             {currentActiveWord.extraWord || (currentActiveWord as any).place4}
                             {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
                           </p>
                         </div>
                       )}
+
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 pt-3 flex items-center gap-1 font-medium">
+                        <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" /> Tap card to reveal answer
+                      </span>
                     </div>
 
-                    {/* Bottom: Action Buttons (< Not Learned | Confusion | Learned >) */}
-                    <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Bottom Action Controls: Modern Minimalist Navigation & Rating Buttons */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePrev();
                         }}
-                        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 flex-shrink-0"
                         title="Previous Card"
                       >
-                        <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                        <ChevronLeft className="w-4 h-4" />
                       </button>
 
+                      {/* Minimalist Action Buttons */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           rateAndMaybeConfirm('dont_know', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'dont_know'
-                            ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
-                            : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
                         }`}
                         title="Not Learned"
                       >
@@ -1004,14 +1004,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('confusion', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'confusion'
-                            ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
-                            : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-sm'
+                            : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
                         }`}
-                        title="Confusion"
+                        title="Confused"
                       >
-                        <span>Confusion</span>
+                        <span>Confused</span>
                       </button>
 
                       <button
@@ -1019,10 +1019,10 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('know', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'know'
-                            ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
-                            : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
+                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                         }`}
                         title="Learned"
                       >
@@ -1034,10 +1034,10 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           handleNext();
                         }}
-                        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 flex-shrink-0"
                         title="Next Card"
                       >
-                        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -1047,14 +1047,14 @@ export default function FlashcardViewer({
                 <div className={faceBaseClass} style={backFaceStyle}>
                   <div className="w-full h-full flex flex-col justify-between overflow-hidden">
                     {/* Top Header Row */}
-                    <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                    <div className="flex items-center justify-between w-full flex-shrink-0">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
-                          G-{currentIndex + 1}/{filteredWords.length}
+                        <span className="px-3 py-1 text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
+                          Group {currentActiveWord.group || 1}
                         </span>
                         {statusTheme.label && (
-                          <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border flex items-center gap-1.5 shadow-2xs ${statusTheme.badgeBg}`}>
-                            <span className={`w-2 h-2 rounded-full ${statusTheme.dotBg}`} />
+                          <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dotBg}`} />
                             <span>{statusTheme.label}</span>
                           </span>
                         )}
@@ -1065,156 +1065,155 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           handleOpenReportModal(currentActiveWord);
                         }}
-                        className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
+                        className="text-slate-400 hover:text-rose-500 p-1 rounded-full transition cursor-pointer active:scale-95"
                         title="Report Issue"
                       >
-                        Report
+                        <AlertTriangle className="w-4 h-4" />
                       </button>
                     </div>
 
-                    {/* Top Section: Place2 Meaning */}
-                    <div className="my-auto text-center space-y-1 pt-2 w-full">
-                      {/* Word reference header */}
-                      <span className={`text-xs font-black font-bengali block tracking-wide uppercase ${statusTheme.wordColor}`}>
+                    {/* Top Section: Main Word Reference + Meaning */}
+                    <div className="my-auto text-center space-y-2 pt-2 w-full">
+                      <span className={`text-xs font-bold uppercase tracking-widest block ${statusTheme.wordColor}`}>
                         {currentActiveWord.word || (currentActiveWord as any).place1}
                       </span>
                       {variableToggles?.meaning !== false && (
                         <div className="space-y-1">
-                          <span className="text-xs text-slate-800 font-medium block font-bengali">
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium block font-bengali">
                             {getPlaceLabel('place2', 'Meaning')}
                           </span>
-                          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#00a884] font-bengali leading-tight tracking-tight text-center">
+                          <h2 className="text-2xl sm:text-4xl font-extrabold text-emerald-600 dark:text-emerald-400 font-bengali leading-tight tracking-tight text-center">
                             {currentActiveWord.meaning || (currentActiveWord as any).place2}
                           </h2>
                         </div>
                       )}
                     </div>
 
-                  {/* Horizontal Divider Line */}
-                  <div className="w-full border-b border-slate-200/90 my-2 sm:my-3" />
+                    {/* Horizontal Divider Line */}
+                    <div className="w-full border-b border-slate-100 dark:border-slate-800 my-2 sm:my-3" />
 
-                  {/* Middle Content Area */}
-                  <div className="my-auto flex-1 min-h-0 space-y-2 sm:space-y-4 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
-                    {/* Two Column Grid for Place5 and Place6 */}
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
-                          {getPlaceLabel('place5', 'Synonyms')}
-                        </span>
-                        <p className="font-black text-slate-950 font-bengali text-base sm:text-2xl break-words leading-snug">
-                          {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [(currentActiveWord as any).synonym1, (currentActiveWord as any).synonym2].filter(Boolean).join(', ') || '-'}
-                        </p>
+                    {/* Middle Content Area */}
+                    <div className="my-auto flex-1 min-h-0 space-y-3 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
+                      {/* Grid for Synonyms & Extra Meaning */}
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-semibold font-bengali block">
+                            {getPlaceLabel('place5', 'Synonyms')}
+                          </span>
+                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-sm sm:text-base break-words leading-snug">
+                            {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [(currentActiveWord as any).synonym1, (currentActiveWord as any).synonym2].filter(Boolean).join(', ') || '-'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-semibold font-bengali block">
+                            {getPlaceLabel('place6', 'Extra Meaning')}
+                          </span>
+                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-sm sm:text-base break-words leading-snug">
+                            {(currentActiveWord as any).place6 || currentActiveWord.extraMeaning || '-'}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
-                          {getPlaceLabel('place6', 'Extra Meaning')}
-                        </span>
-                        <p className="font-black text-slate-950 font-bengali text-base sm:text-2xl break-words leading-snug">
-                          {(currentActiveWord as any).place6 || currentActiveWord.extraMeaning || '-'}
-                        </p>
-                      </div>
+                      {/* Example Sentence */}
+                      {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
+                        <div className="pt-1 space-y-0.5">
+                          <span className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-semibold block font-bengali">
+                            {getPlaceLabel('place3', 'Word in use')}
+                          </span>
+                          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-bengali leading-relaxed text-center break-words px-1 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                            {renderSentence(activeExampleSentence || (currentActiveWord as any).place3 || '')}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Mnemonic / Note */}
+                      {(noteText || currentActiveWord.mnemonic) && (
+                        <div className="pt-1 space-y-0.5">
+                          <span className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 font-semibold block font-bengali">
+                            {getPlaceLabel('mnemonic', 'Mnemonic / Note')}
+                          </span>
+                          <p className="text-xs sm:text-sm font-medium italic text-slate-600 dark:text-slate-300 font-bengali leading-relaxed text-center break-words px-1">
+                            {noteText || currentActiveWord.mnemonic}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Place3: Example / Word in use */}
-                    {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
-                      <div className="pt-1 space-y-0.5">
-                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
-                          {getPlaceLabel('place3', 'Word in use')}
-                        </span>
-                        <p className="text-xs sm:text-sm font-bold text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
-                          {renderSentence(activeExampleSentence || (currentActiveWord as any).place3 || '')}
-                        </p>
-                      </div>
-                    )}
+                    {/* Bottom Action Controls */}
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrev();
+                        }}
+                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 flex-shrink-0"
+                        title="Previous Card"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
 
-                    {/* Mnemonic / Note */}
-                    {(noteText || currentActiveWord.mnemonic) && (
-                      <div className="pt-1 space-y-0.5">
-                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
-                          '{getPlaceLabel('mnemonic', 'Mnemonic')}'
-                        </span>
-                        <p className="text-xs sm:text-sm font-bold italic text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
-                          {noteText || currentActiveWord.mnemonic}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('dont_know', true);
+                        }}
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                          activeStatus === 'dont_know'
+                            ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+                        }`}
+                        title="Not Learned"
+                      >
+                        <span>Not Learned</span>
+                      </button>
 
-                  {/* Bottom: Action Buttons */}
-                  <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrev();
-                      }}
-                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
-                      title="Previous Card"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('confusion', true);
+                        }}
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                          activeStatus === 'confusion'
+                            ? 'bg-purple-500 text-white border-purple-500 shadow-sm'
+                            : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                        }`}
+                        title="Confused"
+                      >
+                        <span>Confused</span>
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('dont_know', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'dont_know'
-                          ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
-                          : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
-                      }`}
-                      title="Not Learned"
-                    >
-                      <span>Not Learned</span>
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('know', true);
+                        }}
+                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                          activeStatus === 'know'
+                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                        }`}
+                        title="Learned"
+                      >
+                        <span>Learned</span>
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('confusion', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'confusion'
-                          ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
-                          : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
-                      }`}
-                      title="Confusion"
-                    >
-                      <span>Confusion</span>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('know', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'know'
-                          ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
-                          : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
-                      }`}
-                      title="Learned"
-                    >
-                      <span>Learned</span>
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNext();
-                      }}
-                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
-                      title="Next Card"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNext();
+                        }}
+                        className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 flex-shrink-0"
+                        title="Next Card"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
+          );
         })()}
       </main>
 
