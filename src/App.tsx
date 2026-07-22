@@ -905,8 +905,8 @@ export default function App() {
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
     allowedUsers: dbGreCourse?.allowedUsers || [],
-    price: dbGreCourse?.price ?? 30,
-    bkashNumber: dbGreCourse?.bkashNumber || '01581624202',
+    price: (dbGreCourse?.price && dbGreCourse.price > 0) ? dbGreCourse.price : 30,
+    bkashNumber: (dbGreCourse?.bkashNumber && dbGreCourse.bkashNumber !== '01700000000' && dbGreCourse.bkashNumber.trim() !== '') ? dbGreCourse.bkashNumber : '01581624202',
     createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
     createdBy: dbGreCourse?.createdBy || 'system'
   };
@@ -917,7 +917,11 @@ export default function App() {
   for (const c of rawAllCourses) {
     if (!seenCourseIds.has(c.id)) {
       seenCourseIds.add(c.id);
-      allCourses.push(c);
+      allCourses.push({
+        ...c,
+        price: (c.price && c.price > 0) ? c.price : 30,
+        bkashNumber: (c.bkashNumber && c.bkashNumber !== '01700000000' && c.bkashNumber.trim() !== '') ? c.bkashNumber : '01581624202'
+      });
     }
   }
   const allAvailableCourses: Course[] = allCourses;
@@ -1314,13 +1318,13 @@ export default function App() {
       </header>
 
       {/* Unified Horizontal Menu Bar (Sits directly under the main banner) */}
-      <div className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center gap-1.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0" id="horizontal-menu-navigation">
+      <div className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center justify-center gap-1.5 md:gap-2.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" id="horizontal-menu-navigation">
         <button
           onClick={() => {
             setSelectedGroupFromDash(null);
             setActiveTab('dashboard');
           }}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dashboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1332,7 +1336,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('my_courses')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'my_courses'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1344,7 +1348,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('flashcard')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'flashcard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1356,7 +1360,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('leaderboard')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'leaderboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1368,7 +1372,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('practice')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             ['practice', 'synonym', 'quiz', 'match'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1380,7 +1384,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('study_tools')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             ['study_tools', 'dictionary', 'lists', 'planner'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1392,7 +1396,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
+          className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'settings'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -1405,7 +1409,7 @@ export default function App() {
         {user && user.email === 'mohammad.001ekram@gmail.com' && (
           <button
             onClick={() => setActiveTab('admin')}
-            className={`flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
               activeTab === 'admin'
                 ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500'
                 : 'text-rose-600 hover:bg-rose-50 hover:text-rose-700'
@@ -1417,7 +1421,7 @@ export default function App() {
         )}
 
         {/* App Meta Info */}
-        <div className="hidden lg:flex items-center gap-1 text-[10px] text-slate-400 font-mono ml-auto pl-4 flex-shrink-0">
+        <div className="hidden xl:flex items-center gap-1 text-[10px] text-slate-400 font-mono absolute right-6 pointer-events-none">
           <span>v2.5.0</span>
           <span>•</span>
           <span>{activeWords.length} Words ({activeCourseId.toUpperCase()})</span>

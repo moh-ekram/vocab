@@ -111,7 +111,7 @@ export default function MyCoursesView({
         email: cleanEmail.toLowerCase(),
         trxId: cleanTrx,
         status: 'pending',
-        price: selectedBuyCourse.price ?? 30,
+        price: (selectedBuyCourse.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30,
         createdAt: new Date().toISOString(),
         requestedBy: user?.email || 'anonymous'
       };
@@ -304,7 +304,7 @@ export default function MyCoursesView({
               onClick={() => setSelectedDetailCourse(course)}
               className={`p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group min-h-[120px] ${
                 isActive 
-                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/25 ring-4 ring-emerald-500/20 hover:bg-emerald-700' 
+                  ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-4 ring-emerald-500/20 hover:bg-emerald-600' 
                   : 'bg-white border-slate-200/90 text-slate-900 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5'
               }`}
             >
@@ -312,12 +312,12 @@ export default function MyCoursesView({
               <div className="flex justify-between items-center gap-1.5 mb-2.5">
                 <div className="flex items-center gap-1 flex-wrap">
                   {isActive ? (
-                    <span className="px-2.5 py-0.5 bg-emerald-800/80 text-emerald-100 font-black text-[9px] rounded-full uppercase tracking-wider border border-emerald-400/30 flex items-center gap-1 shadow-2xs">
-                      <Check className="w-3 h-3 text-emerald-300" /> Active Course
+                    <span className="px-2.5 py-0.5 bg-emerald-700/80 text-emerald-100 font-black text-[9px] rounded-full uppercase tracking-wider border border-emerald-300/40 flex items-center gap-1 shadow-2xs">
+                      <Check className="w-3 h-3 text-emerald-200" /> Active Course
                     </span>
                   ) : !isUserAllowed ? (
                     <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 border border-rose-200 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" /> Locked (৳{course.price ?? 30})
+                      <Lock className="w-2.5 h-2.5" /> Locked (৳{(course.price && course.price > 0) ? course.price : 30})
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
@@ -352,7 +352,7 @@ export default function MyCoursesView({
 
               {/* Word Count - Large Poppins / Kalpurush / SutonnyMJ font */}
               <div className={`mt-3 pt-2.5 border-t flex justify-between items-center ${
-                isActive ? 'border-emerald-500/60 text-emerald-100' : 'border-slate-100 text-slate-500'
+                isActive ? 'border-emerald-400/50 text-emerald-100' : 'border-slate-100 text-slate-500'
               }`}>
                 <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-85">
                   Total Words
@@ -442,7 +442,7 @@ export default function MyCoursesView({
                         </span>
                       ) : !isUserAllowed ? (
                         <span className="px-2 py-0.5 bg-rose-500 text-white font-black text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
-                          <Lock className="w-3 h-3" /> Restricted (৳{course.price ?? 30})
+                          <Lock className="w-3 h-3" /> Restricted (৳{(course.price && course.price > 0) ? course.price : 30})
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-indigo-100">
@@ -485,7 +485,7 @@ export default function MyCoursesView({
                     </div>
                     <div className="p-3 bg-amber-50/60 rounded-2xl border border-amber-100/60">
                       <span className="text-[9px] font-extrabold text-amber-600 uppercase tracking-wider block">Course Price</span>
-                      <span className="text-lg font-black text-amber-900">৳{course.price ?? 30}</span>
+                      <span className="text-lg font-black text-amber-900">৳{(course.price && course.price > 0) ? course.price : 30}</span>
                     </div>
                   </div>
 
@@ -554,7 +554,7 @@ export default function MyCoursesView({
                       className="flex-1 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-pink-600/10"
                     >
                       <ShoppingBag className="w-4 h-4" />
-                      <span>Request Access (Buy Course - ৳{course.price ?? 30})</span>
+                      <span>Request Access (Buy Course - ৳{(course.price && course.price > 0) ? course.price : 30})</span>
                     </button>
                   ) : isActive ? (
                     <div className="flex-1 text-center py-2.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 select-none">
@@ -639,17 +639,18 @@ export default function MyCoursesView({
                 <div className="p-4 bg-pink-50 border border-pink-100 rounded-2xl space-y-2 text-xs">
                   <p className="font-black text-pink-700">bKash Send Money Instructions:</p>
                   <p className="font-semibold text-slate-700 leading-relaxed">
-                    Send <strong className="text-pink-600 font-black text-sm">৳{selectedBuyCourse.price ?? 30} BDT</strong> via Send Money to the bKash Personal number below, then fill out and submit this form.
+                    Send <strong className="text-pink-600 font-black text-sm">৳{(selectedBuyCourse.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30} BDT</strong> via Send Money to the bKash Personal number below, then fill out and submit this form.
                   </p>
                   <div className="flex items-center justify-between p-2.5 bg-white border border-pink-100 rounded-xl mt-1.5">
                     <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">bKash Personal Number:</p>
-                      <p className="font-black text-slate-800 text-sm font-mono">{selectedBuyCourse.bkashNumber || '01581624202'}</p>
+                      <p className="font-black text-slate-800 text-sm font-mono">{(selectedBuyCourse.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202'}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        navigator.clipboard.writeText(selectedBuyCourse.bkashNumber || '01581624202');
+                        const num = (selectedBuyCourse.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202';
+                        navigator.clipboard.writeText(num);
                         alert('bKash number copied to clipboard!');
                       }}
                       className="p-1.5 hover:bg-slate-100 rounded-lg text-indigo-600 font-extrabold text-[10px] flex items-center gap-1 cursor-pointer border border-indigo-100 shadow-2xs"

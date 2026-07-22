@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
 import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2, Lock } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { auth, db } from '../lib/firebase';
 import { collection, getDocs, limit, query, doc, getDoc, setDoc } from 'firebase/firestore';
 
@@ -52,6 +52,18 @@ export default function StatsDashboard({
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Once a day Flashcard Practice cover animation for dashboard banner
+  const [showFlashcardCoverAnim, setShowFlashcardCoverAnim] = useState(false);
+
+  useEffect(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastAnimDate = localStorage.getItem('flashcard_banner_anim_date');
+    if (lastAnimDate !== todayStr) {
+      setShowFlashcardCoverAnim(true);
+      localStorage.setItem('flashcard_banner_anim_date', todayStr);
+    }
+  }, []);
+
   // Sync accessEmail when user changes
   useEffect(() => {
     if (user?.email) {
@@ -95,7 +107,7 @@ export default function StatsDashboard({
         email: cleanEmail.toLowerCase(),
         trxId: cleanTrx,
         status: 'pending',
-        price: selectedBuyCourse.price || 0,
+        price: (selectedBuyCourse.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30,
         createdAt: new Date().toISOString(),
         requestedBy: user?.email || 'anonymous'
       };
@@ -395,6 +407,41 @@ export default function StatsDashboard({
         className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 rounded-3xl p-4 sm:p-6 md:p-8 text-white shadow-xl shadow-indigo-950/15 relative overflow-hidden" 
         id="dashboard-welcome-banner"
       >
+        {/* Once a Day Flashcard Practice Overlay Animation */}
+        <AnimatePresence>
+          {showFlashcardCoverAnim && (
+            <motion.div
+              key="flashcard-cover-overlay"
+              initial={{ opacity: 1, scale: 1, x: '0%', y: '0%' }}
+              animate={{ 
+                opacity: [1, 1, 0],
+                scale: [1, 1, 0.35],
+                x: ['0%', '0%', '25%'],
+                y: ['0%', '0%', '15%']
+              }}
+              transition={{ 
+                duration: 1.0, 
+                times: [0, 0.25, 1],
+                ease: [0.22, 1, 0.36, 1] 
+              }}
+              onAnimationComplete={() => setShowFlashcardCoverAnim(false)}
+              className="absolute inset-0 z-30 bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-900 rounded-3xl p-4 sm:p-6 md:p-8 flex items-center justify-center shadow-2xl border-2 border-indigo-300/40 pointer-events-none"
+            >
+              <div className="flex items-center gap-3 sm:gap-4 bg-white/15 backdrop-blur-xl px-5 sm:px-8 py-3.5 sm:py-5 rounded-2xl border border-white/30 shadow-2xl text-white">
+                <div className="p-2 sm:p-3 bg-indigo-500 rounded-xl text-white shadow-md animate-bounce">
+                  <CreditCard className="w-6 h-6 sm:w-10 sm:h-10" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                    Flashcard Practice
+                    <ChevronRight className="w-5 h-5 text-indigo-200" />
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-indigo-200 font-bold uppercase tracking-wider">Daily Vocabulary Focus</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
           <div className="space-y-1 md:space-y-2">
