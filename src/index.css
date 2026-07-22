@@ -21,10 +21,12 @@ html, body, #root {
 /* Custom 3D Card Flip Animation Utilities */
 .perspective {
   perspective: 1200px;
+  -webkit-perspective: 1200px;
 }
 
 .transform-style-3d {
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .backface-hidden {
@@ -34,10 +36,12 @@ html, body, #root {
 
 .rotate-y-180 {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
 }
 
 .rotate-x-180 {
   transform: rotateX(180deg);
+  -webkit-transform: rotateX(180deg);
 }
 
 @keyframes fadeIn {
