@@ -900,8 +900,8 @@ export default function App() {
     id: 'gre',
     title: dbGreCourse?.title || 'BARC Vocabulary Book',
     description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
-    totalGroups: 37,
-    words: vocabulary,
+    totalGroups: dbGreCourse?.totalGroups || 37,
+    words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : vocabulary,
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
     allowedUsers: dbGreCourse?.allowedUsers || [],
@@ -951,12 +951,17 @@ export default function App() {
     const course = allCourses.find(c => c.id === activeCourseId);
     if (!course) return defaultGreCourse;
 
-    // Check access permissions
+    // Check access permissions - enrolled courses or admin/creator can always access
     const userEmailLower = user?.email?.trim().toLowerCase();
     const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
     const isCreator = course.createdBy === user?.email;
+    const isEnrolled = enrolledCourseIds.includes(course.id);
 
-    if (course.isRestricted && !isAdmin && !isCreator) {
+    if (isEnrolled || isAdmin || isCreator) {
+      return course;
+    }
+
+    if (course.isRestricted) {
       if (!userEmailLower) return defaultGreCourse;
       const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
       if (!isEmailInAllowed) return defaultGreCourse;

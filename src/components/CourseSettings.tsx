@@ -1374,35 +1374,36 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             }
             return rowKeys.find(k => {
               const cleanK = k.toLowerCase().trim();
-              return candidates.some(c => cleanK === c);
+              if (candidates.some(c => cleanK === c)) return true;
+              const normK = cleanK.replace(/[^a-z0-9\u0980-\u09FF]/g, '');
+              if (candidates.some(c => normK === c.replace(/[^a-z0-9\u0980-\u09FF]/g, ''))) return true;
+              return candidates.some(c => c.length >= 3 && (cleanK.includes(c) || c.includes(cleanK)));
             });
           };
 
-          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
-          if (!idKey) {
-            setExcelError('The spreadsheet is missing the mandatory "ID" column. Please make sure your spreadsheet has an "ID" column.');
+          const idKey = findKey(['id', 'unique id', 'word id', 'uid', 'sl', 'serial']);
+          const wordKey = findKey(['word', 'main word', 'english word'], 'place1');
+          const meaningKey = findKey(['meaning', 'bangla meaning', 'bengali meaning'], 'place2');
+
+          if (!idKey && !wordKey) {
+            setExcelError('The spreadsheet must contain at least a "Unique ID" column or a "Word" column.');
             return;
           }
 
-          const rawId = row[idKey] ? String(row[idKey]).trim() : '';
-          if (!rawId) {
-            continue;
-          }
+          const rawId = idKey && row[idKey] !== undefined && row[idKey] !== null ? String(row[idKey]).trim() : '';
 
-          const wordKey = findKey(['word', 'main word'], 'place1');
-          const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
-          const groupKey = findKey(['group']);
+          const groupKey = findKey(['group', 'level']);
           const synonym1Key = findKey(['synonym1', 'syn1'], 'place5');
           const synonym2Key = findKey(['synonym2', 'syn2'], 'place6');
-          const synonymsKey = findKey(['synonyms']);
-          const extraWordKey = findKey(['extra word'], 'place4');
+          const synonymsKey = findKey(['synonyms', 'synonym']);
+          const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
-          const exampleKey = findKey(['example'], 'place3');
-          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note']);
+          const exampleKey = findKey(['example', 'example sentence'], 'place3');
+          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
 
-          const baseWord = wordKey ? String(row[wordKey]).trim() : '';
-          const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
-          const mnemonic = mnemonicKey && row[mnemonicKey] !== undefined ? String(row[mnemonicKey]).trim() : '';
+          const baseWord = wordKey && row[wordKey] !== undefined ? String(row[wordKey]).trim() : '';
+          const banglaMeaning = meaningKey && row[meaningKey] !== undefined ? String(row[meaningKey]).trim() : '';
+          const mnemonic = mnemonicKey && row[mnemonicKey] !== undefined && row[mnemonicKey] !== null ? String(row[mnemonicKey]).trim() : '';
 
           let group: string | number = 1;
           if (groupKey && row[groupKey] !== undefined && row[groupKey] !== null) {
@@ -1431,7 +1432,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const extraWord = extraWordKey ? String(row[extraWordKey]).trim() : '';
           const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
 
-          const existingIdx = updatedLocalWords.findIndex(w => String(w.id).trim() === rawId);
+          // Match existing word by ID or by Word name
+          let existingIdx = -1;
+          if (rawId) {
+            existingIdx = updatedLocalWords.findIndex(w => String(w.id).trim().toLowerCase() === rawId.toLowerCase());
+          }
+          if (existingIdx === -1 && baseWord) {
+            existingIdx = updatedLocalWords.findIndex(w => w.word.trim().toLowerCase() === baseWord.toLowerCase());
+          }
 
           if (existingIdx !== -1) {
             // Update existing word
@@ -1481,8 +1489,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               continue;
             }
 
+            const wordId = rawId || `w-${course.id}-${group}-${updatedLocalWords.length + 1}`;
+
             updatedLocalWords.push({
-              id: rawId,
+              id: wordId,
               group,
               word: baseWord,
               meaning: banglaMeaning,

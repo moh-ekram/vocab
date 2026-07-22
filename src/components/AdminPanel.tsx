@@ -593,11 +593,14 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             }
             return rowKeys.find(k => {
               const cleanK = k.toLowerCase().trim();
-              return candidates.some(c => cleanK === c);
+              if (candidates.some(c => cleanK === c)) return true;
+              const normK = cleanK.replace(/[^a-z0-9\u0980-\u09FF]/g, '');
+              if (candidates.some(c => normK === c.replace(/[^a-z0-9\u0980-\u09FF]/g, ''))) return true;
+              return candidates.some(c => c.length >= 3 && (cleanK.includes(c) || c.includes(cleanK)));
             });
           };
 
-          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
+          const idKey = findKey(['id', 'unique id', 'word id', 'uid', 'sl', 'serial']);
           if (!idKey) {
             setUploadError('The spreadsheet is missing the mandatory "id" column. Please make sure your spreadsheet has an "id" column.');
             return;
@@ -608,16 +611,16 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             return;
           }
 
-          const wordKey = findKey(['word', 'main word'], 'place1');
-          const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
-          const groupKey = findKey(['group']);
+          const wordKey = findKey(['word', 'main word', 'english word'], 'place1');
+          const meaningKey = findKey(['meaning', 'bangla meaning', 'bengali meaning'], 'place2');
+          const groupKey = findKey(['group', 'level']);
           const synonym1Key = findKey(['synonym1', 'synonm1', 'syn1'], 'place5');
           const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2'], 'place6');
-          const synonymsKey = findKey(['synonyms']);
-          const extraWordKey = findKey(['extra word'], 'place4');
+          const synonymsKey = findKey(['synonyms', 'synonym']);
+          const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
-          const exampleKey = findKey(['example'], 'place3');
-          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note']);
+          const exampleKey = findKey(['example', 'example sentence'], 'place3');
+          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
