@@ -10,33 +10,21 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Volume2, 
-  CheckCircle, 
   AlertTriangle, 
-  XCircle, 
-  Info, 
-  Tag, 
-  Bookmark, 
-  Edit3, 
-  Keyboard, 
   Sparkles,
-  Eye,
   RotateCcw,
-  Quote,
   Loader2,
-  Layers,
   ArrowUpDown,
   Filter,
   Play,
-  Send,
   X,
-  Maximize2,
-  Minimize2,
   BookOpen,
   Check,
   Lightbulb,
   ArrowLeft,
-  Settings,
-  HelpCircle
+  Search,
+  HelpCircle,
+  Brain
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -59,6 +47,16 @@ interface FlashcardViewerProps {
   };
   googleSearchQuery?: string;
 }
+
+// Helper function to scale word font size based on length so it never breaks onto multiple lines
+const getWordFontSize = (word: string) => {
+  const len = word ? word.trim().length : 0;
+  if (len <= 5) return 'text-5xl sm:text-6xl md:text-7xl';
+  if (len <= 8) return 'text-4xl sm:text-5xl md:text-6xl';
+  if (len <= 11) return 'text-3xl sm:text-4xl md:text-5xl';
+  if (len <= 15) return 'text-2xl sm:text-3xl md:text-4xl';
+  return 'text-xl sm:text-2xl md:text-3xl';
+};
 
 export default function FlashcardViewer({
   words,
@@ -113,8 +111,6 @@ export default function FlashcardViewer({
     }
   }, [initialGroup]);
 
-  const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [userHasManuallyChangedStatuses, setUserHasManuallyChangedStatuses] = useState(false);
 
   // Swipe gesture refs for mobile navigation
@@ -208,32 +204,21 @@ export default function FlashcardViewer({
     }
   }, [words, progress, userHasManuallyChangedStatuses, selectedStatuses]);
 
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<string>('all');
   
   // Study Order Mode: 'serial', 'alphabetical' (A-Z), 'random'
   const [studyOrder, setStudyOrder] = useState<'serial' | 'alphabetical' | 'random'>(() => {
     return settings?.defaultFlashcardOrder || 'random';
   });
-  const [shuffleKey, setShuffleKey] = useState(0);
 
   // Card orientation
   const [isFlipped, setIsFlipped] = useState(false);
 
-  // Random animation state for shuffle option
-  const [currentRandomAnim, setCurrentRandomAnim] = useState<'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom'>('flip-h');
-
   // Vocabulary Index State
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Active note state & custom sentence state
+  // Active note state
   const [noteText, setNoteText] = useState('');
-  const [isEditingNote, setIsEditingNote] = useState(false);
-  const [customSentenceInput, setCustomSentenceInput] = useState('');
-  const [sentenceSaveToast, setSentenceSaveToast] = useState(false);
-
-  // Hotkey helper tooltip
-  const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
 
   // Word reporting states
   const [reportingWord, setReportingWord] = useState<VocabularyWord | null>(null);
@@ -279,7 +264,7 @@ export default function FlashcardViewer({
 
       setReportMessage({
         type: 'success',
-        text: 'Your report has been successfully submitted to the admin. Thank you for the correction!'
+        text: 'আপনার রিপোর্ট সফলভাবে জমা করা হয়েছে। ধন্যবাদ!'
       });
       setTimeout(() => {
         setReportingWord(null);
@@ -288,7 +273,7 @@ export default function FlashcardViewer({
       console.error('Error submitting report:', err);
       setReportMessage({
         type: 'error',
-        text: 'Failed to submit report. Please try again.'
+        text: 'রিপোর্ট পাঠানো ব্যর্থ হয়েছে। আবার চেষ্টা করুন।'
       });
     } finally {
       setIsSubmittingReport(false);
@@ -299,43 +284,11 @@ export default function FlashcardViewer({
   const [baseFilteredWords, setBaseFilteredWords] = useState<VocabularyWord[]>([]);
   const [filteredWords, setFilteredWords] = useState<VocabularyWord[]>([]);
 
-  // Pending rating confirmation state
-  const [pendingRating, setPendingRating] = useState<{
-    wordId: string;
-    newStatus: WordStatus;
-    oldStatus: WordStatus;
-    wordName: string;
-    autoAdvance: boolean;
-  } | null>(null);
-
   const rateAndMaybeConfirm = (newStatus: WordStatus, autoAdvance = true) => {
     if (!currentActiveWord.id) return;
-    const oldStatus = progress[currentActiveWord.id]?.status || 'unrated';
-
-    if (oldStatus !== 'unrated' && oldStatus !== newStatus) {
-      setPendingRating({
-        wordId: currentActiveWord.id,
-        newStatus,
-        oldStatus,
-        wordName: currentActiveWord.word,
-        autoAdvance
-      });
-      return;
-    }
-
     onRateWord(currentActiveWord.id, newStatus);
     if (autoAdvance) {
       handleNext();
-    }
-  };
-
-  const getStatusLabel = (status: WordStatus) => {
-    switch (status) {
-      case 'know': return 'Learned (Green)';
-      case 'confusion': return 'Confused (Yellow)';
-      case 'dont_know': return 'Not Learned (Red)';
-      case 'unrated': return 'Unrated (Gray)';
-      default: return 'Unrated';
     }
   };
 
@@ -390,7 +343,7 @@ export default function FlashcardViewer({
 
     setCurrentIndex(firstNonPariIndex !== -1 ? firstNonPariIndex : 0);
     setIsFlipped(false);
-  }, [wordIdsString, studyOrder, shuffleKey]);
+  }, [wordIdsString, studyOrder]);
 
   const currentActiveWord: VocabularyWord = filteredWords[currentIndex] || {
     id: '',
@@ -411,7 +364,7 @@ export default function FlashcardViewer({
         {parts.map((part, index) => {
           if (index % 2 === 1) {
             return (
-              <strong key={index} className="font-extrabold text-indigo-400 bg-indigo-900/60 px-1.5 py-0.5 rounded-md border border-indigo-500/30">
+              <strong key={index} className="font-extrabold text-amber-300 bg-amber-900/60 px-1.5 py-0.5 rounded-md border border-amber-500/30">
                 {part}
               </strong>
             );
@@ -426,9 +379,7 @@ export default function FlashcardViewer({
   useEffect(() => {
     if (filteredWords.length > 0) {
       setNoteText(progress[currentActiveWord.id]?.notes ?? currentActiveWord.mnemonic ?? '');
-      setIsEditingNote(false);
       setIsFlipped(false);
-      setCustomSentenceInput('');
     }
   }, [currentIndex, filteredWords.length, currentActiveWord.id, progress, currentActiveWord.mnemonic]);
 
@@ -535,44 +486,7 @@ export default function FlashcardViewer({
     }
   }, [currentActiveWord.id, isSessionActive, settings?.autoPlayAudio, variableToggles]);
 
-  useEffect(() => {
-    if ((settings?.flashcardAnimation || 'shuffle') === 'shuffle') {
-      const animations = ['flip-h', 'flip-v', 'slide', 'fade', 'zoom'] as const;
-      const randomIdx = Math.floor(Math.random() * animations.length);
-      setCurrentRandomAnim(animations[randomIdx]);
-    }
-  }, [currentActiveWord.id, settings?.flashcardAnimation]);
-
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
-
-  const handleSaveCustomSentence = () => {
-    if (!customSentenceInput.trim() || !currentActiveWord.id) return;
-    const existing = progress[currentActiveWord.id]?.notes || '';
-    const updated = existing 
-      ? `${existing}\nSentence: ${customSentenceInput.trim()}`
-      : `Sentence: ${customSentenceInput.trim()}`;
-    
-    onUpdateNotes(currentActiveWord.id, updated);
-    setNoteText(updated);
-    setCustomSentenceInput('');
-    setSentenceSaveToast(true);
-    setTimeout(() => setSentenceSaveToast(false), 2000);
-  };
-
-  // Helper to dynamically adjust font size
-  const getDynamicFontSizeClass = (word: string) => {
-    const len = word ? word.length : 0;
-    if (len <= 6) return 'text-4xl sm:text-6xl md:text-7xl font-black';
-    if (len <= 9) return 'text-3xl sm:text-5xl md:text-6xl font-black';
-    if (len <= 12) return 'text-2xl sm:text-4xl md:text-5xl font-black';
-    return 'text-xl sm:text-3xl md:text-4xl font-black break-all';
-  };
-
-  // Generate IPA phonetic string for visual display
-  const getPhoneticSpelling = (word: string) => {
-    if (!word) return '';
-    return `/${word.toLowerCase()}/`;
-  };
 
   // Get active example sentence
   const activeExampleSentence = currentActiveWord.example || 
@@ -830,218 +744,361 @@ export default function FlashcardViewer({
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 text-white flex flex-col h-screen w-screen overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
       {/* 1. Fullscreen Top Header Bar */}
       <header className="h-14 sm:h-16 px-4 sm:px-8 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-950/60 backdrop-blur-md z-30">
+        {/* Simple Back Button */}
         <button
           onClick={() => setIsSessionActive(false)}
-          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition cursor-pointer border border-white/10"
+          className="p-2.5 text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition cursor-pointer border border-white/10"
+          title="Back"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Exit Focus Mode</span>
+          <ArrowLeft className="w-5 h-5" />
         </button>
 
-        {/* Center Title & Counter */}
+        {/* Center Title & Counter (No Group #) */}
         <div className="text-center">
-          <h2 className="text-xs sm:text-sm font-extrabold text-white tracking-wide flex items-center justify-center gap-1.5">
-            <span>Group {currentActiveWord.group || 1}</span>
-            <span className="text-indigo-400">•</span>
-            <span className="text-indigo-200 font-mono text-[11px] sm:text-xs">
-              {currentIndex + 1}/{filteredWords.length}
-            </span>
-          </h2>
+          <span className="text-sm font-extrabold text-white font-mono tracking-wider bg-white/10 border border-white/10 px-4 py-1.5 rounded-full">
+            {currentIndex + 1} / {filteredWords.length}
+          </span>
         </div>
 
-        {/* Right Tools */}
-        <div className="flex items-center gap-2">
-          {variableToggles?.audio !== false && (
-            <button
-              onClick={speakWord}
-              className="p-2 bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white rounded-full transition cursor-pointer"
-              title="Listen Audio"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-          )}
-
-          <button
-            onClick={() => handleOpenReportModal(currentActiveWord)}
-            className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-full transition cursor-pointer"
-            title="Report Word Error"
-          >
-            <AlertTriangle className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => setIsSessionActive(false)}
-            className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer"
-            title="Close Session"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Right Close Button */}
+        <button
+          onClick={() => setIsSessionActive(false)}
+          className="p-2.5 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer border border-white/10"
+          title="Close Session"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </header>
 
       {/* 2. Main Flashcard Canvas Area */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full gap-4">
-        
-        {/* Flashcard Stack Stage */}
-        <div className="w-full relative my-auto">
-          {/* Stacked Cards visual depth effect underneath */}
-          <div className="absolute inset-x-6 sm:inset-x-8 bottom-[-14px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
-          <div className="absolute inset-x-3 sm:inset-x-4 bottom-[-7px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
-
-          {/* Active Card Card Container */}
-          <div
-            onClick={() => {
-              if (touchHandled.current) {
-                touchHandled.current = false;
-                return;
-              }
-              setIsFlipped(prev => !prev);
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between w-full min-h-[380px] sm:min-h-[420px] relative z-10 cursor-pointer transition-transform duration-300 hover:scale-[1.01]"
+      <main 
+        className="flex-1 overflow-y-auto px-4 py-4 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full gap-4 relative"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Desktop Left/Right Navigation Arrows */}
+        <div className="hidden md:flex items-center justify-between absolute -inset-x-16 top-1/2 -translate-y-1/2 pointer-events-none z-20">
+          <button
+            onClick={handlePrev}
+            className="p-3.5 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-110 active:scale-95"
+            title="Previous Card"
           >
-            {/* Top Row: Speaker Icon & Word Meta */}
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
-                Group {currentActiveWord.group}
-              </span>
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={handleNext}
+            className="p-3.5 rounded-full bg-white/15 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 transition shadow-xl pointer-events-auto cursor-pointer hover:scale-110 active:scale-95"
+            title="Next Card"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
 
-              <div className="flex items-center gap-2">
-                {variableToggles?.audio !== false && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      speakWord();
-                    }}
-                    className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-90"
-                    title="Speak word"
-                  >
-                    <Volume2 className="w-5 h-5" />
-                  </button>
-                )}
+        {/* Flashcard Stack Stage with Dynamic Animation */}
+        {(() => {
+          const animStyle = settings?.flashcardAnimation || 'shuffle';
+
+          let containerAnimClass = '';
+          let frontFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 flex flex-col justify-between z-10';
+          let backFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 flex flex-col justify-between z-10';
+
+          if (animStyle === 'fade') {
+            containerAnimClass = 'relative w-full min-h-[360px] sm:min-h-[400px] cursor-pointer';
+            frontFaceAnimClass += ` transition-opacity duration-300 ${isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
+            backFaceAnimClass += ` transition-opacity duration-300 ${isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`;
+          } else if (animStyle === 'flip-v') {
+            containerAnimClass = `relative w-full min-h-[360px] sm:min-h-[400px] transition-transform duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-x-180' : ''}`;
+            backFaceAnimClass += ' rotate-x-180';
+          } else if (animStyle === 'slide') {
+            containerAnimClass = `relative w-full min-h-[360px] sm:min-h-[400px] transition-all duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180 translate-x-3' : ''}`;
+            backFaceAnimClass += ' rotate-y-180';
+          } else if (animStyle === 'zoom') {
+            containerAnimClass = `relative w-full min-h-[360px] sm:min-h-[400px] transition-all duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180 scale-102' : 'scale-100'}`;
+            backFaceAnimClass += ' rotate-y-180';
+          } else if (animStyle === 'shuffle') {
+            containerAnimClass = `relative w-full min-h-[360px] sm:min-h-[400px] transition-all duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180 -rotate-2 -translate-y-2' : ''}`;
+            backFaceAnimClass += ' rotate-y-180';
+          } else {
+            // default: flip-h
+            containerAnimClass = `relative w-full min-h-[360px] sm:min-h-[400px] transition-transform duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180' : ''}`;
+            backFaceAnimClass += ' rotate-y-180';
+          }
+
+          return (
+            <div className="w-full relative my-auto perspective">
+              {/* Stacked Cards visual depth effect underneath */}
+              <div className="absolute inset-x-6 sm:inset-x-8 bottom-[-14px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
+              <div className="absolute inset-x-3 sm:inset-x-4 bottom-[-7px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
+
+              {/* Active Flip Card Container */}
+              <div
+                onClick={() => {
+                  if (touchHandled.current) {
+                    touchHandled.current = false;
+                    return;
+                  }
+                  setIsFlipped(prev => !prev);
+                }}
+                className={containerAnimClass}
+              >
+                {/* FRONT FACE */}
+                <div className={frontFaceAnimClass}>
+                  {/* Top Header Row on Card */}
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                      Group {currentActiveWord.group}
+                    </span>
+
+                    {/* Audio & Google Search Buttons on Card */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
+                          window.open(googleUrl, '_blank');
+                        }}
+                        className="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-indigo-600 rounded-full transition shadow-xs cursor-pointer active:scale-95"
+                        title="Google Search Word"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+
+                      {variableToggles?.audio !== false && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakWord();
+                          }}
+                          className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-95"
+                          title="Speak word"
+                        >
+                          <Volume2 className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Main Word Body (Front Face) */}
+                  <div className="my-auto text-center space-y-3 py-4 w-full overflow-hidden">
+                    <h1 className={`font-black text-slate-900 tracking-tight font-sans text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none sm:leading-tight ${getWordFontSize(currentActiveWord.word)}`}>
+                      {currentActiveWord.word}
+                    </h1>
+
+                    {/* Extra Word / Derivative if place4 available */}
+                    {currentActiveWord.extraWord && (
+                      <p className="text-sm font-bold text-indigo-600 font-bengali pt-2">
+                        {placeLabels?.place4 ? `${placeLabels.place4}: ` : ''}{currentActiveWord.extraWord}
+                        {currentActiveWord.extraMeaning ? ` - ${currentActiveWord.extraMeaning}` : ''}
+                      </p>
+                    )}
+
+                    <p className="text-xs font-semibold text-indigo-400/80 pt-4 animate-pulse font-sans">
+                      Tap card or press Space to flip ↺
+                    </p>
+                  </div>
+
+                  {/* Card Footer Response Controls (Front Face) */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'dont_know'
+                          ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                          : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                      }`}
+                      title="Not Learned / Red"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Not Learned</span>
+                    </button>
+
+                    <button
+                      onClick={() => rateAndMaybeConfirm('confusion', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'confusion'
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
+                          : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                      }`}
+                      title="Confused / Yellow"
+                    >
+                      <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Confused</span>
+                    </button>
+
+                    <button
+                      onClick={() => rateAndMaybeConfirm('know', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'know'
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                      }`}
+                      title="Learned / Green"
+                    >
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Learned</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* BACK FACE */}
+                <div className={backFaceAnimClass}>
+                  {/* Top Header Row on Card */}
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                      Group {currentActiveWord.group}
+                    </span>
+
+                    {/* Audio & Google Search Buttons on Card */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
+                          window.open(googleUrl, '_blank');
+                        }}
+                        className="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-indigo-600 rounded-full transition shadow-xs cursor-pointer active:scale-95"
+                        title="Google Search Word"
+                      >
+                        <Search className="w-4 h-4" />
+                      </button>
+
+                      {variableToggles?.audio !== false && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakWord();
+                          }}
+                          className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-95"
+                          title="Speak word"
+                        >
+                          <Volume2 className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Back Face Content */}
+                  <div className="my-auto text-center space-y-3 py-4">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-800">{currentActiveWord.word}</h2>
+                    <p className="text-3xl sm:text-4xl font-black text-emerald-600 font-bengali leading-relaxed">
+                      {currentActiveWord.meaning}
+                    </p>
+
+                    {/* Synonyms (Place 5 / Place 6) */}
+                    {(currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) && (
+                      <div className="pt-3 border-t border-slate-100 text-xs font-semibold text-slate-600 max-w-md mx-auto">
+                        <span className="text-[10px] uppercase font-bold text-indigo-500 block pb-1">
+                          {placeLabels?.place5 || 'Synonyms'}
+                        </span>
+                        <p className="text-slate-700 font-medium">
+                          {currentActiveWord.synonyms || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card Footer Response Controls (Back Face) */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'dont_know'
+                          ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                          : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                      }`}
+                      title="Not Learned / Red"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Not Learned</span>
+                    </button>
+
+                    <button
+                      onClick={() => rateAndMaybeConfirm('confusion', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'confusion'
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
+                          : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                      }`}
+                      title="Confused / Yellow"
+                    >
+                      <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Confused</span>
+                    </button>
+
+                    <button
+                      onClick={() => rateAndMaybeConfirm('know', true)}
+                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                        activeStatus === 'know'
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                      }`}
+                      title="Learned / Green"
+                    >
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">Learned</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+          );
+        })()}
 
-            {/* Center Content: Front vs Back Face */}
-            <div className="my-auto text-center space-y-3 py-4">
-              {!isFlipped ? (
-                /* FRONT FACE */
-                <div className="space-y-2 animate-fadeIn">
-                  <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} text-slate-900 tracking-tight font-sans`}>
-                    {currentActiveWord.word}
-                  </h1>
-                  <p className="text-sm font-semibold font-mono text-slate-400">
-                    {getPhoneticSpelling(currentActiveWord.word)}
-                  </p>
-                  {currentActiveWord.extraWord && (
-                    <p className="text-xs font-bold text-emerald-600 font-bengali pt-1">
-                      {currentActiveWord.extraWord}: {currentActiveWord.extraMeaning}
-                    </p>
-                  )}
-                  <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
-                    Tap card to reveal definition ↺
-                  </p>
-                </div>
-              ) : (
-                /* BACK FACE */
-                <div className="space-y-3 animate-fadeIn">
-                  <h2 className="text-xl font-black text-slate-800">{currentActiveWord.word}</h2>
-                  <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
-                    {currentActiveWord.meaning}
-                  </p>
-                  {currentActiveWord.synonyms && (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
-                      <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">Synonyms</span>
-                      <span>{currentActiveWord.synonyms}</span>
-                    </div>
-                  )}
-                  {noteText && (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali">
-                      "{noteText}"
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Card Footer Response Controls (Inside card as seen in image 1) */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+        {/* Dynamic Bottom Boxes: Example & Mnemonic */}
+        {!isFlipped ? (
+          <div className="w-full space-y-3 animate-fadeIn">
+            {/* Box 1: Report error prompt in place of example sentence */}
+            <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                <AlertTriangle className="w-4 h-4 text-amber-300 flex-shrink-0" />
+                <span>Found an error? Report it here</span>
+              </div>
               <button
-                onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                  activeStatus === 'dont_know'
-                    ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                    : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
-                }`}
-                title="Not Learned / Hard"
+                onClick={() => handleOpenReportModal(currentActiveWord)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 rounded-full text-xs font-bold transition cursor-pointer flex-shrink-0"
+                title="Report Error"
               >
-                <X className="w-6 h-6 stroke-[3]" />
-              </button>
-
-              <button
-                onClick={() => setIsFlipped(prev => !prev)}
-                className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                title="Flip Card"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={() => rateAndMaybeConfirm('know', true)}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                  activeStatus === 'know'
-                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                    : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
-                }`}
-                title="Learned / Easy"
-              >
-                <Check className="w-6 h-6 stroke-[3]" />
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-300" />
+                <span>Report Issue</span>
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* "Word in Use" Box (Below Card Stack as seen in attached images) */}
-        <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-            <Lightbulb className="w-4 h-4 text-amber-300 fill-amber-300/20" />
-            <span>Word in use</span>
+            {/* Box 2: AI Mnemonic notice in place of mnemonic */}
+            <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-1 text-indigo-100 font-sans shadow-lg">
+              <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-indigo-200">
+                <Brain className="w-4 h-4 text-indigo-300 flex-shrink-0" />
+                <span>Mnemonic is AI generated</span>
+              </div>
+              <p className="text-[11px] text-indigo-300/80 font-medium">
+                Tap card or press Space to reveal sentence & mnemonic
+              </p>
+            </div>
           </div>
-          <p className="text-xs sm:text-sm font-medium leading-relaxed text-white">
-            {renderSentence(activeExampleSentence)}
-          </p>
-        </div>
+        ) : (
+          <div className="w-full space-y-3 animate-fadeIn">
+            {/* 1. Actual Example Sentence Box (Synchronized with Place 3 label) */}
+            <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-300 border-b border-white/10 pb-2">
+                <Lightbulb className="w-4 h-4 text-amber-300 fill-amber-300/20" />
+                <span>{placeLabels?.place3 || "Word in use"}</span>
+              </div>
+              <p className="text-xs sm:text-sm font-medium leading-relaxed text-white pt-1">
+                {renderSentence(activeExampleSentence)}
+              </p>
+            </div>
 
-        {/* Interactive Sentence Writer Input Box */}
-        <div className="w-full space-y-2">
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 p-1.5 rounded-full flex items-center gap-2 w-full shadow-lg">
-            <input
-              type="text"
-              value={customSentenceInput}
-              onChange={(e) => setCustomSentenceInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSaveCustomSentence();
-                }
-              }}
-              placeholder="Write your sentence..."
-              className="bg-transparent border-0 px-4 py-2 text-xs sm:text-sm text-white placeholder-indigo-300/60 focus:outline-none flex-1 font-sans"
-            />
-            <button
-              onClick={handleSaveCustomSentence}
-              disabled={!customSentenceInput.trim()}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white p-2.5 rounded-full transition cursor-pointer shadow-md flex-shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+            {/* 2. Actual Mnemonic Box */}
+            <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
+              <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 border-b border-white/10 pb-2">
+                <Brain className="w-4 h-4 text-indigo-300" />
+                <span>Mnemonic</span>
+              </div>
+              <p className="text-xs sm:text-sm font-bold text-emerald-300 font-bengali leading-relaxed pt-1">
+                {noteText || currentActiveWord.mnemonic || "No mnemonic added for this word."}
+              </p>
+            </div>
           </div>
-          {sentenceSaveToast && (
-            <p className="text-[11px] font-bold text-emerald-400 text-center animate-fadeIn">
-              ✓ Sentence saved to your word notes!
-            </p>
-          )}
-        </div>
+        )}
       </main>
 
       {/* Word Issue Report Modal */}
