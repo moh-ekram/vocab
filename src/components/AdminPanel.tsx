@@ -981,13 +981,14 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
     });
 
   // Default course with potential Firestore updates
-  const dbGreCourse = customCourses.find(c => c.id === 'gre');
+  const dbGreCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'gre');
   const defaultGreCourse: Course = {
-    id: 'gre',
+    ...(dbGreCourse || {}),
+    id: dbGreCourse?.id || 'gre',
     title: dbGreCourse?.title || 'BARC Vocabulary Book',
     description: dbGreCourse?.description || 'Standard preparation course with 1,110 high-frequency words grouped into 37 levels.',
-    totalGroups: 37,
-    words: words,
+    totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
+    words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : words,
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
     allowedUsers: dbGreCourse?.allowedUsers || [],
@@ -998,7 +999,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
     createdBy: dbGreCourse?.createdBy || 'system'
   };
 
-  const filteredCustomCoursesList = customCourses.filter(c => c.id !== 'gre');
+  const filteredCustomCoursesList = customCourses.filter(c => c.id.trim().toLowerCase() !== 'gre');
 
   return (
     <div className="space-y-8 font-sans" id="admin-panel-container">

@@ -103,8 +103,8 @@ export default function OddOneOutGame({
         qSnap.forEach(docSnap => {
           const data = docSnap.data();
           if (
-            (data.courseId && activeCourseId && data.courseId.toLowerCase() === activeCourseId.toLowerCase()) ||
-            (!data.courseId && activeCourseId === 'gre')
+            (data.courseId && activeCourseId && data.courseId.trim().toLowerCase() === activeCourseId.trim().toLowerCase()) ||
+            (!data.courseId && activeCourseId?.trim().toLowerCase() === 'gre')
           ) {
             loaded.push({ id: docSnap.id, ...data } as OddOneOutQuestion);
           }
@@ -114,7 +114,7 @@ export default function OddOneOutGame({
           setAllQuestions(loaded);
         } else {
           // Fallback or generator
-          if (activeCourseId === 'gre') {
+          if (activeCourseId?.trim().toLowerCase() === 'gre') {
             setAllQuestions(DEFAULT_QUESTIONS);
           } else if (words && words.length > 3) {
             // Smart automatic generation based on vocabulary synonyms!

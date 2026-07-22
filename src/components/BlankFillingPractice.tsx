@@ -114,8 +114,8 @@ export default function BlankFillingPractice({
           const data = docSnap.data();
           // Filter by active course or if courseId is empty default to gre
           if (
-            (data.courseId && activeCourseId && data.courseId.toLowerCase() === activeCourseId.toLowerCase()) ||
-            (!data.courseId && activeCourseId === 'gre')
+            (data.courseId && activeCourseId && data.courseId.trim().toLowerCase() === activeCourseId.trim().toLowerCase()) ||
+            (!data.courseId && activeCourseId?.trim().toLowerCase() === 'gre')
           ) {
             loaded.push({ id: docSnap.id, ...data } as BlankQuestion);
           }
@@ -125,7 +125,7 @@ export default function BlankFillingPractice({
           setAllQuestions(loaded);
         } else {
           // Fallback to default high-quality questions for default GRE or if none uploaded yet
-          if (activeCourseId === 'gre') {
+          if (activeCourseId?.trim().toLowerCase() === 'gre') {
             setAllQuestions(DEFAULT_QUESTIONS);
           } else if (words && words.length > 0) {
             // Auto-generate high-quality practice questions from vocabulary words

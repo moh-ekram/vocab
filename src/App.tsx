@@ -30,7 +30,9 @@ import {
   Settings,
   CreditCard,
   Sun,
-  Moon
+  Moon,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 import {
@@ -69,6 +71,135 @@ const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | string | null>(null);
+
+  // --- MOBILE SWIPE NAVIGATION SETUP ---
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const [swipeToast, setSwipeToast] = useState<{ message: string; direction: 'left' | 'right' } | null>(null);
+
+  const touchState = useRef<{
+    startX: number;
+    startY: number;
+    startTime: number;
+    isVerticalScroll: boolean;
+    isCancelled: boolean;
+  } | null>(null);
+
+  const MAIN_TABS = ['dashboard', 'my_courses', 'flashcard', 'leaderboard', 'practice', 'study_tools', 'settings'];
+
+  const TAB_LABELS: Record<string, string> = {
+    dashboard: 'Dashboard',
+    my_courses: 'My Courses',
+    flashcard: 'Flashcard',
+    leaderboard: 'Leaderboard',
+    practice: 'Practice & Games',
+    study_tools: 'Study Tools',
+    settings: 'Settings',
+    admin: 'Admin Panel'
+  };
+
+  const getPrimaryTab = (tab: string): string => {
+    if (['practice', 'synonym', 'quiz', 'match'].includes(tab)) return 'practice';
+    if (['study_tools', 'dictionary', 'lists', 'planner'].includes(tab)) return 'study_tools';
+    return tab;
+  };
+
+  // Auto-scroll active tab into view in horizontal menu bar
+  useEffect(() => {
+    if (navContainerRef.current) {
+      const activeBtn = navContainerRef.current.querySelector('[data-active="true"]') as HTMLElement;
+      if (activeBtn) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeTab]);
+
+  const showSwipeFeedback = (label: string, direction: 'left' | 'right') => {
+    setSwipeToast({ message: label, direction });
+    setTimeout(() => {
+      setSwipeToast(null);
+    }, 1200);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    
+    const target = e.target as HTMLElement;
+    
+    // Ignore if touch started inside interactive components like flashcard stage, inputs, buttons, range sliders, or horizontal scroll areas
+    if (
+      target.closest('#vocabulary-card-stage') ||
+      target.closest('[data-no-swipe="true"]') ||
+      target.closest('input, textarea, select, button, [type="range"]') ||
+      target.closest('table') ||
+      target.closest('.overflow-x-auto')
+    ) {
+      touchState.current = null;
+      return;
+    }
+
+    touchState.current = {
+      startX: e.touches[0].clientX,
+      startY: e.touches[0].clientY,
+      startTime: Date.now(),
+      isVerticalScroll: false,
+      isCancelled: false
+    };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchState.current || touchState.current.isCancelled) return;
+
+    const deltaX = e.touches[0].clientX - touchState.current.startX;
+    const deltaY = e.touches[0].clientY - touchState.current.startY;
+
+    // Detect if movement is primarily vertical scrolling early to cancel tab swipe
+    if (!touchState.current.isVerticalScroll && Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+      touchState.current.isVerticalScroll = true;
+      touchState.current.isCancelled = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchState.current || touchState.current.isCancelled || touchState.current.isVerticalScroll) {
+      touchState.current = null;
+      return;
+    }
+
+    const endX = e.changedTouches[0]?.clientX ?? touchState.current.startX;
+    const endY = e.changedTouches[0]?.clientY ?? touchState.current.startY;
+    const deltaX = endX - touchState.current.startX;
+    const deltaY = endY - touchState.current.startY;
+    const timeDiff = Date.now() - touchState.current.startTime;
+
+    touchState.current = null;
+
+    // Minimum swipe threshold: >= 55px horizontal distance, < 80px vertical drift, within 600ms
+    if (Math.abs(deltaX) >= 55 && Math.abs(deltaY) < 80 && timeDiff < 600) {
+      const currentPrimary = getPrimaryTab(activeTab);
+      const availableTabs = (user && user.email === 'mohammad.001ekram@gmail.com')
+        ? [...MAIN_TABS, 'admin']
+        : MAIN_TABS;
+      const currentIndex = availableTabs.indexOf(currentPrimary);
+
+      if (deltaX < -55) {
+        // Swiped Left -> Advance to Next Tab
+        if (currentIndex >= 0 && currentIndex < availableTabs.length - 1) {
+          const nextTab = availableTabs[currentIndex + 1];
+          if (nextTab === 'dashboard') setSelectedGroupFromDash(null);
+          setActiveTab(nextTab);
+          showSwipeFeedback(TAB_LABELS[nextTab] || nextTab, 'left');
+        }
+      } else if (deltaX > 55) {
+        // Swiped Right -> Go back to Previous Tab
+        if (currentIndex > 0) {
+          const prevTab = availableTabs[currentIndex - 1];
+          if (prevTab === 'dashboard') setSelectedGroupFromDash(null);
+          setActiveTab(prevTab);
+          showSwipeFeedback(TAB_LABELS[prevTab] || prevTab, 'right');
+        }
+      }
+    }
+  };
 
   // --- PERSISTED STATES ---
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>(() => {
@@ -876,7 +1007,10 @@ export default function App() {
   // Keep users active in at least one enrolled course by default so it does not remain empty
   useEffect(() => {
     if (enrolledCourseIds && enrolledCourseIds.length > 0) {
-      if (!activeCourseId || !enrolledCourseIds.includes(activeCourseId)) {
+      const isCurrentlyEnrolled = enrolledCourseIds.some(
+        id => id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase()
+      );
+      if (!activeCourseId || !isCurrentlyEnrolled) {
         setActiveCourseId(enrolledCourseIds[0]);
       }
     } else {
@@ -895,12 +1029,13 @@ export default function App() {
   }
 
   // --- COURSE RESOLVERS ---
-  const dbGreCourse = customCourses.find(c => c.id === 'gre');
+  const dbGreCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'gre');
   const defaultGreCourse: Course = {
-    id: 'gre',
+    ...(dbGreCourse || {}),
+    id: dbGreCourse?.id || 'gre',
     title: dbGreCourse?.title || 'BARC Vocabulary Book',
     description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
-    totalGroups: dbGreCourse?.totalGroups || 37,
+    totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
     words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : vocabulary,
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
@@ -912,12 +1047,17 @@ export default function App() {
     createdBy: dbGreCourse?.createdBy || 'system'
   };
 
-  const rawAllCourses: Course[] = [defaultGreCourse, ...customCourses.filter(c => c.id !== 'gre'), ...importedCourses];
+  const rawAllCourses: Course[] = [
+    defaultGreCourse, 
+    ...customCourses.filter(c => c.id.trim().toLowerCase() !== 'gre'), 
+    ...importedCourses.filter(c => c.id.trim().toLowerCase() !== 'gre')
+  ];
   const allCourses: Course[] = [];
   const seenCourseIds = new Set<string>();
   for (const c of rawAllCourses) {
-    if (!seenCourseIds.has(c.id)) {
-      seenCourseIds.add(c.id);
+    const cIdLower = c.id.trim().toLowerCase();
+    if (!seenCourseIds.has(cIdLower)) {
+      seenCourseIds.add(cIdLower);
       allCourses.push({
         ...c,
         price: (c.price && c.price > 0) ? c.price : 30,
@@ -929,7 +1069,7 @@ export default function App() {
 
   const handleImportCourse = (course: Course) => {
     setImportedCourses(prev => {
-      if (prev.some(c => c.id === course.id)) {
+      if (prev.some(c => c.id.trim().toLowerCase() === course.id.trim().toLowerCase())) {
         return prev;
       }
       const updated = [...prev, course];
@@ -938,7 +1078,7 @@ export default function App() {
     });
 
     setEnrolledCourseIds(prev => {
-      if (!prev.includes(course.id)) {
+      if (!prev.some(id => id.trim().toLowerCase() === course.id.trim().toLowerCase())) {
         return [...prev, course.id];
       }
       return prev;
@@ -948,14 +1088,15 @@ export default function App() {
   };
 
   const activeCourse = (() => {
-    const course = allCourses.find(c => c.id === activeCourseId);
+    const normActiveId = activeCourseId?.trim().toLowerCase();
+    const course = allCourses.find(c => c.id.trim().toLowerCase() === normActiveId);
     if (!course) return defaultGreCourse;
 
     // Check access permissions - enrolled courses or admin/creator can always access
     const userEmailLower = user?.email?.trim().toLowerCase();
     const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-    const isCreator = course.createdBy === user?.email;
-    const isEnrolled = enrolledCourseIds.includes(course.id);
+    const isCreator = course.createdBy?.trim().toLowerCase() === userEmailLower;
+    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === normActiveId);
 
     if (isEnrolled || isAdmin || isCreator) {
       return course;
@@ -1324,12 +1465,17 @@ export default function App() {
       </header>
 
       {/* Unified Horizontal Menu Bar (Sits directly under the main banner) */}
-      <div className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center justify-center gap-1.5 md:gap-2.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" id="horizontal-menu-navigation">
+      <div 
+        ref={navContainerRef}
+        className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center justify-center gap-1.5 md:gap-2.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" 
+        id="horizontal-menu-navigation"
+      >
         <button
           onClick={() => {
             setSelectedGroupFromDash(null);
             setActiveTab('dashboard');
           }}
+          data-active={activeTab === 'dashboard'}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'dashboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1342,6 +1488,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('my_courses')}
+          data-active={activeTab === 'my_courses'}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'my_courses'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1354,6 +1501,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('flashcard')}
+          data-active={activeTab === 'flashcard'}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'flashcard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1366,6 +1514,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('leaderboard')}
+          data-active={activeTab === 'leaderboard'}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'leaderboard'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1378,6 +1527,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('practice')}
+          data-active={['practice', 'synonym', 'quiz', 'match'].includes(activeTab)}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             ['practice', 'synonym', 'quiz', 'match'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1390,6 +1540,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('study_tools')}
+          data-active={['study_tools', 'dictionary', 'lists', 'planner'].includes(activeTab)}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             ['study_tools', 'dictionary', 'lists', 'planner'].includes(activeTab)
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1402,6 +1553,7 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('settings')}
+          data-active={activeTab === 'settings'}
           className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold ${
             activeTab === 'settings'
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/15'
@@ -1415,6 +1567,7 @@ export default function App() {
         {user && user.email === 'mohammad.001ekram@gmail.com' && (
           <button
             onClick={() => setActiveTab('admin')}
+            data-active={activeTab === 'admin'}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 p-2 md:px-4 md:py-2.5 rounded-xl transition cursor-pointer flex-shrink-0 text-xs font-bold border border-dashed border-rose-200 ${
               activeTab === 'admin'
                 ? 'bg-rose-600 text-white shadow-sm shadow-rose-500/15 border-rose-500'
@@ -1434,8 +1587,26 @@ export default function App() {
         </div>
       </div>
 
+      {/* Mobile Swipe Toast Feedback */}
+      {swipeToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce sm:hidden">
+          <div className="bg-slate-900/90 backdrop-blur-md text-white border border-indigo-500/30 px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold tracking-wide">
+            {swipeToast.direction === 'right' && <ChevronLeft className="w-4 h-4 text-emerald-400 animate-pulse" />}
+            <span className="text-indigo-200">Swiped to:</span>
+            <span className="text-white font-black">{swipeToast.message}</span>
+            {swipeToast.direction === 'left' && <ChevronRight className="w-4 h-4 text-emerald-400 animate-pulse" />}
+          </div>
+        </div>
+      )}
+
       {/* 2. Main Workspace Layout */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 w-full max-w-full" id="main-content-display">
+      <main 
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 w-full max-w-full touch-pan-y" 
+        id="main-content-display"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <StatsDashboard

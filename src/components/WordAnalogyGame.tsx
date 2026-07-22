@@ -108,8 +108,8 @@ export default function WordAnalogyGame({
         qSnap.forEach(docSnap => {
           const data = docSnap.data();
           if (
-            (data.courseId && activeCourseId && data.courseId.toLowerCase() === activeCourseId.toLowerCase()) ||
-            (!data.courseId && activeCourseId === 'gre')
+            (data.courseId && activeCourseId && data.courseId.trim().toLowerCase() === activeCourseId.trim().toLowerCase()) ||
+            (!data.courseId && activeCourseId?.trim().toLowerCase() === 'gre')
           ) {
             loaded.push({ id: docSnap.id, ...data } as WordAnalogyQuestion);
           }

@@ -25,7 +25,18 @@ import {
   Loader2,
   Layers,
   ArrowUpDown,
-  Filter
+  Filter,
+  Play,
+  Send,
+  X,
+  Maximize2,
+  Minimize2,
+  BookOpen,
+  Check,
+  Lightbulb,
+  ArrowLeft,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -62,6 +73,9 @@ export default function FlashcardViewer({
   placeLabels,
   googleSearchQuery
 }: FlashcardViewerProps) {
+  // Session active state - true when inside the full-screen card focus mode, false when on intermediate filter setup screen
+  const [isSessionActive, setIsSessionActive] = useState<boolean>(() => Boolean(initialGroup));
+
   // Filter States - Dynamic unique groups from words list
   const uniqueGroups = React.useMemo(() => {
     const grps = new Set<string | number>();
@@ -95,10 +109,9 @@ export default function FlashcardViewer({
   useEffect(() => {
     if (initialGroup) {
       setSelectedGroups([initialGroup]);
-    } else {
-      setSelectedGroups(uniqueGroups);
+      setIsSessionActive(true);
     }
-  }, [words, initialGroup, uniqueGroups]);
+  }, [initialGroup]);
 
   const [isGroupDropdownOpen, setIsGroupDropdownOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -188,7 +201,6 @@ export default function FlashcardViewer({
       targetStatuses = ['know'];
     }
 
-    // Only update if different to prevent infinite re-renders
     const currentSorted = [...selectedStatuses].sort().join(',');
     const targetSorted = [...targetStatuses].sort().join(',');
     if (currentSorted !== targetSorted) {
@@ -214,9 +226,11 @@ export default function FlashcardViewer({
   // Vocabulary Index State
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Active note state
+  // Active note state & custom sentence state
   const [noteText, setNoteText] = useState('');
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const [customSentenceInput, setCustomSentenceInput] = useState('');
+  const [sentenceSaveToast, setSentenceSaveToast] = useState(false);
 
   // Hotkey helper tooltip
   const [showHotkeysHelp, setShowHotkeysHelp] = useState(false);
@@ -298,7 +312,6 @@ export default function FlashcardViewer({
     if (!currentActiveWord.id) return;
     const oldStatus = progress[currentActiveWord.id]?.status || 'unrated';
 
-    // Check if word is already in 'know' or another tag, and we try to remove or change it
     if (oldStatus !== 'unrated' && oldStatus !== newStatus) {
       setPendingRating({
         wordId: currentActiveWord.id,
@@ -310,7 +323,6 @@ export default function FlashcardViewer({
       return;
     }
 
-    // No confirmation needed: update immediately
     onRateWord(currentActiveWord.id, newStatus);
     if (autoAdvance) {
       handleNext();
@@ -331,12 +343,10 @@ export default function FlashcardViewer({
   useEffect(() => {
     let result = [...words];
 
-    // Filter by multiple selected groups
     if (selectedGroups.length < uniqueGroups.length) {
       result = result.filter(w => selectedGroups.includes(w.group));
     }
 
-    // Filter by tag/status (multi-select)
     if (selectedStatuses.length < 4) {
       result = result.filter(w => {
         const status = progress[w.id]?.status || 'unrated';
@@ -344,7 +354,6 @@ export default function FlashcardViewer({
       });
     }
 
-    // Filter by custom folders/bookmark list
     if (selectedFolder !== 'all') {
       result = result.filter(w => {
         const bookmarks = progress[w.id]?.bookmarks || [];
@@ -353,9 +362,8 @@ export default function FlashcardViewer({
     }
 
     setBaseFilteredWords(result);
-  }, [selectedGroups, selectedStatuses, selectedFolder, words, progress]);
+  }, [selectedGroups, selectedStatuses, selectedFolder, words, progress, uniqueGroups.length]);
 
-  // Track the unique identity/IDs of filtered words to avoid reshuffling on rating updates
   const wordIdsString = baseFilteredWords.map(w => w.id).join(',');
 
   // Phase 2: Order/shuffle selected words
@@ -363,7 +371,6 @@ export default function FlashcardViewer({
     let result = [...baseFilteredWords];
 
     if (studyOrder === 'random') {
-      // Fisher-Yates shuffle algorithm
       for (let i = result.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         const temp = result[i];
@@ -372,13 +379,10 @@ export default function FlashcardViewer({
       }
     } else if (studyOrder === 'alphabetical') {
       result.sort((a, b) => a.word.localeCompare(b.word));
-    } else {
-      // 'serial' -> sorted naturally by vocabulary list sequence (Base list is already structured serially by group)
     }
 
     setFilteredWords(result);
 
-    // Find first word that is not marked as 'pari' (know)
     const firstNonPariIndex = result.findIndex(w => {
       const status = progress[w.id]?.status || 'unrated';
       return status !== 'know';
@@ -386,10 +390,8 @@ export default function FlashcardViewer({
 
     setCurrentIndex(firstNonPariIndex !== -1 ? firstNonPariIndex : 0);
     setIsFlipped(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wordIdsString, studyOrder, shuffleKey]);
 
-  // Safe fallback current word definition
   const currentActiveWord: VocabularyWord = filteredWords[currentIndex] || {
     id: '',
     group: 1,
@@ -409,7 +411,7 @@ export default function FlashcardViewer({
         {parts.map((part, index) => {
           if (index % 2 === 1) {
             return (
-              <strong key={index} className="font-extrabold text-indigo-700 bg-indigo-50/70 px-1.5 py-0.5 rounded-md border border-indigo-100/50">
+              <strong key={index} className="font-extrabold text-indigo-400 bg-indigo-900/60 px-1.5 py-0.5 rounded-md border border-indigo-500/30">
                 {part}
               </strong>
             );
@@ -426,15 +428,15 @@ export default function FlashcardViewer({
       setNoteText(progress[currentActiveWord.id]?.notes ?? currentActiveWord.mnemonic ?? '');
       setIsEditingNote(false);
       setIsFlipped(false);
+      setCustomSentenceInput('');
     }
-  }, [currentIndex, filteredWords.length, currentActiveWord.id, progress]);
+  }, [currentIndex, filteredWords.length, currentActiveWord.id, progress, currentActiveWord.mnemonic]);
 
-  // Navigate index safely
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     } else {
-      setCurrentIndex(filteredWords.length - 1); // Wrap around
+      setCurrentIndex(filteredWords.length - 1);
     }
   };
 
@@ -442,19 +444,18 @@ export default function FlashcardViewer({
     if (currentIndex < filteredWords.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      setCurrentIndex(0); // Wrap around
+      setCurrentIndex(0);
     }
   };
 
   // Keyboard Hotkeys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip hotkeys if focused inside an input/textarea
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
         return;
       }
 
-      if (filteredWords.length === 0) return;
+      if (filteredWords.length === 0 || !isSessionActive) return;
 
       const userShortcuts = settings?.shortcuts || {
         'Space': 'flip',
@@ -465,7 +466,6 @@ export default function FlashcardViewer({
         'Enter': 'audio'
       };
 
-      // Handle standard space code normalization
       const keyIdentifier = e.code === 'Space' ? 'Space' : e.code;
       const action = userShortcuts[keyIdentifier];
 
@@ -514,7 +514,7 @@ export default function FlashcardViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredWords, currentIndex, currentActiveWord.id, rateAndMaybeConfirm, settings?.shortcuts, handleNext, handlePrev]);
+  }, [filteredWords, currentIndex, currentActiveWord.id, isSessionActive, settings?.shortcuts]);
 
   // Text to Speech
   const speakWord = () => {
@@ -522,21 +522,19 @@ export default function FlashcardViewer({
     const utterance = new SpeechSynthesisUtterance(currentActiveWord.word);
     utterance.lang = 'en-US';
     utterance.rate = 0.85;
-    window.speechSynthesis.cancel(); // Clear queued speech
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
 
-  // Autoplay voice pronunciation if enabled
   useEffect(() => {
-    if (settings?.autoPlayAudio && currentActiveWord.word && variableToggles?.audio !== false) {
+    if (isSessionActive && settings?.autoPlayAudio && currentActiveWord.word && variableToggles?.audio !== false) {
       const timer = setTimeout(() => {
         speakWord();
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [currentActiveWord.id, settings?.autoPlayAudio, variableToggles]);
+  }, [currentActiveWord.id, isSessionActive, settings?.autoPlayAudio, variableToggles]);
 
-  // Select a random animation if "shuffle" is configured
   useEffect(() => {
     if ((settings?.flashcardAnimation || 'shuffle') === 'shuffle') {
       const animations = ['flip-h', 'flip-v', 'slide', 'fade', 'zoom'] as const;
@@ -546,1033 +544,515 @@ export default function FlashcardViewer({
   }, [currentActiveWord.id, settings?.flashcardAnimation]);
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
-  const shouldColorize = settings?.colorizeMainWord !== false;
 
-  const frontWordColorClass = shouldColorize 
-    ? (activeStatus === 'know' 
-        ? 'text-emerald-600' 
-        : activeStatus === 'dont_know' 
-          ? 'text-rose-600' 
-          : activeStatus === 'confusion' 
-            ? 'text-amber-500' 
-            : 'text-indigo-950')
-    : 'text-indigo-950';
+  const handleSaveCustomSentence = () => {
+    if (!customSentenceInput.trim() || !currentActiveWord.id) return;
+    const existing = progress[currentActiveWord.id]?.notes || '';
+    const updated = existing 
+      ? `${existing}\nSentence: ${customSentenceInput.trim()}`
+      : `Sentence: ${customSentenceInput.trim()}`;
+    
+    onUpdateNotes(currentActiveWord.id, updated);
+    setNoteText(updated);
+    setCustomSentenceInput('');
+    setSentenceSaveToast(true);
+    setTimeout(() => setSentenceSaveToast(false), 2000);
+  };
 
-  const backWordColorClass = shouldColorize
-    ? (activeStatus === 'know' 
-        ? 'text-emerald-600' 
-        : activeStatus === 'dont_know' 
-          ? 'text-rose-600' 
-          : activeStatus === 'confusion' 
-            ? 'text-amber-500' 
-            : 'text-slate-800')
-    : 'text-slate-800';
-
-  const animationType = (settings?.flashcardAnimation || 'shuffle') === 'shuffle' ? currentRandomAnim : (settings?.flashcardAnimation || 'shuffle');
-
-  // Helper to dynamically adjust vocabulary word font size based on character count
+  // Helper to dynamically adjust font size
   const getDynamicFontSizeClass = (word: string) => {
     const len = word ? word.length : 0;
-    if (len <= 6) {
-      return 'text-4xl sm:text-6xl md:text-7xl lg:text-8xl';
-    } else if (len <= 9) {
-      return 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl';
-    } else if (len <= 12) {
-      return 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl';
-    } else if (len <= 15) {
-      return 'text-xl sm:text-3xl md:text-4xl lg:text-5xl break-all';
-    } else {
-      return 'text-lg sm:text-2xl md:text-3xl lg:text-4xl break-all';
-    }
+    if (len <= 6) return 'text-4xl sm:text-6xl md:text-7xl font-black';
+    if (len <= 9) return 'text-3xl sm:text-5xl md:text-6xl font-black';
+    if (len <= 12) return 'text-2xl sm:text-4xl md:text-5xl font-black';
+    return 'text-xl sm:text-3xl md:text-4xl font-black break-all';
   };
 
-  // Helper to dynamically adjust synonyms font size based on character count
-  const getDynamicSynonymsFontSizeClass = (synonyms: string) => {
-    const len = synonyms ? synonyms.length : 0;
-    if (len <= 12) {
-      return 'text-lg sm:text-2xl md:text-3xl lg:text-4xl';
-    } else if (len <= 20) {
-      return 'text-base sm:text-xl md:text-2xl lg:text-3xl';
-    } else if (len <= 30) {
-      return 'text-sm sm:text-lg md:text-xl lg:text-2xl';
-    } else {
-      return 'text-xs sm:text-base md:text-lg lg:text-xl break-all';
-    }
+  // Generate IPA phonetic string for visual display
+  const getPhoneticSpelling = (word: string) => {
+    if (!word) return '';
+    return `/${word.toLowerCase()}/`;
   };
 
-  // Helper to retrieve shortcut key representations for each action
-  const getShortcutKeyForAction = (action: string): string => {
-    const userShortcuts = settings?.shortcuts || {
-      'Space': 'flip',
-      'ArrowRight': 'know',
-      'ArrowLeft': 'dont_know',
-      'ArrowUp': 'confusion',
-      'ArrowDown': 'skip',
-      'Enter': 'audio'
-    };
+  // Get active example sentence
+  const activeExampleSentence = currentActiveWord.example || 
+    (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id][0]) || 
+    `Take the time to sit back and listen to ${currentActiveWord.word} and establish a routine for yourself.`;
 
-    const keys = Object.entries(userShortcuts)
-      .filter(([_, act]) => act === action)
-      .map(([key, _]) => {
-        switch (key) {
-          case 'ArrowRight': return '→';
-          case 'ArrowLeft': return '←';
-          case 'ArrowUp': return '↑';
-          case 'ArrowDown': return '↓';
-          case 'Space': return 'Space';
-          case 'Enter': return 'Enter';
-          case 'Digit1': return '1';
-          case 'Digit2': return '2';
-          case 'Digit3': return '3';
-          case 'Digit4': return '4';
-          case 'Digit5': return '5';
-          case 'Digit6': return '6';
-          case 'KeyA': return 'A';
-          case 'KeyS': return 'S';
-          case 'KeyD': return 'D';
-          case 'KeyF': return 'F';
-          case 'KeyG': return 'G';
-          default: return key;
-        }
-      });
+  // =========================================================================
+  // RENDER STAGE 1: INTERMEDIATE FILTER & SETUP SCREEN (isSessionActive = false)
+  // =========================================================================
+  if (!isSessionActive) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto" id="flashcard-setup-view">
+        {/* Header Hero Banner */}
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-indigo-300 to-transparent pointer-events-none" />
+          
+          <div className="relative z-10 space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-indigo-200 border border-white/10">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Flashcard Focus Mode</span>
+            </div>
+            
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans">
+              Flashcard Study Setup
+            </h1>
+            <p className="text-xs sm:text-sm text-indigo-200 max-w-2xl font-sans leading-relaxed">
+              Configure your group filters and study options. Entering flashcards will open an immersive, distraction-free card deck with maximum screen space.
+            </p>
 
-    return keys.length > 0 ? keys.join('/') : '';
-  };
+            <div className="flex flex-wrap items-center gap-4 pt-3">
+              <div className="bg-white/10 border border-white/15 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-emerald-400" />
+                <div>
+                  <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-wider">Ready Words</p>
+                  <p className="text-lg font-black text-white">{filteredWords.length} Words Selected</p>
+                </div>
+              </div>
 
-  // Determine stage & face class names based on animation type
-  let outerWrapperClass = '';
-  let frontFaceClass = '';
-  let backFaceClass = '';
-
-  if (animationType === 'flip-h') {
-    outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-2.5 sm:p-6 md:p-8 flex flex-col justify-between backface-hidden shadow-xl hover:shadow-2xl transition-all duration-300 before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
-    backFaceClass = 'absolute inset-0 bg-white p-2.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl transform rotate-y-180 backface-hidden flex flex-col justify-between before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
-  } else if (animationType === 'flip-v') {
-    outerWrapperClass = `w-full h-full relative transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-x-180' : ''}`;
-    frontFaceClass = 'absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-2.5 sm:p-6 md:p-8 flex flex-col justify-between backface-hidden shadow-xl hover:shadow-2xl transition-all duration-300 before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
-    backFaceClass = 'absolute inset-0 bg-white p-2.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl transform rotate-x-180 backface-hidden flex flex-col justify-between before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none';
-  } else if (animationType === 'slide') {
-    outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-2.5 sm:p-6 md:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all duration-500 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
-    }`;
-    backFaceClass = `absolute inset-0 bg-white p-2.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-all duration-500 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0 pointer-events-none'
-    }`;
-  } else if (animationType === 'fade') {
-    outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-2.5 sm:p-6 md:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-opacity duration-300 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'
-    }`;
-    backFaceClass = `absolute inset-0 bg-white p-2.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-opacity duration-300 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'
-    }`;
-  } else if (animationType === 'zoom') {
-    outerWrapperClass = 'w-full h-full relative';
-    frontFaceClass = `absolute inset-0 bg-white border border-indigo-100/80 rounded-3xl p-2.5 sm:p-6 md:p-8 flex flex-col justify-between shadow-xl hover:shadow-2xl transition-all duration-300 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? 'scale-75 opacity-0 pointer-events-none' : 'scale-100 opacity-100'
-    }`;
-    backFaceClass = `absolute inset-0 bg-white p-2.5 sm:p-5 rounded-3xl border border-indigo-100/80 shadow-xl flex flex-col justify-between transition-all duration-300 ease-in-out before:absolute before:inset-2 border:border-indigo-50/50 before:rounded-[20px] before:pointer-events-none ${
-      isFlipped ? 'scale-100 opacity-100' : 'scale-75 opacity-0 pointer-events-none'
-    }`;
-  }
-
-  return (
-    <div className="space-y-6" id="flashcard-viewer-container">
-      {/* Top Filter and Customization Bar */}
-      <div className="bg-white p-2.5 sm:p-3.5 md:p-5 rounded-2xl border border-slate-200/60 shadow-xs space-y-2 md:space-y-0 md:flex md:items-center md:justify-between" id="flashcard-filters">
-        {/* Mobile Filter Toggle Button Bar */}
-        <div className="flex items-center justify-between md:hidden w-full">
-          <button
-            type="button"
-            onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 rounded-xl text-xs font-bold text-indigo-700 cursor-pointer transition"
-          >
-            <Filter className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Filters & Order</span>
-            <span className="text-[10px] text-indigo-400">{isMobileFiltersOpen ? '▲' : '▼'}</span>
-          </button>
-          <span className="text-xs font-bold text-slate-500 font-sans">
-            {currentIndex + 1} / {filteredWords.length} Words
-          </span>
+              <button
+                type="button"
+                onClick={() => setIsSessionActive(true)}
+                disabled={filteredWords.length === 0}
+                className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-black rounded-2xl transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center gap-2.5 text-sm font-sans"
+              >
+                <Play className="w-5 h-5 fill-current" />
+                <span>Start Flashcards ({filteredWords.length})</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className={`w-full md:w-auto flex-col md:flex-row gap-3 items-stretch md:items-center justify-between ${isMobileFiltersOpen ? 'flex pt-2 border-t border-slate-100 md:pt-0 md:border-0' : 'hidden md:flex'}`}>
-          <div className="flex items-center gap-3 overflow-x-auto md:overflow-x-visible md:overflow-visible pb-2 md:pb-0 scrollbar-none flex-nowrap md:flex-wrap w-full md:w-auto">
-          
-          {/* Select Group (Multi-select) */}
-          <div className="space-y-1 relative flex-shrink-0" id="group-multi-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Vocabulary Group</label>
+        {/* Filter Configuration Controls */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+              <Filter className="w-5 h-5 text-indigo-600" />
+              <span>Study Deck Filters</span>
+            </h3>
             <button
-              type="button"
-              onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 md:px-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 whitespace-nowrap cursor-pointer text-left"
+              onClick={() => {
+                setSelectedGroups(uniqueGroups);
+                setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
+                setSelectedFolder('all');
+                setStudyOrder('random');
+              }}
+              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer hover:underline"
             >
-              <div className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                <span>
-                  {selectedGroups.length === uniqueGroups.length 
-                    ? `All Groups` 
-                    : selectedGroups.length === 0 
-                    ? 'No Group Selected' 
-                    : `${selectedGroups.length} Groups`}
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400">▼</span>
+              Reset All Filters
             </button>
-
-            {isGroupDropdownOpen && (
-              <>
-                {/* Click outside overlay */}
-                <div className="fixed inset-0 bg-slate-900/40 md:bg-transparent z-40 md:z-10" onClick={() => setIsGroupDropdownOpen(false)} />
-                
-                {/* Dropdown panel / Bottom sheet */}
-                <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-80 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-sm md:text-xs font-bold text-slate-600">Group Filter ({selectedGroups.length})</span>
-                    <div className="flex gap-2 text-xs md:text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedGroups(uniqueGroups)}
-                        className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
-                      >
-                        Select All
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedGroups([])}
-                        className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Grid of Groups */}
-                  <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {uniqueGroups.map((gVal) => {
-                      const isSelected = selectedGroups.includes(gVal);
-                      return (
-                        <button
-                          key={gVal}
-                          type="button"
-                          onClick={() => {
-                            setSelectedGroups(prev => 
-                              prev.includes(gVal)
-                                ? prev.filter(x => x !== gVal)
-                                : [...prev, gVal]
-                            );
-                          }}
-                          className={`py-2 md:py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-indigo-600 text-white shadow-xs'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/60'
-                          }`}
-                        >
-                          {gVal}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsGroupDropdownOpen(false)}
-                      className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[11px] font-bold rounded-xl transition cursor-pointer"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
-          {/* Select Status (Multi-select) */}
-          <div className="space-y-1 relative flex-shrink-0" id="status-multi-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Tag Filter</label>
-            <button
-              type="button"
-              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-              className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-3 py-2 md:px-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 flex items-center justify-between gap-2 whitespace-nowrap cursor-pointer text-left"
-            >
-              <div className="flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-amber-500" />
-                <span>
-                  {selectedStatuses.length === 4 
-                    ? 'All Tags' 
-                    : selectedStatuses.length === 0 
-                    ? 'No Tag Selected' 
-                    : selectedStatuses.length === 1
-                    ? selectedStatuses.map(s => {
-                        if (s === 'know') return 'Learned';
-                        if (s === 'dont_know') return 'Not Learned';
-                        if (s === 'confusion') return 'Confused';
-                        return 'Unrated';
-                      })[0]
-                    : `${selectedStatuses.length} Tags`}
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400">▼</span>
-            </button>
-
-            {isStatusDropdownOpen && (
-              <>
-                {/* Click outside overlay */}
-                <div className="fixed inset-0 bg-slate-900/40 md:bg-transparent z-40 md:z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                
-                {/* Dropdown panel / Bottom sheet */}
-                <div className="fixed bottom-0 left-0 right-0 md:absolute md:top-full md:left-0 md:bottom-auto md:right-auto mt-2 w-full md:w-56 bg-white border border-slate-200/80 rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-xl p-6 md:p-4 z-50 md:z-20 space-y-3 font-sans animate-fadeIn">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-sm md:text-xs font-bold text-slate-600 font-sans">Tag Filter</span>
-                    <div className="flex gap-2 text-xs md:text-[10px]">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
-                          setUserHasManuallyChangedStatuses(true);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-700 font-extrabold cursor-pointer hover:underline"
-                      >
-                        Select All
-                      </button>
-                      <span className="text-slate-200">|</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedStatuses([]);
-                          setUserHasManuallyChangedStatuses(true);
-                        }}
-                        className="text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer hover:underline"
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    {[
-                      { key: 'know', label: 'Learned (Green)', color: 'bg-emerald-500' },
-                      { key: 'confusion', label: 'Confused (Yellow)', color: 'bg-amber-500' },
-                      { key: 'dont_know', label: 'Not Learned (Red)', color: 'bg-rose-500' },
-                      { key: 'unrated', label: 'Unrated (Gray)', color: 'bg-slate-400' }
-                    ].map(st => {
-                      const isSelected = selectedStatuses.includes(st.key);
-                      return (
-                        <button
-                          key={st.key}
-                          type="button"
-                          onClick={() => {
-                            setSelectedStatuses(prev => 
-                              prev.includes(st.key)
-                                ? prev.filter(x => x !== st.key)
-                                : [...prev, st.key]
-                            );
-                            setUserHasManuallyChangedStatuses(true);
-                          }}
-                          className={`w-full text-left px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg text-xs font-bold flex items-center justify-between transition cursor-pointer ${
-                            isSelected ? 'bg-indigo-50 text-indigo-900' : 'hover:bg-slate-50 text-slate-600'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2.5 h-2.5 rounded-full ${st.color}`} />
-                            <span>{st.label}</span>
-                          </div>
-                          {isSelected && (
-                            <span className="text-[10px] text-indigo-600 font-sans">✓</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setIsStatusDropdownOpen(false)}
-                      className="w-full md:w-auto px-4 py-2 bg-slate-950 hover:bg-slate-900 text-white text-xs md:text-[10px] font-bold rounded-xl transition cursor-pointer"
-                    >
-                      Apply
-                    </button>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Group Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Vocabulary Groups ({selectedGroups.length}/{uniqueGroups.length})
+                </label>
+                <div className="flex gap-2 text-xs">
+                  <button
+                    onClick={() => setSelectedGroups(uniqueGroups)}
+                    className="text-indigo-600 font-bold hover:underline"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <button
+                    onClick={() => setSelectedGroups([])}
+                    className="text-rose-600 font-bold hover:underline"
+                  >
+                    Clear All
+                  </button>
                 </div>
-              </>
-            )}
+              </div>
+
+              <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto p-1 bg-slate-50 border border-slate-200/60 rounded-2xl">
+                {uniqueGroups.map((gVal) => {
+                  const isSelected = selectedGroups.includes(gVal);
+                  return (
+                    <button
+                      key={gVal}
+                      type="button"
+                      onClick={() => {
+                        setSelectedGroups(prev => 
+                          prev.includes(gVal) ? prev.filter(x => x !== gVal) : [...prev, gVal]
+                        );
+                      }}
+                      className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/60'
+                      }`}
+                    >
+                      {gVal}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Status Tags Selection */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Tag Status Filter
+                </label>
+                <div className="flex gap-2 text-xs">
+                  <button
+                    onClick={() => {
+                      setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
+                      setUserHasManuallyChangedStatuses(true);
+                    }}
+                    className="text-indigo-600 font-bold hover:underline"
+                  >
+                    All Tags
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { key: 'unrated', label: 'Unrated (Gray)', color: 'bg-slate-400' },
+                  { key: 'dont_know', label: 'Not Learned (Red)', color: 'bg-rose-500' },
+                  { key: 'confusion', label: 'Confused (Yellow)', color: 'bg-amber-500' },
+                  { key: 'know', label: 'Learned (Green)', color: 'bg-emerald-500' }
+                ].map(st => {
+                  const isSelected = selectedStatuses.includes(st.key);
+                  return (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStatuses(prev => 
+                          prev.includes(st.key)
+                            ? prev.filter(x => x !== st.key)
+                            : [...prev, st.key]
+                        );
+                        setUserHasManuallyChangedStatuses(true);
+                      }}
+                      className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between transition cursor-pointer border ${
+                        isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-3xs' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-3 h-3 rounded-full ${st.color}`} />
+                        <span>{st.label}</span>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 text-indigo-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Custom Bookmarks Select */}
-          <div className="space-y-1 flex-shrink-0" id="bookmark-folder-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider font-sans">Bookmark List</label>
-            <div className="relative flex items-center">
-              <Bookmark className="w-3.5 h-3.5 text-emerald-500 absolute left-3 pointer-events-none" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+            {/* Bookmark Folder */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Bookmark Collection</label>
               <select
                 value={selectedFolder}
                 onChange={(e) => setSelectedFolder(e.target.value)}
-                className="bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-8 pr-8 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700 cursor-pointer appearance-none flex-shrink-0 min-w-[120px]"
+                className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               >
-                <option value="all">All Lists</option>
+                <option value="all">All Words (No Folder Limit)</option>
                 {folders.map(f => (
                   <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
               </select>
-              <span className="text-[10px] text-slate-400 absolute right-3 pointer-events-none">▼</span>
+            </div>
+
+            {/* Study Order */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sequence / Order</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStudyOrder('serial')}
+                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    studyOrder === 'serial' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <span>Serial</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStudyOrder('alphabetical')}
+                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    studyOrder === 'alphabetical' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="font-mono text-[10px] font-black">A-Z</span>
+                  <span>Alphabetical</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStudyOrder('random')}
+                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    studyOrder === 'random' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Shuffle</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Study Order Control */}
-          <div className="space-y-1 font-sans flex-shrink-0" id="study-order-selector">
-            <label className="hidden md:block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Study Order</label>
-            <div className="flex bg-slate-50 border border-slate-200 rounded-xl p-1 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setStudyOrder('serial')}
-                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                  studyOrder === 'serial'
-                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <ArrowUpDown className="w-3 h-3" />
-                <span>Serial</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setStudyOrder('alphabetical')}
-                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                  studyOrder === 'alphabetical'
-                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <span className="text-[9px] font-black font-mono">A-Z</span>
-                <span>Alphabetical</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setStudyOrder('random')}
-                className={`px-2.5 py-1 text-[11px] md:text-xs font-extrabold rounded-lg transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap ${
-                  studyOrder === 'random'
-                    ? 'bg-white text-indigo-700 shadow-xs border-slate-100'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Random</span>
-              </button>
-            </div>
-            {studyOrder === 'random' && (
-              <button
-                type="button"
-                onClick={() => setShuffleKey(prev => prev + 1)}
-                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 p-1 rounded-lg cursor-pointer transition flex items-center justify-center mt-0.5 ml-1 absolute left-full top-0"
-                title="Reshuffle"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+          {/* Action Footer */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">
+              Matching Words: <span className="text-indigo-600 font-extrabold">{filteredWords.length}</span>
+            </span>
 
-        {/* Hotkeys helper button */}
-        <button
-          onClick={() => setShowHotkeysHelp(prev => !prev)}
-          className={`hidden md:flex items-center gap-2 px-3 py-2 border rounded-xl text-sm font-semibold transition flex-shrink-0 ${
-            showHotkeysHelp ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
-          }`}
-        >
-          <Keyboard className="w-4 h-4" />
-          <span className="font-sans">Keyboard Shortcuts</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => setIsSessionActive(true)}
+              disabled={filteredWords.length === 0}
+              className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold rounded-2xl transition cursor-pointer shadow-md shadow-indigo-500/20 flex items-center gap-2 text-sm"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Enter Focus Mode →</span>
+            </button>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Hotkeys Help Tooltip Box */}
-      {showHotkeysHelp && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900 grid grid-cols-2 md:grid-cols-4 gap-4 shadow-inner animate-fadeIn">
-          <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Space</kbd> or Click</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">Flip Card</p>
-          </div>
-          <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">➡</kbd> Right Arrow</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Learned" & Next</p>
-          </div>
-          <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬅</kbd> Left Arrow</p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Not Learned" & Next</p>
-          </div>
-          <div>
-            <p className="font-bold flex items-center gap-1.5 font-sans"><kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">⬆</kbd> / <kbd className="bg-white px-2 py-0.5 border rounded-md font-mono text-xs">Enter</kbd></p>
-            <p className="text-xs text-amber-800 font-sans mt-0.5">Mark "Confused" & Next</p>
-          </div>
+  // =========================================================================
+  // RENDER STAGE 2: IMMERSIVE FULL-SCREEN FLASHCARD FOCUS MODE (isSessionActive = true)
+  // =========================================================================
+  return (
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 text-white flex flex-col h-screen w-screen overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
+      {/* 1. Fullscreen Top Header Bar */}
+      <header className="h-14 sm:h-16 px-4 sm:px-8 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-950/60 backdrop-blur-md z-30">
+        <button
+          onClick={() => setIsSessionActive(false)}
+          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition cursor-pointer border border-white/10"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Exit Focus Mode</span>
+        </button>
+
+        {/* Center Title & Counter */}
+        <div className="text-center">
+          <h2 className="text-xs sm:text-sm font-extrabold text-white tracking-wide flex items-center justify-center gap-1.5">
+            <span>Group {currentActiveWord.group || 1}</span>
+            <span className="text-indigo-400">•</span>
+            <span className="text-indigo-200 font-mono text-[11px] sm:text-xs">
+              {currentIndex + 1}/{filteredWords.length}
+            </span>
+          </h2>
         </div>
-      )}
 
-      {filteredWords.length === 0 ? (
-        <div className="text-center py-20 bg-amber-50/40 border border-dashed border-amber-200 rounded-3xl space-y-4 max-w-xl mx-auto" id="no-filtered-words">
-          <div className="space-y-1">
-            <h3 className="font-extrabold text-slate-800 text-base font-sans">No words found!</h3>
-            <p className="text-xs text-slate-500 font-medium font-sans">There are no words under your selected filters or bookmark list.</p>
-          </div>
+        {/* Right Tools */}
+        <div className="flex items-center gap-2">
+          {variableToggles?.audio !== false && (
+            <button
+              onClick={speakWord}
+              className="p-2 bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white rounded-full transition cursor-pointer"
+              title="Listen Audio"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+          )}
+
           <button
-            onClick={() => {
-              setSelectedGroups(Array.from({ length: 37 }, (_, i) => i + 1));
-              setSelectedStatuses(['dont_know', 'know', 'confusion', 'unrated']);
-              setUserHasManuallyChangedStatuses(true);
-              setSelectedFolder('all');
-            }}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm font-sans cursor-pointer shadow-md"
+            onClick={() => handleOpenReportModal(currentActiveWord)}
+            className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-full transition cursor-pointer"
+            title="Report Word Error"
           >
-            Reset Filters
+            <AlertTriangle className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => setIsSessionActive(false)}
+            className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer"
+            title="Close Session"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" id="flashcard-interactive-grid">
-          {/* Main Flashcard Column */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* The Flash Card Container with Flip Animation */}
-            <div
-              onClick={() => {
-                if (touchHandled.current) {
-                  touchHandled.current = false;
-                  return;
-                }
-                setIsFlipped(prev => !prev);
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-              className="group cursor-pointer perspective h-[20rem] sm:h-[25rem] md:h-[28rem] relative w-full animate-card-float select-none"
-              id="vocabulary-card-stage"
-            >
-              {/* Stacked background cards below to show a pile */}
-              <div className="absolute inset-x-4 bottom-[-14px] h-full bg-slate-100/70 border border-slate-200/50 rounded-3xl shadow-sm rotate-2 pointer-events-none z-0"></div>
-              <div className="absolute inset-x-2 bottom-[-7px] h-full bg-slate-50 border border-slate-200/80 rounded-3xl shadow-md -rotate-1 pointer-events-none z-0"></div>
+      </header>
 
-              <div className={`${outerWrapperClass} z-10 relative`}>
-                {/* FRONT FACE (Word) */}
-                <div className={frontFaceClass}>
-                  {/* Main display word centered in card */}
-                  <div className="my-auto text-center space-y-3 w-full max-w-full overflow-hidden px-2 flex flex-col items-center justify-center">
-                    <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} font-['Poppins'] font-black tracking-tight select-none py-1 break-words text-center ${frontWordColorClass}`}>
-                      {currentActiveWord.word}
-                    </h1>
-                    <div className="flex items-center justify-center gap-2">
-                      {variableToggles?.audio !== false && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            speakWord();
-                          }}
-                          className="p-2 sm:p-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 transition shadow-xs animate-pulse cursor-pointer"
-                          title="Listen Pronunciation"
-                        >
-                          <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                      )}
-                      <a
-                        href={getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-2 sm:p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-xl transition shadow-xs flex items-center justify-center"
-                        title="Search on Google"
-                      >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                        </svg>
-                      </a>
-                    </div>
-                    {currentActiveWord.extraWord && variableToggles?.extraWord !== false && (
-                      <div className="text-xs sm:text-base font-extrabold text-[#009966] font-[Verdana] select-none tracking-wide flex items-center justify-center gap-1.5 pt-0.5">
-                        <span>{currentActiveWord.extraWord}</span>
-                        <span className="text-[#009966] font-black">:</span>
-                        <span className="font-bold text-[#009966] font-bengali">{currentActiveWord.extraMeaning}</span>
-                      </div>
-                    )}
-                  </div>
+      {/* 2. Main Flashcard Canvas Area */}
+      <main className="flex-1 overflow-y-auto px-4 py-4 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full gap-4">
+        
+        {/* Flashcard Stack Stage */}
+        <div className="w-full relative my-auto">
+          {/* Stacked Cards visual depth effect underneath */}
+          <div className="absolute inset-x-6 sm:inset-x-8 bottom-[-14px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
+          <div className="absolute inset-x-3 sm:inset-x-4 bottom-[-7px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
 
-                  {/* Footer hint */}
-                  <div className="flex justify-between items-center text-xs text-slate-400 font-sans border-t border-slate-100/60 pt-2 mt-auto">
-                    <span className="text-[10px] text-indigo-400 font-semibold sm:hidden">Swipe left/right to navigate</span>
-                    <span className="flex items-center gap-1 font-mono text-[11px] text-slate-300 ml-auto">
-                      ID: {currentActiveWord.id}
-                    </span>
-                  </div>
-                </div>
+          {/* Active Card Card Container */}
+          <div
+            onClick={() => {
+              if (touchHandled.current) {
+                touchHandled.current = false;
+                return;
+              }
+              setIsFlipped(prev => !prev);
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between w-full min-h-[380px] sm:min-h-[420px] relative z-10 cursor-pointer transition-transform duration-300 hover:scale-[1.01]"
+          >
+            {/* Top Row: Speaker Icon & Word Meta */}
+            <div className="flex items-center justify-between w-full">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
+                Group {currentActiveWord.group}
+              </span>
 
-                {/* BACK FACE (Meaning & Synonyms) */}
-                <div className={backFaceClass}>
-                  <div className="space-y-1.5 flex-1 flex flex-col justify-between">
-                    <div className="flex justify-end items-center pb-1 border-b border-slate-100">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-base sm:text-xl font-black ${backWordColorClass}`}>{currentActiveWord.word}</span>
-                        <a
-                          href={getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 rounded-lg transition"
-                          title="Search on Google"
-                        >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                          </svg>
-                        </a>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenReportModal(currentActiveWord);
-                          }}
-                          className="p-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer"
-                          title="Report Error"
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Bengali Meaning & Synonyms layout with auto-centering */}
-                    {(!currentActiveWord.synonyms || variableToggles?.synonyms === false) ? (
-                      <div className="text-center py-4 flex flex-col items-center justify-center">
-                        <p className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-emerald-600 leading-relaxed font-bengali">{currentActiveWord.meaning}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Bengali Meaning */}
-                        <div className="text-center py-0.5">
-                          <p className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-emerald-600 leading-normal font-bengali">{currentActiveWord.meaning}</p>
-                        </div>
-
-                        {/* Synonyms */}
-                        <div className="space-y-0 text-center py-1 border-t border-slate-100/40 w-full max-w-full overflow-hidden px-1">
-                          <p className="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-widest font-sans">{placeLabels?.place5 || 'Synonyms'}</p>
-                          <p className={`${getDynamicSynonymsFontSizeClass(currentActiveWord.synonyms || '')} font-extrabold text-indigo-950 tracking-tight leading-normal break-words font-sans`}>{currentActiveWord.synonyms || 'N/A'}</p>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Example Sentences */}
-                    {variableToggles?.example !== false && (
-                      <div className="pt-1 border-t border-slate-100 space-y-0.5 text-left max-w-xl mx-auto">
-                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans text-center md:text-left">{placeLabels?.place3 || 'Example Sentence'}</p>
-                        {currentActiveWord.example || (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id].length > 0) ? (
-                          <div className="space-y-1 max-h-[80px] sm:max-h-[110px] overflow-y-auto pr-1 font-sans">
-                            {currentActiveWord.example ? (
-                              <div className="flex items-start gap-1 text-xs sm:text-[15px] font-medium text-slate-700 leading-relaxed font-sans">
-                                <span className="text-indigo-500 mt-1 flex-shrink-0 text-xs leading-none">•</span>
-                                <p className="flex-1">
-                                  {renderSentence(currentActiveWord.example)}
-                                </p>
-                              </div>
-                            ) : (
-                              sentencesData[currentActiveWord.id].slice(0, 1).map((sent, index) => (
-                                <div key={index} className="flex items-start gap-1 text-xs sm:text-[15px] font-medium text-slate-700 leading-relaxed font-sans">
-                                  <span className="text-indigo-500 mt-1 flex-shrink-0 text-xs leading-none">•</span>
-                                  <p className="flex-1">
-                                    {renderSentence(sent)}
-                                  </p>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-slate-450 italic font-sans pl-3">No example found.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Mnemonic / Memory Aid Note */}
-                    {(noteText || currentActiveWord.mnemonic) && (
-                      <div className="pt-1 border-t border-slate-100/80 space-y-0.5 text-left max-w-xl mx-auto font-sans">
-                        <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest font-sans text-center md:text-left flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-indigo-500 inline" />
-                          <span>Mnemonic / Memory Aid</span>
-                        </p>
-                        <p className="text-xs sm:text-sm md:text-[15px] font-extrabold text-slate-800 leading-relaxed font-bengali">
-                          "{noteText || currentActiveWord.mnemonic}"
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Rating Controllers & Navigation */}
-            <div className="bg-white p-2.5 sm:p-5 rounded-2xl border border-slate-200/60 shadow-xs" id="card-controls">
-              {/* Mobile View: 3 Tag Buttons placed where prev-next buttons were */}
-              <div className="flex sm:hidden items-center justify-between gap-1.5 w-full">
-                <button
-                  onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
-                    activeStatus === 'dont_know'
-                      ? 'bg-rose-500 text-white border-rose-600 shadow-xs'
-                      : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                  }`}
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  <span>Not Learned</span>
-                </button>
-
-                <button
-                  onClick={() => rateAndMaybeConfirm('confusion', true)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
-                    activeStatus === 'confusion'
-                      ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                      : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
-                  }`}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Confused</span>
-                </button>
-
-                <button
-                  onClick={() => rateAndMaybeConfirm('know', true)}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
-                    activeStatus === 'know'
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
-                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                  }`}
-                >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  <span>Learned</span>
-                </button>
-              </div>
-
-              {/* Desktop View: Prev/Next & Desktop Tag Buttons */}
-              <div className="hidden sm:flex flex-row justify-between items-center gap-4">
-                {/* Navigation arrows */}
-                <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                {variableToggles?.audio !== false && (
                   <button
-                    onClick={handlePrev}
-                    className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 active:scale-95 rounded-xl border border-slate-200 transition cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      speakWord();
+                    }}
+                    className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-90"
+                    title="Speak word"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <Volume2 className="w-5 h-5" />
                   </button>
-                  <span className="text-sm font-bold text-slate-500 font-sans select-none">
-                    {currentIndex + 1} / {filteredWords.length}
-                  </span>
-                  <button
-                    onClick={handleNext}
-                    className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 active:scale-95 rounded-xl border border-slate-200 transition cursor-pointer"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Tag Buttons (Desktop) */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                    className={`flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
-                      activeStatus === 'dont_know'
-                        ? 'bg-red-500 border-red-600 text-white shadow-md shadow-red-500/10'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    <span>Not Learned</span>
-                    {getShortcutKeyForAction('dont_know') && (
-                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
-                        activeStatus === 'dont_know'
-                          ? 'bg-red-600/50 border border-red-400/40 text-red-100'
-                          : 'bg-slate-100 border border-slate-200 text-slate-400'
-                      }`}>
-                        {getShortcutKeyForAction('dont_know')}
-                      </kbd>
-                    )}
-                  </button>
-
-                  {/* Mark as Confusion */}
-                  <button
-                    onClick={() => rateAndMaybeConfirm('confusion', true)}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
-                      activeStatus === 'confusion'
-                        ? 'bg-amber-500 border-amber-600 text-white shadow-md shadow-amber-500/10'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>Confused</span>
-                    {getShortcutKeyForAction('confusion') && (
-                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
-                        activeStatus === 'confusion'
-                          ? 'bg-amber-600/50 border border-amber-400/40 text-amber-100'
-                          : 'bg-slate-100 border border-slate-200 text-slate-400'
-                      }`}>
-                        {getShortcutKeyForAction('confusion')}
-                      </kbd>
-                    )}
-                  </button>
-
-                  {/* Mark as Know */}            {/* Mark as Know */}
-                  <button
-                    onClick={() => rateAndMaybeConfirm('know', true)}
-                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold font-sans text-xs transition border cursor-pointer ${
-                      activeStatus === 'know'
-                        ? 'bg-emerald-500 border-emerald-600 text-white shadow-md shadow-emerald-500/15'
-                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Learned</span>
-                    {getShortcutKeyForAction('know') && (
-                      <kbd className={`hidden md:inline-flex items-center justify-center h-4 px-1 text-[9px] font-mono rounded font-normal ml-1 ${
-                        activeStatus === 'know'
-                          ? 'bg-emerald-600/50 border border-emerald-400/40 text-emerald-100'
-                          : 'bg-slate-100 border border-slate-200 text-slate-400'
-                      }`}>
-                        {getShortcutKeyForAction('know')}
-                      </kbd>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Bookmark Folders & Personal Mnemonics */}
-          <div className="space-y-6">
-            {/* Quick notes mnemonic card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                    <Edit3 className="w-5 h-5 text-indigo-600" />
-                    Personal Notes & Mnemonics
-                  </h3>
-                  {!isEditingNote && (
-                    <button
-                      onClick={() => setIsEditingNote(true)}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 font-sans"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-
-                {isEditingNote ? (
-                  <div className="space-y-3">
-                    <textarea
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="Write mnemonics or example sentences to easily remember this word..."
-                      rows={4}
-                      className="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans text-slate-700"
-                    ></textarea>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          onUpdateNotes(currentActiveWord.id, noteText);
-                          setIsEditingNote(false);
-                        }}
-                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition font-sans"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNoteText(progress[currentActiveWord.id]?.notes ?? currentActiveWord.mnemonic ?? '');
-                          setIsEditingNote(false);
-                        }}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition font-sans"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="min-h-20 flex flex-col justify-center">
-                    {noteText ? (
-                      isFlipped ? (
-                        <div className="space-y-1.5 animate-fadeIn">
-                          <div className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-xs">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            <span>Mnemonic / Note:</span>
-                          </div>
-                          <p className="text-sm font-black text-emerald-800 bg-emerald-50/90 p-3.5 rounded-xl border border-emerald-200/90 leading-relaxed font-sans shadow-2xs">
-                            "{noteText}"
-                          </p>
-                        </div>
-                      ) : (
-                        <div 
-                          onClick={() => setIsFlipped(true)}
-                          className="p-4 bg-slate-50 hover:bg-emerald-50/50 border border-dashed border-slate-200 hover:border-emerald-300 rounded-xl text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center gap-1.5"
-                          title="Click to flip flashcard"
-                        >
-                          <Eye className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                          <p className="text-xs font-black text-emerald-800 font-sans">
-                            ফ্লাশকার্ড উল্টালে Mnemonic দেখতে পাবেন
-                          </p>
-                          <span className="text-[10px] text-slate-400 font-medium font-sans">(Click card or press Spacebar to flip)</span>
-                        </div>
-                      )
-                    ) : (
-                      <p className="text-xs text-slate-400 font-sans text-center py-6">
-                        No mnemonic notes or hints have been added yet. Click 'Edit' to write one.
-                      </p>
-                    )}
-                  </div>
                 )}
               </div>
             </div>
 
-            {/* Status & Position tags replacing the old folder bookmark lists widget */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs space-y-4">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2 pb-3 border-b border-slate-100 mb-3">
-                <Bookmark className="w-5 h-5 text-indigo-600" />
-                Word Progress & Status
-              </h3>
-
-              <div className="flex flex-col gap-3 font-sans pt-1">
-                {/* Tag 1: Group and Index position */}
-                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Word Position:</span>
-                  <span className="px-3 py-1.5 bg-indigo-50 text-indigo-800 font-extrabold text-xs rounded-lg border border-indigo-100 shadow-3xs">
-                    Group {currentActiveWord.group} • Word {currentIndex + 1} / {filteredWords.length}
-                  </span>
+            {/* Center Content: Front vs Back Face */}
+            <div className="my-auto text-center space-y-3 py-4">
+              {!isFlipped ? (
+                /* FRONT FACE */
+                <div className="space-y-2 animate-fadeIn">
+                  <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} text-slate-900 tracking-tight font-sans`}>
+                    {currentActiveWord.word}
+                  </h1>
+                  <p className="text-sm font-semibold font-mono text-slate-400">
+                    {getPhoneticSpelling(currentActiveWord.word)}
+                  </p>
+                  {currentActiveWord.extraWord && (
+                    <p className="text-xs font-bold text-emerald-600 font-bengali pt-1">
+                      {currentActiveWord.extraWord}: {currentActiveWord.extraMeaning}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
+                    Tap card to reveal definition ↺
+                  </p>
                 </div>
-
-                {/* Tag 2: Active Tag/Status */}
-                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tag Status:</span>
-                  <div className="flex items-center">
-                    {activeStatus === 'know' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Learned
-                      </span>
-                    )}
-                    {activeStatus === 'confusion' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Confused
-                      </span>
-                    )}
-                    {activeStatus === 'dont_know' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        <XCircle className="w-3.5 h-3.5 text-rose-500" /> Not Learned
-                      </span>
-                    )}
-                    {activeStatus === 'unrated' && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg shadow-3xs">
-                        Unrated
-                      </span>
-                    )}
-                  </div>
+              ) : (
+                /* BACK FACE */
+                <div className="space-y-3 animate-fadeIn">
+                  <h2 className="text-xl font-black text-slate-800">{currentActiveWord.word}</h2>
+                  <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
+                    {currentActiveWord.meaning}
+                  </p>
+                  {currentActiveWord.synonyms && (
+                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
+                      <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">Synonyms</span>
+                      <span>{currentActiveWord.synonyms}</span>
+                    </div>
+                  )}
+                  {noteText && (
+                    <div className="pt-2 border-t border-slate-100 text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali">
+                      "{noteText}"
+                    </div>
+                  )}
                 </div>
+              )}
+            </div>
 
-                {/* Status Legend */}
-                <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-around gap-2 text-xs font-medium text-slate-600">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                    <span>= learned</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <XCircle className="w-4 h-4 text-rose-500" />
-                    <span>= not learned</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 text-amber-500" />
-                    <span>= confused</span>
-                  </div>
-                </div>
-              </div>
+            {/* Card Footer Response Controls (Inside card as seen in image 1) */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  activeStatus === 'dont_know'
+                    ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                    : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                }`}
+                title="Not Learned / Hard"
+              >
+                <X className="w-6 h-6 stroke-[3]" />
+              </button>
+
+              <button
+                onClick={() => setIsFlipped(prev => !prev)}
+                className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                title="Flip Card"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => rateAndMaybeConfirm('know', true)}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  activeStatus === 'know'
+                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                    : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                }`}
+                title="Learned / Easy"
+              >
+                <Check className="w-6 h-6 stroke-[3]" />
+              </button>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Pending Rating Confirmation Modal */}
-      {pendingRating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
-            onClick={() => setPendingRating(null)}
-          />
-          
-          {/* Modal Content */}
-          <div className="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center space-y-4">
-              {/* Warning Icon */}
-              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center border border-amber-100">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-950 font-sans">Confirm Tag Change</h3>
-                <p className="text-sm text-slate-600 font-sans leading-relaxed">
-                  You have already marked <span className="font-extrabold text-slate-800">"{pendingRating.wordName}"</span> as{' '}
-                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
-                    pendingRating.oldStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                    pendingRating.oldStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                    'bg-rose-50 text-rose-700 border border-rose-100'
-                  }`}>
-                    {getStatusLabel(pendingRating.oldStatus)}
-                  </span>{' '}
-                  .
-                </p>
-                <p className="text-sm text-slate-600 font-sans leading-relaxed">
-                  Are you sure you want to change its tag to{' '}
-                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
-                    pendingRating.newStatus === 'know' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                    pendingRating.newStatus === 'confusion' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                    pendingRating.newStatus === 'dont_know' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
-                    'bg-slate-50 text-slate-700 border border-slate-100'
-                  }`}>
-                    {getStatusLabel(pendingRating.newStatus)}
-                  </span>{' '}
-                  ?
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-3 w-full pt-2">
-                <button
-                  onClick={() => {
-                    onRateWord(pendingRating.wordId, pendingRating.newStatus);
-                    if (pendingRating.autoAdvance) {
-                      handleNext();
-                    }
-                    setPendingRating(null);
-                  }}
-                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs"
-                >
-                  Yes, Change
-                </button>
-                <button
-                  onClick={() => setPendingRating(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+        {/* "Word in Use" Box (Below Card Stack as seen in attached images) */}
+        <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+            <Lightbulb className="w-4 h-4 text-amber-300 fill-amber-300/20" />
+            <span>Word in use</span>
           </div>
+          <p className="text-xs sm:text-sm font-medium leading-relaxed text-white">
+            {renderSentence(activeExampleSentence)}
+          </p>
         </div>
-      )}
+
+        {/* Interactive Sentence Writer Input Box */}
+        <div className="w-full space-y-2">
+          <div className="bg-white/10 backdrop-blur-md border border-white/15 p-1.5 rounded-full flex items-center gap-2 w-full shadow-lg">
+            <input
+              type="text"
+              value={customSentenceInput}
+              onChange={(e) => setCustomSentenceInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSaveCustomSentence();
+                }
+              }}
+              placeholder="Write your sentence..."
+              className="bg-transparent border-0 px-4 py-2 text-xs sm:text-sm text-white placeholder-indigo-300/60 focus:outline-none flex-1 font-sans"
+            />
+            <button
+              onClick={handleSaveCustomSentence}
+              disabled={!customSentenceInput.trim()}
+              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white p-2.5 rounded-full transition cursor-pointer shadow-md flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+          {sentenceSaveToast && (
+            <p className="text-[11px] font-bold text-emerald-400 text-center animate-fadeIn">
+              ✓ Sentence saved to your word notes!
+            </p>
+          )}
+        </div>
+      </main>
 
       {/* Word Issue Report Modal */}
       {reportingWord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => !isSubmittingReport && setReportingWord(null)}
           />
-          
-          {/* Modal Content */}
-          <div className="relative bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 z-10 animate-fadeIn">
             <div className="space-y-4">
-              {/* Header */}
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center border border-rose-100">
                   <AlertTriangle className="w-5 h-5" />
@@ -1580,7 +1060,7 @@ export default function FlashcardViewer({
                 <div>
                   <h3 className="text-base font-bold text-slate-950 font-sans">Report Error</h3>
                   <p className="text-xs text-slate-500 font-sans">
-                    Word: <span className="font-extrabold text-slate-800">{reportingWord.word}</span> (Group: {reportingWord.group})
+                    Word: <span className="font-extrabold text-slate-800">{reportingWord.word}</span>
                   </p>
                 </div>
               </div>
@@ -1593,7 +1073,6 @@ export default function FlashcardViewer({
                 </div>
               ) : (
                 <div className="space-y-4 pt-1">
-                  {/* Issue Type */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-500 font-sans">Issue Type:</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1601,9 +1080,7 @@ export default function FlashcardViewer({
                         type="button"
                         onClick={() => setReportType('wrong_meaning')}
                         className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'wrong_meaning' 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                          reportType === 'wrong_meaning' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-650'
                         }`}
                       >
                         Incorrect Meaning
@@ -1612,51 +1089,25 @@ export default function FlashcardViewer({
                         type="button"
                         onClick={() => setReportType('wrong_synonym')}
                         className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'wrong_synonym' 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
+                          reportType === 'wrong_synonym' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-650'
                         }`}
                       >
                         Incorrect Synonyms
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setReportType('wrong_example')}
-                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'wrong_example' 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
-                        }`}
-                      >
-                        Incorrect Example
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setReportType('other')}
-                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'other' 
-                            ? 'bg-rose-50 border-rose-200 text-rose-700' 
-                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-650'
-                        }`}
-                      >
-                        Other Issues
-                      </button>
                     </div>
                   </div>
 
-                  {/* Description */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 font-sans">Provide correct info or description:</label>
+                    <label className="text-xs font-bold text-slate-500 font-sans">Provide description:</label>
                     <textarea
                       value={reportDescription}
                       onChange={(e) => setReportDescription(e.target.value)}
                       rows={3}
-                      placeholder="Write the correct info here (e.g., correct meaning, spelling, or example sentence)..."
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-rose-500 font-sans leading-relaxed resize-none"
+                      placeholder="Write correct info..."
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-500 font-sans leading-relaxed resize-none"
                     />
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex items-center gap-3 pt-2">
                     <button
                       type="button"
