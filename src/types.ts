@@ -7,6 +7,7 @@ export interface VocabularyWord {
   extraWord: string; // Word from extra column
   extraMeaning: string; // Meaning from extra column
   example?: string; // Optional usage sentence/example
+  mnemonic?: string; // Mnemonic / memory aid note
 }
 
 export type WordStatus = 'know' | 'dont_know' | 'confusion' | 'unrated'; // 'know', 'dont_know', 'confusion', 'unrated'

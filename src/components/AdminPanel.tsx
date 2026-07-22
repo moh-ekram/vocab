@@ -617,6 +617,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example'], 'place3');
+          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note']);
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
@@ -652,6 +653,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const example = exampleKey ? String(row[exampleKey]).trim() : '';
           const extraWord = extraWordKey ? String(row[extraWordKey]).trim() : '';
           const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
+          const mnemonic = mnemonicKey ? String(row[mnemonicKey]).trim() : '';
 
           wordsList.push({
             id: rawId,
@@ -661,7 +663,8 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
             synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
             extraWord: extraWord,
             extraMeaning: extraMeaning,
-            example
+            example,
+            mnemonic
           });
 
           index++;
@@ -1275,8 +1278,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
               {/* Default Course Card */}
               <div 
                 onClick={() => handleOpenEditModal(defaultGreCourse)}
-                className="p-5 border border-indigo-150 hover:border-indigo-300 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-sm cursor-pointer group"
+                className="p-5 border border-indigo-150 hover:border-indigo-300 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs cursor-pointer group"
                 title="Click to edit default course settings"
+                style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -1299,7 +1303,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
 
               {/* Custom uploaded courses card list */}
               {filteredCustomCoursesList.length === 0 ? (
-                <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn">
+                <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
                   <BookOpen className="w-8 h-8 text-slate-300" />
                   <div>
                     <p className="font-bold text-slate-600">No custom courses found in Firestore.</p>
@@ -1311,8 +1315,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   <div 
                     key={c.id} 
                     onClick={() => handleOpenEditModal(c)}
-                    className="p-5 border border-slate-150 hover:border-indigo-300 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-sm animate-fadeIn cursor-pointer group"
+                    className="p-5 border border-slate-150 hover:border-indigo-300 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn cursor-pointer group"
                     title="Click to modify settings"
+                    style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -1397,7 +1402,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                     onChange={(e) => {
                       setIsSlugTouched(true);
                       // Only allow simple ASCII alphanumeric, hyphen and underscore
-                      setNewCourseId(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ''));
+                      setNewCourseId(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
                     }}
                     placeholder="Auto-generated or type a custom English ID"
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-mono font-bold text-slate-800 transition"

@@ -10,6 +10,30 @@ import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Course, UserProgress, WordStatus } from '../types';
 
+const getEnglishFeatureLabel = (key: string, placeLabels?: Record<string, string>) => {
+  switch (key) {
+    case 'meaning': return placeLabels?.place2 || 'Word Meaning';
+    case 'synonyms': return placeLabels?.place5 || 'Synonyms';
+    case 'extraWord': return placeLabels?.place4 || 'Derivatives';
+    case 'extraMeaning': return placeLabels?.place6 || 'Derivative Meaning';
+    case 'example': return placeLabels?.place3 || 'Example Sentences';
+    case 'audio': return 'Voice Pronunciation';
+    default: return key;
+  }
+};
+
+const getEnglishGameLabel = (key: string, placeLabels?: Record<string, string>) => {
+  switch (key) {
+    case 'quiz': return 'Practice Quiz';
+    case 'match': return 'Word Match';
+    case 'synonym': return 'Synonym Check';
+    case 'blank': return 'Fill in the Blank';
+    case 'odd_one_out': return 'Odd One Out';
+    case 'analogy': return 'Word Analogy';
+    default: return key;
+  }
+};
+
 interface MyCoursesViewProps {
   user: any;
   allCourses: Course[];
@@ -339,15 +363,15 @@ export default function MyCoursesView({
                 </div>
 
                 {/* Course Title */}
-                <h3 className="font-extrabold text-slate-800 text-sm tracking-tight leading-snug line-clamp-1" title={course.title}>
+                <h3 className="font-extrabold text-slate-800 text-sm tracking-tight leading-snug line-clamp-1" title={course.title} style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
                   {course.title}
                 </h3>
-                <p className="text-slate-500 text-[11px] mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-slate-500 text-[11px] mt-1 line-clamp-2 leading-relaxed" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
                   {course.description || 'No description available for this course.'}
                 </p>
                 
                 {/* Quick Info */}
-                <div className="flex gap-2.5 mt-2 text-[9px] text-slate-400 font-bold">
+                <div className="flex gap-2.5 mt-2 text-[9px] text-slate-400 font-bold" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
                   <span>Groups: {course.totalGroups || 1}</span>
                   <span>•</span>
                   <span>Words: {wordsCount}</span>
@@ -355,48 +379,56 @@ export default function MyCoursesView({
               </div>
 
               {/* Compact Active Toggles and Games */}
-              <div className="p-3.5 space-y-2.5 flex-1">
-                {/* Active Features list */}
-                <div>
-                  <span className="text-[10px] font-extrabold text-slate-400 block mb-1">সক্রিয় ফিচারসমূহ:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {variables.map(v => {
-                      const isEnabled = course.variableToggles ? course.variableToggles[v.key] !== false : true;
-                      if (!isEnabled) return null;
-                      return (
-                        <span key={v.key} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-indigo-50/50 text-indigo-700 border border-indigo-100/30 rounded-md text-[9px] font-bold">
-                          <v.icon className="w-2.5 h-2.5" />
-                          <span>{v.label}</span>
-                        </span>
-                      );
-                    })}
+              <div className="p-4 space-y-4 flex-1" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-left">
+                  {/* Column 1: Active Features */}
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                      Features
+                    </span>
+                    <ul className="space-y-1">
+                      {variables.map(v => {
+                        const isEnabled = course.variableToggles ? course.variableToggles[v.key] !== false : true;
+                        if (!isEnabled) return null;
+                        const englishLabel = getEnglishFeatureLabel(v.key, course.placeLabels);
+                        return (
+                          <li key={v.key} className="flex items-center gap-1.5 text-[11px] text-slate-650 font-semibold leading-tight">
+                            <span className="text-indigo-500 font-extrabold select-none">•</span>
+                            <span>{englishLabel}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                </div>
 
-                {/* Enabled Games list */}
-                <div>
-                  <span className="text-[10px] font-extrabold text-slate-400 block mb-1">প্র্যাক্টিস গেমস:</span>
-                  <div className="flex flex-wrap gap-1">
-                    {games.map(g => {
-                      const isEnabled = course.enabledGames ? course.enabledGames[g.key] !== false : true;
-                      if (!isEnabled) return null;
-                      return (
-                        <span key={g.key} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-50/50 text-emerald-800 border border-emerald-100/30 rounded-md text-[9px] font-bold">
-                          <g.icon className="w-2.5 h-2.5" />
-                          <span>{g.label}</span>
-                        </span>
-                      );
-                    })}
+                  {/* Column 2: Practice Games */}
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                      Games
+                    </span>
+                    <ul className="space-y-1">
+                      {games.map(g => {
+                        const isEnabled = course.enabledGames ? course.enabledGames[g.key] !== false : true;
+                        if (!isEnabled) return null;
+                        const englishLabel = getEnglishGameLabel(g.key, course.placeLabels);
+                        return (
+                          <li key={g.key} className="flex items-center gap-1.5 text-[11px] text-slate-650 font-semibold leading-tight">
+                            <span className="text-emerald-500 font-extrabold select-none">•</span>
+                            <span>{englishLabel}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 </div>
 
                 {/* Course Progress */}
-                <div className="space-y-1 pt-1">
+                <div className="space-y-1.5 pt-3 border-t border-slate-100/50">
                   <div className="flex justify-between items-center text-[9px] font-extrabold">
                     <span className="text-slate-400 uppercase tracking-wider">Syllabus Progress</span>
                     <span className="text-emerald-600 font-mono">{progressPercent}%</span>
                   </div>
-                  <div className="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                     <div 
                       className="bg-emerald-500 h-full rounded-full transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
@@ -406,17 +438,17 @@ export default function MyCoursesView({
               </div>
 
               {/* Card Footer Actions */}
-              <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-2">
+              <div className="p-3 bg-slate-50/50 border-t border-slate-100 flex items-center gap-2" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
                 {!isUserAllowed ? (
                   <button
                     onClick={() => setSelectedBuyCourse(course)}
-                    className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-700 text-white text-[10px] font-extrabold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                    className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-700 text-white text-[10px] font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
                     <span>কোর্সটি কিনুন (Buy Course - ৳{course.price || 0})</span>
                   </button>
                 ) : isActive ? (
-                  <div className="flex-1 text-center py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-extrabold rounded-lg border border-emerald-100 select-none">
+                  <div className="flex-1 text-center py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-lg border border-emerald-100 select-none">
                     ✓ Currently Active Course
                   </div>
                 ) : (
@@ -428,7 +460,7 @@ export default function MyCoursesView({
                         setActiveCourseId(course.id);
                       }
                     }}
-                    className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-extrabold rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-sm"
+                    className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-lg transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                   >
                     <ArrowRight className="w-3.5 h-3.5" />
                     <span>Set Active</span>

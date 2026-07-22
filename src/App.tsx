@@ -1501,6 +1501,7 @@ export default function App() {
               }}
               activeCourseId={activeCourseId}
               enabledGames={activeCourse?.enabledGames}
+              placeLabels={activeCourse?.placeLabels}
             />
           )}
 

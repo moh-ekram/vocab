@@ -10,6 +10,14 @@ interface PracticeQuizProps {
   settings?: AppSettings;
   onQuizComplete?: (score: number, totalQuestions: number) => void;
   onBack?: () => void;
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+    place5?: string;
+    place6?: string;
+  };
 }
 
 type QuizType = 'mcq_en_bn' | 'mcq_bn_en' | 'typing_spelling';
@@ -20,7 +28,7 @@ interface Question {
   correctAnswer: string;
 }
 
-export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings, onQuizComplete, onBack }: PracticeQuizProps) {
+export default function PracticeQuiz({ words, progress, onRateWord, activeGroup, settings, onQuizComplete, onBack, placeLabels }: PracticeQuizProps) {
   // Quiz states
   const [quizType, setQuizType] = useState<QuizType>(() => {
     return settings?.defaultQuizType || 'mcq_en_bn';
@@ -272,8 +280,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">MCQ (English ➡ Meaning)</span>
-                  <span className="text-xs text-slate-400">View the English word and choose the correct meaning.</span>
+                  <span className="font-bold text-slate-800 text-sm">MCQ ({placeLabels?.place1 || 'English'} ➡ {placeLabels?.place2 || 'Meaning'})</span>
+                  <span className="text-xs text-slate-400">View the {placeLabels?.place1 || 'English'} word and choose the correct {placeLabels?.place2?.toLowerCase() || 'meaning'}.</span>
                 </button>
 
                 <button
@@ -284,8 +292,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">MCQ (Meaning ➡ English)</span>
-                  <span className="text-xs text-slate-400">View the meaning and choose the correct English word.</span>
+                  <span className="font-bold text-slate-800 text-sm">MCQ ({placeLabels?.place2 || 'Meaning'} ➡ {placeLabels?.place1 || 'English'})</span>
+                  <span className="text-xs text-slate-400">View the {placeLabels?.place2?.toLowerCase() || 'meaning'} and choose the correct {placeLabels?.place1 || 'English'} word.</span>
                 </button>
 
                 <button
@@ -296,8 +304,8 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
                       : 'bg-white hover:bg-slate-50 border-slate-200/60'
                   }`}
                 >
-                  <span className="font-bold text-slate-800 text-sm">Spelling Type Challenge</span>
-                  <span className="text-xs text-slate-400">Type the correct English spelling based on meaning and clues.</span>
+                  <span className="font-bold text-slate-800 text-sm">{placeLabels?.place1 || 'Spelling'} Type Challenge</span>
+                  <span className="text-xs text-slate-400">Type the correct {placeLabels?.place1 || 'English'} spelling based on {placeLabels?.place2?.toLowerCase() || 'meaning'} and clues.</span>
                 </button>
               </div>
             </div>
@@ -543,7 +551,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
           {/* Question display */}
           <div className="bg-slate-50/50 p-8 rounded-2xl border border-slate-200/60 text-center space-y-4">
             <span className="px-3 py-1 bg-indigo-50 text-indigo-800 text-[10px] font-extrabold uppercase rounded-full tracking-wider font-sans">
-              {quizType === 'mcq_bn_en' ? 'Meaning' : 'English Word'}
+              {quizType === 'mcq_bn_en' ? (placeLabels?.place2 || 'Meaning') : (placeLabels?.place1 || 'English Word')}
             </span>
 
             <h1 className="text-3xl md:text-4xl font-black text-slate-800 leading-tight">
@@ -593,7 +601,7 @@ export default function PracticeQuiz({ words, progress, onRateWord, activeGroup,
             /* Spelling Typing Mode input fields */
             <div className="space-y-4">
               <div className="space-y-1 font-sans">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type English Spelling</label>
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type {placeLabels?.place1 || 'English'} Spelling</label>
                 <div className="relative">
                   <input
                     type="text"

@@ -20,10 +20,7 @@ service cloud.firestore {
       return isSignedIn() 
         && request.auth.token != null 
         && request.auth.token.email != null 
-        && (
-          request.auth.token.email == 'mohammad.001ekram@gmail.com'
-          || request.auth.token.email.matches('(?i)^mohammad\\.001ekram@gmail\\.com$')
-        );
+        && request.auth.token.email.lower() == 'mohammad.001ekram@gmail.com';
     }
 
     function isValidId(id) {

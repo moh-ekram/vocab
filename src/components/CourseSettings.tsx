@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { read, utils } from 'xlsx';
+import { read, utils, writeFile } from 'xlsx';
 
 interface CourseSettingsProps {
   course: Course;
@@ -851,6 +851,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [editedExtraWord, setEditedExtraWord] = useState('');
   const [editedExtraMeaning, setEditedExtraMeaning] = useState('');
   const [editedExample, setEditedExample] = useState('');
+  const [editedMnemonic, setEditedMnemonic] = useState('');
 
   // Pagination
   const [currentWordPage, setCurrentWordPage] = useState(1);
@@ -865,6 +866,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [singleExtraWord, setSingleExtraWord] = useState('');
   const [singleExtraMeaning, setSingleExtraMeaning] = useState('');
   const [singleExample, setSingleExample] = useState('');
+  const [singleMnemonic, setSingleMnemonic] = useState('');
   const [addFormMessage, setAddFormMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Form: Bulk spreadsheet uploading
@@ -1166,6 +1168,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setEditedExtraWord(w.extraWord || '');
     setEditedExtraMeaning(w.extraMeaning || '');
     setEditedExample(w.example || '');
+    setEditedMnemonic(w.mnemonic || '');
   };
 
   const handleSaveWordEdit = () => {
@@ -1205,13 +1208,40 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           synonyms: editedSynonyms.trim(),
           extraWord: editedExtraWord.trim(),
           extraMeaning: editedExtraMeaning.trim(),
-          example: editedExample.trim()
+          example: editedExample.trim(),
+          mnemonic: editedMnemonic.trim()
         };
       }
       return w;
     }));
 
     setEditingWord(null);
+  };
+
+  // --- EXPORT WORDS TO EXCEL ---
+  const handleExportWordsToExcel = () => {
+    if (localWords.length === 0) {
+      alert('No words available in this course to export.');
+      return;
+    }
+
+    const exportData = localWords.map(w => ({
+      'Unique ID': w.id,
+      'Group': w.group,
+      'Word': w.word,
+      'Meaning': w.meaning,
+      'Synonyms': w.synonyms || '',
+      'Derivative Word': w.extraWord || '',
+      'Derivative Meaning': w.extraMeaning || '',
+      'Example Sentence': w.example || '',
+      'Mnemonic': w.mnemonic || ''
+    }));
+
+    const worksheet = utils.json_to_sheet(exportData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, 'Words');
+    const safeTitle = (course.title || 'course').replace(/[^a-zA-Z0-9_-]/g, '_');
+    writeFile(workbook, `${safeTitle}_words_${Date.now()}.xlsx`);
   };
 
   // --- SINGLE WORD ADDITION HANDLER ---
@@ -1248,7 +1278,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       synonyms: singleSynonyms.trim(),
       extraWord: singleExtraWord.trim(),
       extraMeaning: singleExtraMeaning.trim(),
-      example: singleExample.trim()
+      example: singleExample.trim(),
+      mnemonic: singleMnemonic.trim()
     };
 
     setLocalWords(prev => [...prev, newWordItem]);
@@ -1261,6 +1292,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setSingleExtraWord('');
     setSingleExtraMeaning('');
     setSingleExample('');
+    setSingleMnemonic('');
 
     setAddFormMessage({ 
       type: 'success', 
@@ -1326,8 +1358,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           setLocalPlaceLabels(detectedLabels);
         }
 
-        const wordsList: VocabularyWord[] = [];
-        let index = localWords.length + 1;
+        let updatedLocalWords = [...localWords];
+        let updatedCount = 0;
+        let addedCount = 0;
 
         for (const row of rawRows) {
           const rowKeys = Object.keys(row);
@@ -1343,6 +1376,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             });
           };
 
+          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
+          if (!idKey) {
+            setExcelError('The spreadsheet is missing the mandatory "ID" column. Please make sure your spreadsheet has an "ID" column.');
+            return;
+          }
+
+          const rawId = row[idKey] ? String(row[idKey]).trim() : '';
+          if (!rawId) {
+            continue;
+          }
+
           const wordKey = findKey(['word', 'main word'], 'place1');
           const meaningKey = findKey(['meaning', 'bangla meaning'], 'place2');
           const groupKey = findKey(['group']);
@@ -1352,25 +1396,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const extraWordKey = findKey(['extra word'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example'], 'place3');
-          const idKey = findKey(['id', 'unique id', 'word id', 'uid']);
-
-          if (!idKey) {
-            setExcelError('The spreadsheet is missing the mandatory "ID" column. Please make sure your spreadsheet has an "ID" column.');
-            return;
-          }
-
-          const rawId = row[idKey] ? String(row[idKey]).trim() : '';
-          if (!rawId) {
-            setExcelError('Error parsing: A row is missing a unique ID in the mandatory "ID" column.');
-            return;
-          }
+          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note']);
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
-
-          if (!baseWord || !banglaMeaning) {
-            continue; 
-          }
+          const mnemonic = mnemonicKey && row[mnemonicKey] !== undefined ? String(row[mnemonicKey]).trim() : '';
 
           let group: string | number = 1;
           if (groupKey && row[groupKey] !== undefined && row[groupKey] !== null) {
@@ -1399,27 +1429,89 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const extraWord = extraWordKey ? String(row[extraWordKey]).trim() : '';
           const extraMeaning = extraMeaningKey ? String(row[extraMeaningKey]).trim() : '';
 
-          wordsList.push({
-            id: rawId,
-            group,
-            word: baseWord,
-            meaning: banglaMeaning,
-            synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
-            extraWord,
-            extraMeaning,
-            example
-          });
+          const existingIdx = updatedLocalWords.findIndex(w => String(w.id).trim() === rawId);
 
-          index++;
+          if (existingIdx !== -1) {
+            // Update existing word
+            const existingWord = { ...updatedLocalWords[existingIdx] };
+            let wasUpdated = false;
+
+            if (mnemonic) {
+              existingWord.mnemonic = mnemonic;
+              wasUpdated = true;
+            }
+            if (baseWord) {
+              existingWord.word = baseWord;
+              wasUpdated = true;
+            }
+            if (banglaMeaning) {
+              existingWord.meaning = banglaMeaning;
+              wasUpdated = true;
+            }
+            if (groupKey && row[groupKey] !== undefined) {
+              existingWord.group = group;
+              wasUpdated = true;
+            }
+            if (synonyms) {
+              existingWord.synonyms = synonyms;
+              wasUpdated = true;
+            }
+            if (extraWord) {
+              existingWord.extraWord = extraWord;
+              wasUpdated = true;
+            }
+            if (extraMeaning) {
+              existingWord.extraMeaning = extraMeaning;
+              wasUpdated = true;
+            }
+            if (example) {
+              existingWord.example = example;
+              wasUpdated = true;
+            }
+
+            if (wasUpdated) {
+              updatedLocalWords[existingIdx] = existingWord;
+              updatedCount++;
+            }
+          } else {
+            // New word insertion requires word & meaning
+            if (!baseWord || !banglaMeaning) {
+              continue;
+            }
+
+            updatedLocalWords.push({
+              id: rawId,
+              group,
+              word: baseWord,
+              meaning: banglaMeaning,
+              synonyms: synonyms || extraWord,
+              extraWord,
+              extraMeaning,
+              example,
+              mnemonic
+            });
+            addedCount++;
+          }
         }
 
-        if (wordsList.length === 0) {
-          setExcelError('Columns did not match! The spreadsheet must contain at least "main word" and "bangla meaning" columns.');
+        if (updatedCount === 0 && addedCount === 0) {
+          setExcelError('No words were updated or added. Make sure your spreadsheet contains valid "Unique ID" matching existing words or new "Word" and "Meaning" columns.');
           return;
         }
 
-        setLocalWords(prev => [...prev, ...wordsList]);
-        setExcelSuccess(`Successfully added ${wordsList.length} new words from the Excel file! Click "Update Settings" below to save permanently.`);
+        setLocalWords(updatedLocalWords);
+        
+        let msg = 'Spreadsheet processed successfully! ';
+        if (updatedCount > 0 && addedCount > 0) {
+          msg += `Updated ${updatedCount} existing words (mnemonics/details) and added ${addedCount} new words.`;
+        } else if (updatedCount > 0) {
+          msg += `Successfully updated ${updatedCount} existing words with mnemonics/details.`;
+        } else {
+          msg += `Successfully added ${addedCount} new words.`;
+        }
+        msg += ' Click "Update Settings" below to save permanently.';
+
+        setExcelSuccess(msg);
       } catch (err) {
         console.error(err);
         setExcelError('Failed to process spreadsheet file. Please verify it is a valid format.');
@@ -2497,16 +2589,28 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <h4 className="font-extrabold text-slate-900 text-sm">Word Directory & Individual Editing</h4>
                   </div>
 
-                  {selectedWordIds.size > 0 && (
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={handleDeleteSelectedWords}
-                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-extrabold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer animate-fadeIn"
+                      onClick={handleExportWordsToExcel}
+                      className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      title="Download complete course word list as Excel spreadsheet"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Selected ({selectedWordIds.size})</span>
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                      <span>Export Excel (.xlsx)</span>
                     </button>
-                  )}
+
+                    {selectedWordIds.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteSelectedWords}
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-extrabold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer animate-fadeIn"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Selected ({selectedWordIds.size})</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Filters */}
@@ -2517,7 +2621,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       type="text"
                       value={wordSearchQuery}
                       onChange={(e) => setWordSearchQuery(e.target.value)}
-                      placeholder="Search by word or meaning..."
+                      placeholder="Search by word, meaning, or ID..."
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 font-bold"
                     />
                   </div>
@@ -2548,17 +2652,18 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                             />
                           </th>
+                          <th className="px-3 py-3 font-mono">Unique ID</th>
                           <th className="px-4 py-3">Word (English)</th>
                           <th className="px-4 py-3">Meaning (Bangla)</th>
                           <th className="px-4 py-3 text-center">Group</th>
-                          <th className="px-4 py-3 hidden sm:table-cell">Synonyms / Derivatives</th>
+                          <th className="px-4 py-3 hidden sm:table-cell">Synonyms / Derivatives / Mnemonic</th>
                           <th className="px-4 py-3 w-24 text-center">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
                         {paginatedWords.length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-semibold bg-white">
+                            <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-semibold bg-white">
                               No words found. Try changing filters or adding some words.
                             </td>
                           </tr>
@@ -2577,12 +2682,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                     className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                                   />
                                 </td>
+                                <td className="px-3 py-2 font-mono text-[10px] text-slate-500 font-bold select-all">{w.id}</td>
                                 <td className="px-4 py-2 font-black text-slate-900 font-sans">{w.word}</td>
                                 <td className="px-4 py-2 text-slate-600 font-bold">{w.meaning}</td>
                                 <td className="px-4 py-2 text-center"><span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black text-[10px]">{w.group}</span></td>
                                 <td className="px-4 py-2 text-slate-400 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
                                   {w.synonyms && <span className="block truncate">Synonyms: {w.synonyms}</span>}
                                   {w.extraWord && <span className="block truncate mt-0.5">Derivative: {w.extraWord} ({w.extraMeaning})</span>}
+                                  {w.mnemonic && <span className="block truncate mt-0.5 text-indigo-600 font-semibold">Mnemonic: {w.mnemonic}</span>}
                                 </td>
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
@@ -2755,6 +2862,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         value={singleExample}
                         onChange={(e) => setSingleExample(e.target.value)}
                         placeholder="e.g. The storm abated after midnight." 
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-extrabold text-slate-500 block">Mnemonic / Personal Note</label>
+                      <input 
+                        type="text" 
+                        value={singleMnemonic}
+                        onChange={(e) => setSingleMnemonic(e.target.value)}
+                        placeholder="e.g. Memory trick or hint" 
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                     </div>
@@ -3641,6 +3759,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   value={editedExample}
                   onChange={(e) => setEditedExample(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Mnemonic / Personal Note</label>
+                <textarea 
+                  rows={2}
+                  value={editedMnemonic}
+                  onChange={(e) => setEditedMnemonic(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
+                  placeholder="Memory trick or hint to display on flashcard..."
                 />
               </div>
 

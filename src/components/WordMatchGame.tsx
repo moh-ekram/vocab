@@ -7,6 +7,14 @@ interface WordMatchGameProps {
   activeGroup: number | null;
   settings?: AppSettings;
   onBack: () => void;
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+    place5?: string;
+    place6?: string;
+  };
 }
 
 interface MatchCard {
@@ -17,7 +25,7 @@ interface MatchCard {
   isMatched: boolean;
 }
 
-export default function WordMatchGame({ words, activeGroup, settings, onBack }: WordMatchGameProps) {
+export default function WordMatchGame({ words, activeGroup, settings, onBack, placeLabels }: WordMatchGameProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [cards, setCards] = useState<MatchCard[]>([]);
   const [selectedLeft, setSelectedLeft] = useState<MatchCard | null>(null);
@@ -180,7 +188,7 @@ export default function WordMatchGame({ words, activeGroup, settings, onBack }: 
           <div className="space-y-2">
             <h2 className="text-2xl font-black text-slate-900">Word Match Game</h2>
             <p className="text-sm text-slate-500 font-sans max-w-sm mx-auto">
-              Match the English words on the left with their correct meanings on the right. See how fast you can complete the pairs!
+              Match the {placeLabels?.place1 || 'English'} words on the left with their correct {placeLabels?.place2?.toLowerCase() || 'meanings'} on the right. See how fast you can complete the pairs!
             </p>
           </div>
 
@@ -214,7 +222,7 @@ export default function WordMatchGame({ words, activeGroup, settings, onBack }: 
             <div className="grid grid-cols-2 gap-4">
               {/* Left Side: English */}
               <div className="space-y-3">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">English Word</span>
+                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">{placeLabels?.place1 || 'English Word'}</span>
                 {leftColumn.map(card => {
                   const isSelected = selectedLeft?.id === card.id;
                   let borderStyle = 'border-slate-200/60 bg-white text-slate-700 hover:border-indigo-200 hover:shadow-xs';
@@ -241,7 +249,7 @@ export default function WordMatchGame({ words, activeGroup, settings, onBack }: 
 
               {/* Right Side: Bengali meaning */}
               <div className="space-y-3">
-                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">Meaning</span>
+                <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider text-center font-sans">{placeLabels?.place2 || 'Meaning'}</span>
                 {rightColumn.map(card => {
                   const isSelected = selectedRight?.id === card.id;
                   let borderStyle = 'border-slate-200/60 bg-white text-slate-700 hover:border-indigo-200 hover:shadow-xs';

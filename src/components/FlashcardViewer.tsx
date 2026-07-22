@@ -384,7 +384,7 @@ export default function FlashcardViewer({
   // Sync note text when index shifts
   useEffect(() => {
     if (filteredWords.length > 0) {
-      setNoteText(progress[currentActiveWord.id]?.notes || '');
+      setNoteText(progress[currentActiveWord.id]?.notes ?? currentActiveWord.mnemonic ?? '');
       setIsEditingNote(false);
       setIsFlipped(false);
     }
@@ -1277,7 +1277,7 @@ export default function FlashcardViewer({
                       </button>
                       <button
                         onClick={() => {
-                          setNoteText(progress[currentActiveWord.id]?.notes || '');
+                          setNoteText(progress[currentActiveWord.id]?.notes ?? currentActiveWord.mnemonic ?? '');
                           setIsEditingNote(false);
                         }}
                         className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition font-sans"

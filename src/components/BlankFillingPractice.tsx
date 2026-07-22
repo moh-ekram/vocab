@@ -23,6 +23,14 @@ interface BlankFillingPracticeProps {
   activeCourseId: string;
   words?: VocabularyWord[];
   onBack: () => void;
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+    place5?: string;
+    place6?: string;
+  };
 }
 
 const DEFAULT_QUESTIONS: BlankQuestion[] = [
@@ -63,7 +71,8 @@ export default function BlankFillingPractice({
   onUpdateBlankProgress,
   activeCourseId,
   words,
-  onBack
+  onBack,
+  placeLabels
 }: BlankFillingPracticeProps) {
   const [allQuestions, setAllQuestions] = useState<BlankQuestion[]>([]);
   const [questions, setQuestions] = useState<BlankQuestion[]>([]);
@@ -176,7 +185,7 @@ export default function BlankFillingPractice({
               wordsForMeanings.forEach((w, index) => {
                 generated.push({
                   id: `bq-gen-mean-${w.id}-${index}`,
-                  sentence: `Choose the correct word that matches the meaning: "${w.meaning}"`,
+                  sentence: `Choose the correct ${placeLabels?.place1 || 'word'} that matches the ${placeLabels?.place2?.toLowerCase() || 'meaning'}: "${w.meaning}"`,
                   options: makeOptionsForWord(w.word),
                   answer: w.word,
                   courseId: activeCourseId

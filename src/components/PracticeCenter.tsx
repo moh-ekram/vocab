@@ -39,6 +39,14 @@ interface PracticeCenterProps {
   onQuizComplete: (score: number, totalQuestions: number) => void;
   activeCourseId: string;
   enabledGames?: Record<string, boolean>;
+  placeLabels?: {
+    place1?: string;
+    place2?: string;
+    place3?: string;
+    place4?: string;
+    place5?: string;
+    place6?: string;
+  };
 }
 
 export default function PracticeCenter({
@@ -60,7 +68,8 @@ export default function PracticeCenter({
   settings,
   onQuizComplete,
   activeCourseId,
-  enabledGames
+  enabledGames,
+  placeLabels
 }: PracticeCenterProps) {
   const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank' | 'odd_one_out' | 'analogy'>('hub');
 
@@ -308,6 +317,7 @@ export default function PracticeCenter({
           settings={settings}
           onQuizComplete={onQuizComplete}
           onBack={() => setSubTab('hub')}
+          placeLabels={placeLabels}
         />
       )}
 
@@ -317,6 +327,7 @@ export default function PracticeCenter({
           activeGroup={typeof activeGroup === 'number' ? activeGroup : (typeof activeGroup === 'string' ? parseInt(activeGroup, 10) || null : null)}
           settings={settings}
           onBack={() => setSubTab('hub')}
+          placeLabels={placeLabels}
         />
       )}
 
@@ -343,6 +354,7 @@ export default function PracticeCenter({
           activeCourseId={activeCourseId}
           words={words}
           onBack={() => setSubTab('hub')}
+          placeLabels={placeLabels}
         />
       )}
 
