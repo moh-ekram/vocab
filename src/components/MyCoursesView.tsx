@@ -43,6 +43,7 @@ interface MyCoursesViewProps {
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
   progress: Record<string, UserProgress>;
   onImportCourse: (course: Course) => void;
+  onSelectTab?: (tab: string) => void;
 }
 
 export default function MyCoursesView({
@@ -53,7 +54,8 @@ export default function MyCoursesView({
   setActiveCourseId,
   setEnrolledCourseIds,
   progress,
-  onImportCourse
+  onImportCourse,
+  onSelectTab
 }: MyCoursesViewProps) {
   const [filter, setFilter] = useState<'all' | 'enrolled' | 'locked'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -371,6 +373,43 @@ export default function MyCoursesView({
                   {wordsCount} Words
                 </span>
               </div>
+
+              {/* Start Flashcards Action Button */}
+              <div className="mt-3 pt-1">
+                {isUserAllowed ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isEnrolled) {
+                        handleFreeEnroll(course);
+                      } else {
+                        setActiveCourseId(course.id);
+                      }
+                      onSelectTab?.('flashcard');
+                    }}
+                    className={`w-full py-2 px-3 text-xs font-black rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                      isActive
+                        ? 'bg-white text-emerald-800 hover:bg-emerald-50'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10'
+                    }`}
+                  >
+                    <BookOpen className={`w-3.5 h-3.5 ${isActive ? 'text-emerald-700' : 'text-white'}`} />
+                    <span>স্টার্ট ফ্ল্যাশকার্ড</span>
+                    <ArrowRight className="w-3 h-3 opacity-80" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDetailCourse(course);
+                    }}
+                    className="w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black rounded-xl border border-rose-200 transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Request Access (৳{(course.price && course.price > 0) ? course.price : 30})</span>
+                  </button>
+                )}
+              </div>
             </motion.div>
           );
         })}
@@ -566,25 +605,40 @@ export default function MyCoursesView({
                       <ShoppingBag className="w-4 h-4" />
                       <span>Request Access (Buy Course - ৳{(course.price && course.price > 0) ? course.price : 30})</span>
                     </button>
-                  ) : isActive ? (
-                    <div className="flex-1 text-center py-2.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 select-none">
-                      ✓ Currently Active Course
-                    </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        if (!isEnrolled) {
-                          handleFreeEnroll(course);
-                        } else {
-                          setActiveCourseId(course.id);
-                        }
-                        setSelectedDetailCourse(null);
-                      }}
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                      <span>Set as Active Course</span>
-                    </button>
+                    <div className="flex-1 flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (!isEnrolled) {
+                            handleFreeEnroll(course);
+                          } else {
+                            setActiveCourseId(course.id);
+                          }
+                          setSelectedDetailCourse(null);
+                          onSelectTab?.('flashcard');
+                        }}
+                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 active:scale-95"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>স্টার্ট ফ্ল্যাশকার্ড (Start Flashcard)</span>
+                      </button>
+
+                      {!isActive && (
+                        <button
+                          onClick={() => {
+                            if (!isEnrolled) {
+                              handleFreeEnroll(course);
+                            } else {
+                              setActiveCourseId(course.id);
+                            }
+                            setSelectedDetailCourse(null);
+                          }}
+                          className="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-extrabold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 border border-indigo-200"
+                        >
+                          <span>Set Active</span>
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {isUserAllowed && isEnrolled && !course.isDefault && (
@@ -633,7 +687,7 @@ export default function MyCoursesView({
                     <span className="p-1 bg-pink-500 rounded-lg text-white font-black text-xs font-mono px-2 py-0.5">bKash</span>
                     Course Access Request
                   </h3>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedBuyCourse.title}</p>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedBuyCourse.title?.toUpperCase().includes('BARC') ? "Barron's 1100 Vocabulary" : selectedBuyCourse.title}</p>
                 </div>
                 <button 
                   onClick={() => setSelectedBuyCourse(null)}

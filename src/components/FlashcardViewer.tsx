@@ -792,8 +792,8 @@ export default function FlashcardViewer({
           const animStyle = settings?.flashcardAnimation || 'shuffle';
 
           let containerAnimClass = 'relative w-full h-full flex-1 cursor-pointer';
-          let frontFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between z-10 overflow-hidden';
-          let backFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-3xl p-5 sm:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between z-10 overflow-hidden';
+          let frontFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl shadow-indigo-100/50 border border-indigo-200/90 flex flex-col justify-between z-10 overflow-hidden';
+          let backFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl shadow-indigo-100/50 border border-indigo-200/90 flex flex-col justify-between z-10 overflow-hidden';
 
           if (animStyle === 'fade') {
             frontFaceAnimClass += ` transition-opacity duration-300 ${isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
@@ -824,8 +824,8 @@ export default function FlashcardViewer({
           return (
             <div className="w-full h-full flex-1 relative perspective my-auto">
               {/* Stacked Cards depth effect */}
-              <div className="absolute inset-x-5 sm:inset-x-8 bottom-[-10px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
-              <div className="absolute inset-x-2.5 sm:inset-x-4 bottom-[-5px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
+              <div className="absolute inset-x-5 sm:inset-x-8 bottom-[-10px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-[28px] sm:rounded-[36px] rotate-2 pointer-events-none z-0"></div>
+              <div className="absolute inset-x-2.5 sm:inset-x-4 bottom-[-5px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-[28px] sm:rounded-[36px] -rotate-1 pointer-events-none z-0"></div>
 
               {/* Active Flip Card Container */}
               <div
@@ -840,10 +840,10 @@ export default function FlashcardViewer({
               >
                 {/* FRONT FACE */}
                 <div className={frontFaceAnimClass}>
-                  {/* Top Row: Group info on Left (no pill background), Report Button on Right */}
+                  {/* Top Row: Group Pill Badge on Left, Report Button on Right */}
                   <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
-                    <span className="text-xs sm:text-sm font-medium text-slate-400 font-bengali">
-                      Group: #{currentActiveWord.group}
+                    <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
+                      G-{currentIndex + 1}/{filteredWords.length}
                     </span>
 
                     <button
@@ -851,36 +851,35 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         handleOpenReportModal(currentActiveWord);
                       }}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-500 hover:text-rose-600 transition cursor-pointer active:scale-95"
+                      className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
                       title="Report Issue"
                     >
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Report</span>
+                      Report
                     </button>
                   </div>
 
-                  {/* Middle: Main Word + Pronounce & Google Buttons directly under (icon-only) */}
-                  <div className="my-auto text-center space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
-                    <span className="text-xs text-slate-400 font-medium font-bengali">
+                  {/* Middle: Main Word + Pronounce & Google Buttons directly under */}
+                  <div className="my-auto text-center space-y-3 sm:space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
+                    <span className="text-xs text-slate-800 font-medium font-bengali tracking-wide">
                       {getPlaceLabel('place1', 'Word')}
                     </span>
 
-                    <h1 className={`font-black text-slate-900 tracking-tight font-bengali text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none ${getWordFontSize(currentActiveWord.word || (currentActiveWord as any).place1 || '')}`}>
+                    <h1 className="font-black text-slate-950 tracking-tight font-bengali text-center text-4xl sm:text-5xl md:text-6xl leading-none px-1">
                       {currentActiveWord.word || (currentActiveWord as any).place1}
                     </h1>
 
-                    {/* Pronunciation & Google search buttons directly under main word (icon-only outline style) */}
-                    <div className="flex items-center justify-center gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
+                    {/* Pronunciation & Google search circular buttons directly under main word */}
+                    <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
                       {variableToggles?.audio !== false && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             speakWord();
                           }}
-                          className="p-3 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-600 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-indigo-200/70"
+                          className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
                           title="Speak / Pronounce Word"
                         >
-                          <Volume2 className="w-5 h-5 text-indigo-600" />
+                          <Volume2 className="w-5 h-5 text-slate-700" />
                         </button>
                       )}
 
@@ -890,7 +889,7 @@ export default function FlashcardViewer({
                           const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
                           window.open(googleUrl, '_blank');
                         }}
-                        className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/80"
+                        className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
                         title="Google Search Word"
                       >
                         <GoogleIcon className="w-5 h-5" />
@@ -900,10 +899,10 @@ export default function FlashcardViewer({
                     {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
                     {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
                       <div className="pt-1 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-[11px] text-slate-400 font-medium font-bengali">
+                        <span className="text-[11px] text-slate-500 font-medium font-bengali">
                           {getPlaceLabel('place4', 'Derivatives')}:
                         </span>
-                        <p className="text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
                           {currentActiveWord.extraWord || (currentActiveWord as any).place4}
                           {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
                         </p>
@@ -911,54 +910,73 @@ export default function FlashcardViewer({
                     )}
                   </div>
 
-                  {/* Bottom: 4 Action Buttons (Not Learned, Confused, Learned, Skip) */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: Action Buttons (< Not Learned | Confusion | Learned >) */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
-                        activeStatus === 'dont_know'
-                          ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
-                          : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
-                      }`}
-                      title="Not Learned / Red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrev();
+                      }}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      title="Previous Card"
                     >
-                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('dont_know', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        activeStatus === 'dont_know'
+                          ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
+                          : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
+                      }`}
+                      title="Not Learned"
+                    >
                       <span>Not Learned</span>
                     </button>
 
                     <button
-                      onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('confusion', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'confusion'
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
-                          : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
+                          ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
+                          : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
                       }`}
-                      title="Confused / Yellow"
+                      title="Confusion"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Confused</span>
+                      <span>Confusion</span>
                     </button>
 
                     <button
-                      onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('know', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'know'
-                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
-                          : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
+                          ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
+                          : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
                       }`}
-                      title="Learned / Green"
+                      title="Learned"
                     >
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Learned</span>
                     </button>
 
                     <button
-                      onClick={() => handleNext()}
-                      className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300/80 active:scale-95 shadow-2xs"
-                      title="Skip / স্কিপ"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNext();
+                      }}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      title="Next Card"
                     >
-                      <SkipForward className="w-3.5 h-3.5 stroke-[2.5] text-indigo-600" />
-                      <span className="font-bengali text-indigo-700 font-bold">Skip</span>
+                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
@@ -967,8 +985,8 @@ export default function FlashcardViewer({
                 <div className={backFaceAnimClass}>
                   {/* Top Header Row */}
                   <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
-                    <span className="text-xs sm:text-sm font-medium text-slate-400 font-bengali">
-                      Group: #{currentActiveWord.group}
+                    <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
+                      G-{currentIndex + 1}/{filteredWords.length}
                     </span>
 
                     <button
@@ -976,140 +994,145 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         handleOpenReportModal(currentActiveWord);
                       }}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-500 hover:text-rose-600 transition cursor-pointer active:scale-95"
+                      className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
                       title="Report Issue"
                     >
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
-                      <span>Report</span>
+                      Report
                     </button>
                   </div>
 
-                  {/* Middle Content Area: items b, c, d, e */}
-                  <div className="my-auto space-y-4 py-3 text-center w-full max-w-lg mx-auto overflow-y-auto">
-                    {/* b. Placemarker 2 (Meaning) */}
+                  {/* Top Section: Place2 Meaning */}
+                  <div className="my-auto text-center space-y-1 pt-2 w-full">
                     {variableToggles?.meaning !== false && (
-                      <div className="space-y-1 pt-1">
-                        <span className="text-xs text-slate-400 font-medium block font-bengali">
-                          {getPlaceLabel('place2', 'Meaning')}:
+                      <div className="space-y-1">
+                        <span className="text-xs text-slate-800 font-medium block font-bengali">
+                          {getPlaceLabel('place2', 'Meaning')}
                         </span>
-                        <p className="text-2xl sm:text-3xl font-bold text-slate-800 font-bengali leading-relaxed">
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#00a884] font-bengali leading-tight tracking-tight text-center">
                           {currentActiveWord.meaning || (currentActiveWord as any).place2}
-                        </p>
+                        </h2>
                       </div>
                     )}
+                  </div>
 
-                    {/* c. Placemarker 5 & 6 (Synonyms) */}
-                    {variableToggles?.synonyms !== false && (currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2 || (currentActiveWord as any).place5 || (currentActiveWord as any).place6) && (
-                      <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700">
-                        <div className="space-y-0.5">
-                          <span className="text-xs text-slate-400 font-medium block font-bengali">
-                            {getPlaceLabel('place5', 'Synonyms')}:
-                          </span>
-                          <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
-                            {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
-                          </p>
-                        </div>
+                  {/* Horizontal Divider Line */}
+                  <div className="w-full border-b border-slate-200/90 my-3 sm:my-4" />
 
-                        {/* Additional place6 field or synonym2 if separate */}
-                        {((currentActiveWord as any).place6 || (currentActiveWord.synonym2 && placeLabels?.place6)) && (
-                          <div className="space-y-0.5 pt-1">
-                            <span className="text-xs text-slate-400 font-medium block font-bengali">
-                              {getPlaceLabel('place6', 'Extra Synonyms')}:
-                            </span>
-                            <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
-                              {(currentActiveWord as any).place6 || currentActiveWord.synonym2}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* d. Placemarker 4 & 6 (Derivatives / Extra Info) */}
-                    {(variableToggles?.extraWord !== false || variableToggles?.extraMeaning !== false) && (currentActiveWord.extraWord || currentActiveWord.extraMeaning || (currentActiveWord as any).place4 || (currentActiveWord as any).place6) && (
-                      <div className="space-y-0.5 pt-2 border-t border-slate-100">
-                        <span className="text-xs text-slate-400 font-medium block font-bengali">
-                          {getPlaceLabel('place4', 'Derivatives')}:
+                  {/* Middle Content Area */}
+                  <div className="my-auto space-y-3 sm:space-y-4 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
+                    {/* Two Column Grid for Place5 and Place6 */}
+                    <div className="grid grid-cols-2 gap-3 text-center">
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
+                          {getPlaceLabel('place5', 'Synonyms')}
                         </span>
-                        <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
-                          {currentActiveWord.extraWord || (currentActiveWord as any).place4}
-                          {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` - ${currentActiveWord.extraMeaning || (currentActiveWord as any).place6}` : ''}
+                        <p className="font-black text-slate-950 font-bengali text-lg sm:text-2xl break-words leading-snug">
+                          {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ') || '-'}
                         </p>
                       </div>
-                    )}
 
-                    {/* e. Placemarker 3 (Word in use / example sentence) */}
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
+                          {getPlaceLabel('place6', 'Extra Meaning')}
+                        </span>
+                        <p className="font-black text-slate-950 font-bengali text-lg sm:text-2xl break-words leading-snug">
+                          {(currentActiveWord as any).place6 || currentActiveWord.extraMeaning || '-'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Place3: Example / Word in use */}
                     {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
-                      <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
-                        <span className="text-xs text-slate-400 font-medium block font-bengali">
-                          {getPlaceLabel('place3', 'Word in use')}:
+                      <div className="pt-2 space-y-1">
+                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
+                          {getPlaceLabel('place3', 'Word in use')}
                         </span>
-                        <p className="text-sm sm:text-base font-semibold text-slate-800 font-bengali leading-relaxed break-words">
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
                           {renderSentence(activeExampleSentence || (currentActiveWord as any).place3 || '')}
                         </p>
                       </div>
                     )}
 
-                    {/* f. Category / Mnemonic (if present) */}
+                    {/* Mnemonic / Note */}
                     {(noteText || currentActiveWord.mnemonic) && (
-                      <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
-                        <span className="text-xs text-slate-400 font-medium block font-bengali">
-                          ক্যাটাগরি / নোট:
+                      <div className="pt-2 space-y-1">
+                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
+                          '{getPlaceLabel('mnemonic', 'Mnemonic')}'
                         </span>
-                        <p className="text-xs sm:text-sm font-semibold text-slate-800 font-bengali leading-relaxed break-words">
+                        <p className="text-xs sm:text-sm font-bold italic text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
                           {noteText || currentActiveWord.mnemonic}
                         </p>
                       </div>
                     )}
                   </div>
 
-                  {/* Bottom: 4 Action Buttons (Not Learned, Confused, Learned, Skip) */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: Action Buttons */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
-                        activeStatus === 'dont_know'
-                          ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
-                          : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
-                      }`}
-                      title="Not Learned / Red"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrev();
+                      }}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      title="Previous Card"
                     >
-                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('dont_know', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        activeStatus === 'dont_know'
+                          ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
+                          : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
+                      }`}
+                      title="Not Learned"
+                    >
                       <span>Not Learned</span>
                     </button>
 
                     <button
-                      onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('confusion', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'confusion'
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
-                          : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
+                          ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
+                          : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
                       }`}
-                      title="Confused / Yellow"
+                      title="Confusion"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Confused</span>
+                      <span>Confusion</span>
                     </button>
 
                     <button
-                      onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rateAndMaybeConfirm('know', true);
+                      }}
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'know'
-                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
-                          : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
+                          ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
+                          : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
                       }`}
-                      title="Learned / Green"
+                      title="Learned"
                     >
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       <span>Learned</span>
                     </button>
 
                     <button
-                      onClick={() => handleNext()}
-                      className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300/80 active:scale-95 shadow-2xs"
-                      title="Skip / স্কিপ"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNext();
+                      }}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      title="Next Card"
                     >
-                      <SkipForward className="w-3.5 h-3.5 stroke-[2.5] text-indigo-600" />
-                      <span className="font-bengali text-indigo-700 font-bold">Skip</span>
+                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>

@@ -32,7 +32,8 @@ import {
   Sun,
   Moon,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 
 import {
@@ -70,6 +71,30 @@ const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
 const LOCAL_STORAGE_ACTIVE_TAB_KEY = 'vocab_memorizer_active_tab_v3';
 
 export default function App() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('User response to install prompt:', outcome);
+      setDeferredPrompt(null);
+    } else {
+      alert("To install Bishorghor Vocabulary on your mobile device:\n\n1. Safari (iOS): Tap Share button -> 'Add to Home Screen'\n2. Chrome (Android): Tap menu (3 dots) -> 'Install App' or 'Add to Home screen'");
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_TAB_KEY);
     return (saved as ActiveTab) || 'dashboard';
@@ -227,7 +252,11 @@ export default function App() {
     const saved = localStorage.getItem('vocab_memorizer_cached_custom_courses');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Course[] = JSON.parse(saved);
+        return parsed.map(c => ({
+          ...c,
+          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : c.title
+        }));
       } catch (e) {
         return [];
       }
@@ -238,7 +267,11 @@ export default function App() {
     const saved = localStorage.getItem('vocab_memorizer_imported_courses');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed: Course[] = JSON.parse(saved);
+        return parsed.map(c => ({
+          ...c,
+          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : c.title
+        }));
       } catch (e) {
         return [];
       }
@@ -586,7 +619,9 @@ export default function App() {
         const querySnapshot = await getDocs(coursesRef);
         const loaded: Course[] = [];
         querySnapshot.forEach(doc => {
-          loaded.push({ id: doc.id, ...doc.data() } as Course);
+          const data = doc.data() as Course;
+          const cleanTitle = (!data.title || data.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : data.title;
+          loaded.push({ id: doc.id, ...data, title: cleanTitle } as Course);
         });
         setCustomCourses(loaded);
         localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(loaded));
@@ -1424,6 +1459,17 @@ export default function App() {
             {darkMode ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-300" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-300" />}
           </button>
 
+          {/* Install PWA App Button */}
+          <button
+            onClick={handleInstallApp}
+            className="flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-2.5 md:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 rounded-xl transition cursor-pointer text-[10px] md:text-xs font-bold shadow-xs"
+            title="Install App / Add to Home Screen"
+            id="pwa-install-btn"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Install App</span>
+          </button>
+
           {user ? (
             <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
               <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/15 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
@@ -1657,6 +1703,7 @@ export default function App() {
               setEnrolledCourseIds={setEnrolledCourseIds}
               progress={progress}
               onImportCourse={handleImportCourse}
+              onSelectTab={setActiveTab}
             />
           )}
 

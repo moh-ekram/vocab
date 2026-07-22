@@ -89,8 +89,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [excelAnalogyUploadError, setExcelAnalogyUploadError] = useState<string | null>(null);
   const [excelAnalogySaveStatus, setExcelAnalogySaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
+  // Helper to clean title
+  const getCleanCourseTitle = (t?: string) => (!t || t.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : t;
+
   // --- GENERAL COURSE STATES ---
-  const [title, setTitle] = useState(course.title);
+  const [title, setTitle] = useState(getCleanCourseTitle(course.title));
   const [description, setDescription] = useState(course.description);
   const [localPlaceLabels, setLocalPlaceLabels] = useState<Record<string, string>>(course.placeLabels || {});
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
@@ -884,7 +887,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   // Synchronize on course prop changes
   useEffect(() => {
-    setTitle(course.title);
+    setTitle(getCleanCourseTitle(course.title));
     setDescription(course.description);
     setIsDefault(!!course.isDefault);
     setIsRestricted(!!course.isRestricted);
@@ -1665,7 +1668,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
       const updatedCourse: Course = {
         ...course,
-        title: title.trim(),
+        title: getCleanCourseTitle(title.trim()),
         description: description.trim(),
         isDefault: isDefault,
         isRestricted: isRestricted,
