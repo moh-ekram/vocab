@@ -646,7 +646,7 @@ export default function FlashcardViewer({
               {[
                 { key: 'unrated', label: 'Unrated', color: 'bg-slate-400' },
                 { key: 'dont_know', label: 'Not Learned', color: 'bg-rose-500' },
-                { key: 'confusion', label: 'Confused', color: 'bg-amber-500' },
+                { key: 'confusion', label: 'Confused', color: 'bg-purple-500' },
                 { key: 'know', label: 'Learned', color: 'bg-emerald-500' }
               ].map(st => {
                 const isSelected = selectedStatuses.includes(st.key);
@@ -790,42 +790,93 @@ export default function FlashcardViewer({
         {/* Flashcard Stack Stage with Dynamic Animation */}
         {(() => {
           const animStyle = settings?.flashcardAnimation || 'shuffle';
+          const statusTheme = (() => {
+            switch (activeStatus) {
+              case 'dont_know':
+                return {
+                  wordColor: 'text-[#f43f5e]',
+                  borderClass: 'border-[#f43f5e] ring-2 ring-rose-400/30 shadow-rose-100/50',
+                  badgeBg: 'bg-rose-50 border-rose-300 text-rose-700',
+                  dotBg: 'bg-rose-500',
+                  label: 'Not Learned'
+                };
+              case 'confusion':
+                return {
+                  wordColor: 'text-[#a855f7]',
+                  borderClass: 'border-[#a855f7] ring-2 ring-purple-400/30 shadow-purple-100/50',
+                  badgeBg: 'bg-purple-50 border-purple-300 text-purple-700',
+                  dotBg: 'bg-purple-500',
+                  label: 'Confusion'
+                };
+              case 'know':
+                return {
+                  wordColor: 'text-[#0d9488]',
+                  borderClass: 'border-[#0d9488] ring-2 ring-teal-400/30 shadow-teal-100/50',
+                  badgeBg: 'bg-teal-50 border-teal-300 text-teal-700',
+                  dotBg: 'bg-teal-500',
+                  label: 'Learned'
+                };
+              default:
+                return {
+                  wordColor: 'text-slate-950',
+                  borderClass: 'border-indigo-200/90 shadow-indigo-100/50',
+                  badgeBg: '',
+                  dotBg: '',
+                  label: ''
+                };
+            }
+          })();
 
-          let containerAnimClass = 'relative w-full h-full flex-1 cursor-pointer';
-          let frontFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl shadow-indigo-100/50 border border-indigo-200/90 flex flex-col justify-between z-10 overflow-hidden';
-          let backFaceAnimClass = 'absolute inset-0 backface-hidden bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl shadow-indigo-100/50 border border-indigo-200/90 flex flex-col justify-between z-10 overflow-hidden';
+          let containerTransform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+          let frontTransform = 'rotateY(0deg)';
+          let backTransform = 'rotateY(180deg)';
 
           if (animStyle === 'fade') {
-            frontFaceAnimClass += ` transition-opacity duration-300 ${isFlipped ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
-            backFaceAnimClass += ` transition-opacity duration-300 ${isFlipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`;
+            containerTransform = 'none';
           } else if (animStyle === 'flip-v') {
-            containerAnimClass += ` transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-x-180' : ''}`;
-            frontFaceAnimClass += ` ${isFlipped ? 'pointer-events-none' : ''}`;
-            backFaceAnimClass += ` rotate-x-180 ${!isFlipped ? 'pointer-events-none' : ''}`;
+            containerTransform = isFlipped ? 'rotateX(180deg)' : 'rotateX(0deg)';
+            frontTransform = 'rotateX(0deg)';
+            backTransform = 'rotateX(180deg)';
           } else if (animStyle === 'slide') {
-            containerAnimClass += ` transition-all duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180 translate-x-3' : ''}`;
-            frontFaceAnimClass += ` ${isFlipped ? 'pointer-events-none' : ''}`;
-            backFaceAnimClass += ` rotate-y-180 ${!isFlipped ? 'pointer-events-none' : ''}`;
+            containerTransform = isFlipped ? 'rotateY(180deg) translateX(8px)' : 'rotateY(0deg)';
           } else if (animStyle === 'zoom') {
-            containerAnimClass += ` transition-all duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180 scale-102' : 'scale-100'}`;
-            frontFaceAnimClass += ` ${isFlipped ? 'pointer-events-none' : ''}`;
-            backFaceAnimClass += ` rotate-y-180 ${!isFlipped ? 'pointer-events-none' : ''}`;
+            containerTransform = isFlipped ? 'rotateY(180deg) scale(1.02)' : 'rotateY(0deg) scale(1.0)';
           } else if (animStyle === 'shuffle') {
-            containerAnimClass += ` transition-all duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180 -rotate-2 -translate-y-2' : ''}`;
-            frontFaceAnimClass += ` ${isFlipped ? 'pointer-events-none' : ''}`;
-            backFaceAnimClass += ` rotate-y-180 ${!isFlipped ? 'pointer-events-none' : ''}`;
-          } else {
-            // default: flip-h
-            containerAnimClass += ` transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`;
-            frontFaceAnimClass += ` ${isFlipped ? 'pointer-events-none' : ''}`;
-            backFaceAnimClass += ` rotate-y-180 ${!isFlipped ? 'pointer-events-none' : ''}`;
+            containerTransform = isFlipped ? 'rotateY(180deg) translateY(-4px)' : 'rotateY(0deg)';
           }
+
+          const containerStyle: React.CSSProperties = {
+            transformStyle: 'preserve-3d',
+            WebkitTransformStyle: 'preserve-3d',
+            transform: containerTransform,
+            transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+          };
+
+          const faceBaseClass = `absolute inset-0 bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl border flex flex-col justify-between z-10 transition-colors duration-300 ${statusTheme.borderClass}`;
+
+          const frontFaceStyle: React.CSSProperties = {
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: frontTransform,
+            opacity: animStyle === 'fade' ? (isFlipped ? 0 : 1) : 1,
+            pointerEvents: isFlipped ? 'none' : 'auto',
+            transition: animStyle === 'fade' ? 'opacity 0.3s ease-in-out' : undefined
+          };
+
+          const backFaceStyle: React.CSSProperties = {
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: backTransform,
+            opacity: animStyle === 'fade' ? (isFlipped ? 1 : 0) : 1,
+            pointerEvents: !isFlipped ? 'none' : 'auto',
+            transition: animStyle === 'fade' ? 'opacity 0.3s ease-in-out' : undefined
+          };
 
           return (
             <div className="w-full h-full flex-1 relative perspective my-auto">
-              {/* Stacked Cards depth effect */}
-              <div className="absolute inset-x-5 sm:inset-x-8 bottom-[-10px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-[28px] sm:rounded-[36px] rotate-2 pointer-events-none z-0"></div>
-              <div className="absolute inset-x-2.5 sm:inset-x-4 bottom-[-5px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-[28px] sm:rounded-[36px] -rotate-1 pointer-events-none z-0"></div>
+              {/* Stacked Cards depth effect - Straight Cards without rotation */}
+              <div className="absolute inset-x-5 sm:inset-x-8 bottom-[-10px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-[28px] sm:rounded-[36px] pointer-events-none z-0"></div>
+              <div className="absolute inset-x-2.5 sm:inset-x-4 bottom-[-5px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-[28px] sm:rounded-[36px] pointer-events-none z-0"></div>
 
               {/* Active Flip Card Container */}
               <div
@@ -836,184 +887,208 @@ export default function FlashcardViewer({
                   }
                   setIsFlipped(prev => !prev);
                 }}
-                className={containerAnimClass}
+                className="relative w-full h-full flex-1 cursor-pointer"
+                style={containerStyle}
               >
                 {/* FRONT FACE */}
-                <div className={frontFaceAnimClass}>
-                  {/* Top Row: Group Pill Badge on Left, Report Button on Right */}
-                  <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
-                    <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
-                      G-{currentIndex + 1}/{filteredWords.length}
-                    </span>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenReportModal(currentActiveWord);
-                      }}
-                      className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
-                      title="Report Issue"
-                    >
-                      Report
-                    </button>
-                  </div>
-
-                  {/* Middle: Main Word + Pronounce & Google Buttons directly under */}
-                  <div className="my-auto text-center space-y-3 sm:space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
-                    <span className="text-xs text-slate-800 font-medium font-bengali tracking-wide">
-                      {getPlaceLabel('place1', 'Word')}
-                    </span>
-
-                    <h1 className="font-black text-slate-950 tracking-tight font-bengali text-center text-4xl sm:text-5xl md:text-6xl leading-none px-1">
-                      {currentActiveWord.word || (currentActiveWord as any).place1}
-                    </h1>
-
-                    {/* Pronunciation & Google search circular buttons directly under main word */}
-                    <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
-                      {variableToggles?.audio !== false && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            speakWord();
-                          }}
-                          className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
-                          title="Speak / Pronounce Word"
-                        >
-                          <Volume2 className="w-5 h-5 text-slate-700" />
-                        </button>
-                      )}
+                <div className={faceBaseClass} style={frontFaceStyle}>
+                  <div className="w-full h-full flex flex-col justify-between overflow-hidden">
+                    {/* Top Row: Group Pill Badge & Status Badge on Left, Report Button on Right */}
+                    <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
+                          G-{currentIndex + 1}/{filteredWords.length}
+                        </span>
+                        {statusTheme.label && (
+                          <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border flex items-center gap-1.5 shadow-2xs ${statusTheme.badgeBg}`}>
+                            <span className={`w-2 h-2 rounded-full ${statusTheme.dotBg}`} />
+                            <span>{statusTheme.label}</span>
+                          </span>
+                        )}
+                      </div>
 
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
-                          window.open(googleUrl, '_blank');
+                          handleOpenReportModal(currentActiveWord);
                         }}
-                        className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
-                        title="Google Search Word"
+                        className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
+                        title="Report Issue"
                       >
-                        <GoogleIcon className="w-5 h-5" />
+                        Report
                       </button>
                     </div>
 
-                    {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
-                    {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
-                      <div className="pt-1 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-[11px] text-slate-500 font-medium font-bengali">
-                          {getPlaceLabel('place4', 'Derivatives')}:
-                        </span>
-                        <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
-                          {currentActiveWord.extraWord || (currentActiveWord as any).place4}
-                          {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
-                        </p>
+                    {/* Middle: Main Word + Pronounce & Google Buttons directly under */}
+                    <div className="my-auto text-center space-y-3 sm:space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
+                      <span className="text-xs text-slate-800 font-medium font-bengali tracking-wide">
+                        {getPlaceLabel('place1', 'Word')}
+                      </span>
+
+                      <h1 className={`font-black tracking-tight font-bengali text-center text-4xl sm:text-5xl md:text-6xl leading-none px-1 transition-colors duration-300 ${statusTheme.wordColor}`}>
+                        {currentActiveWord.word || (currentActiveWord as any).place1}
+                      </h1>
+
+                      {/* Pronunciation & Google search circular buttons directly under main word */}
+                      <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
+                        {variableToggles?.audio !== false && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              speakWord();
+                            }}
+                            className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
+                            title="Speak / Pronounce Word"
+                          >
+                            <Volume2 className="w-5 h-5 text-slate-700" />
+                          </button>
+                        )}
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
+                            window.open(googleUrl, '_blank');
+                          }}
+                          className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
+                          title="Google Search Word"
+                        >
+                          <GoogleIcon className="w-5 h-5" />
+                        </button>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Bottom: Action Buttons (< Not Learned | Confusion | Learned >) */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePrev();
-                      }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
-                      title="Previous Card"
-                    >
-                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-                    </button>
+                      {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
+                      {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
+                        <div className="pt-1 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[11px] text-slate-500 font-medium font-bengali">
+                            {getPlaceLabel('place4', 'Derivatives')}:
+                          </span>
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
+                            {currentActiveWord.extraWord || (currentActiveWord as any).place4}
+                            {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('dont_know', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'dont_know'
-                          ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
-                          : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
-                      }`}
-                      title="Not Learned"
-                    >
-                      <span>Not Learned</span>
-                    </button>
+                    {/* Bottom: Action Buttons (< Not Learned | Confusion | Learned >) */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrev();
+                        }}
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        title="Previous Card"
+                      >
+                        <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('confusion', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'confusion'
-                          ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
-                          : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
-                      }`}
-                      title="Confusion"
-                    >
-                      <span>Confusion</span>
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('dont_know', true);
+                        }}
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                          activeStatus === 'dont_know'
+                            ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
+                            : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
+                        }`}
+                        title="Not Learned"
+                      >
+                        <span>Not Learned</span>
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        rateAndMaybeConfirm('know', true);
-                      }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
-                        activeStatus === 'know'
-                          ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
-                          : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
-                      }`}
-                      title="Learned"
-                    >
-                      <span>Learned</span>
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('confusion', true);
+                        }}
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                          activeStatus === 'confusion'
+                            ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
+                            : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
+                        }`}
+                        title="Confusion"
+                      >
+                        <span>Confusion</span>
+                      </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNext();
-                      }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
-                      title="Next Card"
-                    >
-                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-                    </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rateAndMaybeConfirm('know', true);
+                        }}
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                          activeStatus === 'know'
+                            ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
+                            : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
+                        }`}
+                        title="Learned"
+                      >
+                        <span>Learned</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNext();
+                        }}
+                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        title="Next Card"
+                      >
+                        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* BACK FACE */}
-                <div className={backFaceAnimClass}>
-                  {/* Top Header Row */}
-                  <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
-                    <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
-                      G-{currentIndex + 1}/{filteredWords.length}
-                    </span>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenReportModal(currentActiveWord);
-                      }}
-                      className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
-                      title="Report Issue"
-                    >
-                      Report
-                    </button>
-                  </div>
-
-                  {/* Top Section: Place2 Meaning */}
-                  <div className="my-auto text-center space-y-1 pt-2 w-full">
-                    {variableToggles?.meaning !== false && (
-                      <div className="space-y-1">
-                        <span className="text-xs text-slate-800 font-medium block font-bengali">
-                          {getPlaceLabel('place2', 'Meaning')}
+                <div className={faceBaseClass} style={backFaceStyle}>
+                  <div className="w-full h-full flex flex-col justify-between overflow-hidden">
+                    {/* Top Header Row */}
+                    <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 sm:px-4 py-0.5 sm:py-1 text-xs font-medium text-indigo-600 border border-indigo-400 rounded-full font-mono bg-indigo-50/20">
+                          G-{currentIndex + 1}/{filteredWords.length}
                         </span>
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#00a884] font-bengali leading-tight tracking-tight text-center">
-                          {currentActiveWord.meaning || (currentActiveWord as any).place2}
-                        </h2>
+                        {statusTheme.label && (
+                          <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border flex items-center gap-1.5 shadow-2xs ${statusTheme.badgeBg}`}>
+                            <span className={`w-2 h-2 rounded-full ${statusTheme.dotBg}`} />
+                            <span>{statusTheme.label}</span>
+                          </span>
+                        )}
                       </div>
-                    )}
-                  </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenReportModal(currentActiveWord);
+                        }}
+                        className="text-[#f43f5e] hover:text-rose-600 font-medium text-sm transition cursor-pointer active:scale-95"
+                        title="Report Issue"
+                      >
+                        Report
+                      </button>
+                    </div>
+
+                    {/* Top Section: Place2 Meaning */}
+                    <div className="my-auto text-center space-y-1 pt-2 w-full">
+                      {/* Word reference header */}
+                      <span className={`text-xs font-black font-bengali block tracking-wide uppercase ${statusTheme.wordColor}`}>
+                        {currentActiveWord.word || (currentActiveWord as any).place1}
+                      </span>
+                      {variableToggles?.meaning !== false && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-slate-800 font-medium block font-bengali">
+                            {getPlaceLabel('place2', 'Meaning')}
+                          </span>
+                          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#00a884] font-bengali leading-tight tracking-tight text-center">
+                            {currentActiveWord.meaning || (currentActiveWord as any).place2}
+                          </h2>
+                        </div>
+                      )}
+                    </div>
 
                   {/* Horizontal Divider Line */}
                   <div className="w-full border-b border-slate-200/90 my-3 sm:my-4" />
@@ -1138,7 +1213,8 @@ export default function FlashcardViewer({
                 </div>
               </div>
             </div>
-          );
+          </div>
+        );
         })()}
       </main>
 
