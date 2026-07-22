@@ -809,10 +809,10 @@ export default function FlashcardViewer({
               >
                 {/* FRONT FACE */}
                 <div className={frontFaceAnimClass}>
-                  {/* Top Row: Group & Number on Left, Report Button on Right */}
-                  <div className="flex items-center justify-between w-full flex-shrink-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
-                      Group {currentActiveWord.group} • #{currentIndex + 1}
+                  {/* Top Row: Group info on Left (no pill background), Report Button on Right */}
+                  <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                    <span className="text-xs sm:text-sm font-medium text-slate-400 font-bengali">
+                      Group: #{currentActiveWord.group}
                     </span>
 
                     <button
@@ -820,7 +820,7 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         handleOpenReportModal(currentActiveWord);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-full text-xs font-bold transition cursor-pointer active:scale-95"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-500 hover:text-rose-600 transition cursor-pointer active:scale-95"
                       title="Report Issue"
                     >
                       <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
@@ -830,19 +830,23 @@ export default function FlashcardViewer({
 
                   {/* Middle: Main Word + Pronounce & Google Buttons directly under (icon-only) */}
                   <div className="my-auto text-center space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
-                    <h1 className={`font-black text-slate-900 tracking-tight font-sans text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none ${getWordFontSize(currentActiveWord.word)}`}>
+                    <span className="text-xs text-slate-400 font-medium font-bengali">
+                      {getPlaceLabel('place1', 'Word')}
+                    </span>
+
+                    <h1 className={`font-black text-slate-900 tracking-tight font-bengali text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none ${getWordFontSize(currentActiveWord.word)}`}>
                       {currentActiveWord.word}
                     </h1>
 
-                    {/* Pronunciation & Google search buttons directly under main word (icon-only) */}
-                    <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Pronunciation & Google search buttons directly under main word (icon-only outline style) */}
+                    <div className="flex items-center justify-center gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
                       {variableToggles?.audio !== false && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             speakWord();
                           }}
-                          className="p-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full transition flex items-center justify-center shadow-xs cursor-pointer active:scale-95 border border-indigo-100"
+                          className="p-3 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-600 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-indigo-200/70"
                           title="Speak / Pronounce Word"
                         >
                           <Volume2 className="w-5 h-5 text-indigo-600" />
@@ -855,7 +859,7 @@ export default function FlashcardViewer({
                           const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
                           window.open(googleUrl, '_blank');
                         }}
-                        className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition flex items-center justify-center shadow-xs cursor-pointer active:scale-95 border border-slate-200/60"
+                        className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/80"
                         title="Google Search Word"
                       >
                         <GoogleIcon className="w-5 h-5" />
@@ -863,14 +867,14 @@ export default function FlashcardViewer({
                     </div>
                   </div>
 
-                  {/* Bottom: 3 Status Rating Buttons */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: 3 Status Rating Buttons (Minimalist Outline Style) */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-2 sm:gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'dont_know'
-                          ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                          : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                          ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
+                          : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
                       }`}
                       title="Not Learned / Red"
                     >
@@ -880,10 +884,10 @@ export default function FlashcardViewer({
 
                     <button
                       onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'confusion'
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
-                          : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
+                          : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
                       }`}
                       title="Confused / Yellow"
                     >
@@ -893,10 +897,10 @@ export default function FlashcardViewer({
 
                     <button
                       onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'know'
-                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
+                          : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
                       }`}
                       title="Learned / Green"
                     >
@@ -909,9 +913,9 @@ export default function FlashcardViewer({
                 {/* BACK FACE */}
                 <div className={backFaceAnimClass}>
                   {/* Top Header Row */}
-                  <div className="flex items-center justify-between w-full flex-shrink-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/60">
-                      Group {currentActiveWord.group} • #{currentIndex + 1}
+                  <div className="flex items-center justify-between w-full flex-shrink-0 pt-0.5">
+                    <span className="text-xs sm:text-sm font-medium text-slate-400 font-bengali">
+                      Group: #{currentActiveWord.group}
                     </span>
 
                     <button
@@ -919,7 +923,7 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         handleOpenReportModal(currentActiveWord);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-full text-xs font-bold transition cursor-pointer active:scale-95"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-rose-500 hover:text-rose-600 transition cursor-pointer active:scale-95"
                       title="Report Issue"
                     >
                       <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
@@ -927,77 +931,37 @@ export default function FlashcardViewer({
                     </button>
                   </div>
 
-                  {/* Middle Content Area: items a, b, c, d, e */}
-                  <div className="my-auto space-y-3.5 py-3 text-center w-full max-w-lg mx-auto overflow-y-auto">
-                    {/* a. Placemarker 1 (Word title / place1) + Pronounce & Google Search buttons */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block font-sans">
-                        {getPlaceLabel('place1', 'Word')}
+                  {/* Middle Content Area: items b, c, d, e */}
+                  <div className="my-auto space-y-4 py-3 text-center w-full max-w-lg mx-auto overflow-y-auto">
+                    {/* b. Placemarker 2 (Meaning) */}
+                    <div className="space-y-1 pt-1">
+                      <span className="text-xs text-slate-400 font-medium block font-bengali">
+                        {getPlaceLabel('place2', 'Meaning')}:
                       </span>
-                      <div className="flex items-center justify-center gap-3">
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-sans">
-                          {currentActiveWord.word}
-                        </h2>
-
-                        {/* Pronunciation & Google search buttons on Back Face */}
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {variableToggles?.audio !== false && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                speakWord();
-                              }}
-                              className="p-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-indigo-100"
-                              title="Speak / Pronounce Word"
-                            >
-                              <Volume2 className="w-4 h-4 text-indigo-600" />
-                            </button>
-                          )}
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
-                              window.open(googleUrl, '_blank');
-                            }}
-                            className="p-2 bg-white hover:bg-slate-50 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/80"
-                            title="Google Search Word"
-                          >
-                            <GoogleIcon className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* b. Placemarker 2 (Meaning, just below placemarker 1) */}
-                    <div className="space-y-0.5 pt-0.5">
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block font-sans">
-                        {getPlaceLabel('place2', 'Meaning')}
-                      </span>
-                      <p className="text-2xl sm:text-3xl font-bold text-emerald-600 font-bengali leading-relaxed">
+                      <p className="text-2xl sm:text-3xl font-bold text-slate-800 font-bengali leading-relaxed">
                         {currentActiveWord.meaning}
                       </p>
                     </div>
 
                     {/* c. Placemarker 5,6 (Synonyms / Extra meaning, just below placemarker 2) */}
                     {((currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) || (currentActiveWord.extraWord || currentActiveWord.extraMeaning)) && (
-                      <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700 font-sans">
+                      <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700">
                         {(currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) && (
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-indigo-500 block">
-                              {getPlaceLabel('place5', 'Synonyms')}
+                          <div className="space-y-0.5">
+                            <span className="text-xs text-slate-400 font-medium block font-bengali">
+                              {getPlaceLabel('place5', 'Synonyms')}:
                             </span>
-                            <p className="font-semibold text-slate-800 break-words">
+                            <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
                               {currentActiveWord.synonyms || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
                             </p>
                           </div>
                         )}
                         {(currentActiveWord.extraWord || currentActiveWord.extraMeaning) && (
-                          <div>
-                            <span className="text-[10px] uppercase font-bold text-indigo-500 block">
-                              {getPlaceLabel('place4', 'Derivatives')}
+                          <div className="space-y-0.5">
+                            <span className="text-xs text-slate-400 font-medium block font-bengali">
+                              {getPlaceLabel('place4', 'Derivatives')}:
                             </span>
-                            <p className="font-semibold text-indigo-700 font-bengali break-words">
+                            <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
                               {currentActiveWord.extraWord}{currentActiveWord.extraMeaning ? ` - ${currentActiveWord.extraMeaning}` : ''}
                             </p>
                           </div>
@@ -1005,39 +969,39 @@ export default function FlashcardViewer({
                       </div>
                     )}
 
-                    {/* d. Placemarker 3 (Word in use / example sentence in smaller Poppins / font-sans) */}
+                    {/* d. Placemarker 3 (Word in use / example sentence) */}
                     {activeExampleSentence && (
-                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-left space-y-1">
-                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block font-sans">
-                          {getPlaceLabel('place3', 'Word in use')}
+                      <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
+                        <span className="text-xs text-slate-400 font-medium block font-bengali">
+                          {getPlaceLabel('place3', 'Word in use')}:
                         </span>
-                        <p className="text-xs sm:text-sm font-medium text-slate-800 font-sans leading-relaxed break-words">
+                        <p className="text-sm sm:text-base font-semibold text-slate-800 font-bengali leading-relaxed break-words">
                           {renderSentence(activeExampleSentence)}
                         </p>
                       </div>
                     )}
 
-                    {/* e. Mnemonic (if present in Excel / word data, otherwise blank) */}
-                    {(noteText || currentActiveWord.mnemonic) ? (
-                      <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl text-left space-y-1">
-                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block font-sans">
-                          Mnemonic
+                    {/* e. Category / Mnemonic (if present) */}
+                    {(noteText || currentActiveWord.mnemonic) && (
+                      <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
+                        <span className="text-xs text-slate-400 font-medium block font-bengali">
+                          ক্যাটাগরি / নোট:
                         </span>
-                        <p className="text-xs sm:text-sm font-bold text-amber-900 font-bengali leading-relaxed break-words">
+                        <p className="text-xs sm:text-sm font-semibold text-slate-800 font-bengali leading-relaxed break-words">
                           {noteText || currentActiveWord.mnemonic}
                         </p>
                       </div>
-                    ) : null}
+                    )}
                   </div>
 
-                  {/* Bottom: 3 Status Rating Buttons */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: 3 Status Rating Buttons (Minimalist Outline Style) */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-2 sm:gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'dont_know'
-                          ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                          : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                          ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
+                          : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
                       }`}
                       title="Not Learned / Red"
                     >
@@ -1047,10 +1011,10 @@ export default function FlashcardViewer({
 
                     <button
                       onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'confusion'
-                          ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
-                          : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
+                          : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
                       }`}
                       title="Confused / Yellow"
                     >
@@ -1060,10 +1024,10 @@ export default function FlashcardViewer({
 
                     <button
                       onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-3 sm:px-4 py-2.5 rounded-2xl flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
                         activeStatus === 'know'
-                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                          ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
+                          : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
                       }`}
                       title="Learned / Green"
                     >
