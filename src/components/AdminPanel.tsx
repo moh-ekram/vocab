@@ -727,10 +727,16 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         // Extract place labels from headers
         let detectedLabels: Record<string, string> = {};
         firstLineRawCells.forEach(cell => {
-          const match = cell.trim().match(/^place(1|2|3|4|5|6):(.*)$/i);
+          const rawCell = cell.trim();
+          const match = rawCell.match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
+          } else {
+            const lowerCell = rawCell.toLowerCase();
+            if (['word in use', 'write your sentence', 'example sentence', 'sentence'].includes(lowerCell) && !detectedLabels.place3) {
+              detectedLabels.place3 = rawCell;
+            }
           }
         });
         setParsedPlaceLabels(detectedLabels);
@@ -761,7 +767,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
           const synsPos = findPos(['synonyms']);
           const extraWPos = findPos(['extra word'], 'place4');
           const extraMPos = findPos(['extra meaning']);
-          const exPos = findPos(['example'], 'place3');
+          const exPos = findPos(['example', 'example sentence', 'word in use', 'write your sentence', 'sentence'], 'place3');
 
           if (idPos !== -1) colIdxs.id = idPos;
           if (wordPos !== -1) colIdxs.word = wordPos;

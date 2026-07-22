@@ -71,6 +71,16 @@ export default function FlashcardViewer({
   placeLabels,
   googleSearchQuery
 }: FlashcardViewerProps) {
+  // Helper to resolve place labels handling both flat and nested placeLabels structure safely
+  const getPlaceLabel = (
+    key: 'place1' | 'place2' | 'place3' | 'place4' | 'place5' | 'place6',
+    fallback: string
+  ) => {
+    if (!placeLabels) return fallback;
+    if ((placeLabels as any)[key] && typeof (placeLabels as any)[key] === 'string') return (placeLabels as any)[key];
+    if ((placeLabels as any).placeLabels?.[key] && typeof (placeLabels as any).placeLabels[key] === 'string') return (placeLabels as any).placeLabels[key];
+    return fallback;
+  };
   // Session active state - true when inside the full-screen card focus mode, false when on intermediate filter setup screen
   const [isSessionActive, setIsSessionActive] = useState<boolean>(() => Boolean(initialGroup));
 
@@ -886,8 +896,8 @@ export default function FlashcardViewer({
 
                     {/* Extra Word / Derivative if place4 available */}
                     {currentActiveWord.extraWord && (
-                      <p className="text-sm font-bold text-indigo-600 font-bengali pt-2">
-                        {placeLabels?.place4 ? `${placeLabels.place4}: ` : ''}{currentActiveWord.extraWord}
+                      <p className="text-sm font-bold text-indigo-600 font-bengali pt-2 break-words">
+                        {getPlaceLabel('place4', 'Derivatives')}: {currentActiveWord.extraWord}
                         {currentActiveWord.extraMeaning ? ` - ${currentActiveWord.extraMeaning}` : ''}
                       </p>
                     )}
@@ -988,9 +998,9 @@ export default function FlashcardViewer({
                     {(currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) && (
                       <div className="pt-3 border-t border-slate-100 text-xs font-semibold text-slate-600 max-w-md mx-auto">
                         <span className="text-[10px] uppercase font-bold text-indigo-500 block pb-1">
-                          {placeLabels?.place5 || 'Synonyms'}
+                          {getPlaceLabel('place5', 'Synonyms')}
                         </span>
-                        <p className="text-slate-700 font-medium">
+                        <p className="text-slate-700 font-medium break-words">
                           {currentActiveWord.synonyms || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
                         </p>
                       </div>
@@ -1080,9 +1090,9 @@ export default function FlashcardViewer({
             <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-300 border-b border-white/10 pb-2">
                 <Lightbulb className="w-4 h-4 text-amber-300 fill-amber-300/20" />
-                <span>{placeLabels?.place3 || "Word in use"}</span>
+                <span className="break-words">{getPlaceLabel('place3', 'Word in use')}</span>
               </div>
-              <p className="text-xs sm:text-sm font-medium leading-relaxed text-white pt-1">
+              <p className="text-xs sm:text-sm font-medium leading-relaxed text-white pt-1 break-words">
                 {renderSentence(activeExampleSentence)}
               </p>
             </div>
@@ -1093,7 +1103,7 @@ export default function FlashcardViewer({
                 <Brain className="w-4 h-4 text-indigo-300" />
                 <span>Mnemonic</span>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-emerald-300 font-bengali leading-relaxed pt-1">
+              <p className="text-xs sm:text-sm font-bold text-emerald-300 font-bengali leading-relaxed pt-1 break-words">
                 {noteText || currentActiveWord.mnemonic || "No mnemonic added for this word."}
               </p>
             </div>

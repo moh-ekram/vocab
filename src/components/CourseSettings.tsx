@@ -1347,13 +1347,18 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         }
 
         // Extract place labels from headers
-        let detectedLabels: Record<string, string> = {};
+        let detectedLabels: Record<string, string> = { ...localPlaceLabels };
         const firstRowKeys = Object.keys(rawRows[0]);
         firstRowKeys.forEach(k => {
           const match = k.match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
+          } else {
+            const lowerK = k.toLowerCase().trim();
+            if (['word in use', 'write your sentence', 'example sentence', 'sentence'].includes(lowerK) && !detectedLabels.place3) {
+              detectedLabels.place3 = k.trim();
+            }
           }
         });
         if (Object.keys(detectedLabels).length > 0) {
@@ -1398,7 +1403,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const synonymsKey = findKey(['synonyms', 'synonym']);
           const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
-          const exampleKey = findKey(['example', 'example sentence'], 'place3');
+          const exampleKey = findKey(['example', 'example sentence', 'word in use', 'write your sentence', 'sentence'], 'place3');
           const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
 
           const baseWord = wordKey && row[wordKey] !== undefined ? String(row[wordKey]).trim() : '';
