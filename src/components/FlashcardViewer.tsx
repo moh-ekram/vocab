@@ -18,6 +18,7 @@ import {
   Edit3, 
   Keyboard, 
   Sparkles,
+  Eye,
   RotateCcw,
   Quote,
   Loader2,
@@ -1137,6 +1138,19 @@ export default function FlashcardViewer({
                         )}
                       </div>
                     )}
+
+                    {/* Mnemonic / Memory Aid Note */}
+                    {(noteText || currentActiveWord.mnemonic) && (
+                      <div className="pt-2 border-t border-slate-100/80 space-y-1 text-left max-w-xl mx-auto font-sans">
+                        <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest font-sans text-center md:text-left flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-emerald-600 inline" />
+                          <span>Mnemonic / Memory Aid</span>
+                        </p>
+                        <p className="text-sm sm:text-[15px] font-black text-emerald-800 bg-emerald-50/90 p-2.5 rounded-xl border border-emerald-200/90 leading-relaxed font-sans shadow-2xs">
+                          "{noteText || currentActiveWord.mnemonic}"
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1289,9 +1303,29 @@ export default function FlashcardViewer({
                 ) : (
                   <div className="min-h-20 flex flex-col justify-center">
                     {noteText ? (
-                      <p className="text-sm text-slate-600 font-sans italic bg-slate-50 p-3.5 rounded-xl border border-dashed border-slate-200 leading-relaxed">
-                        "{noteText}"
-                      </p>
+                      isFlipped ? (
+                        <div className="space-y-1.5 animate-fadeIn">
+                          <div className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-xs">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Mnemonic / Note:</span>
+                          </div>
+                          <p className="text-sm font-black text-emerald-800 bg-emerald-50/90 p-3.5 rounded-xl border border-emerald-200/90 leading-relaxed font-sans shadow-2xs">
+                            "{noteText}"
+                          </p>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => setIsFlipped(true)}
+                          className="p-4 bg-slate-50 hover:bg-emerald-50/50 border border-dashed border-slate-200 hover:border-emerald-300 rounded-xl text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center gap-1.5"
+                          title="Click to flip flashcard"
+                        >
+                          <Eye className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                          <p className="text-xs font-black text-emerald-800 font-sans">
+                            ফ্লাশকার্ড উল্টালে Mnemonic দেখতে পাবেন
+                          </p>
+                          <span className="text-[10px] text-slate-400 font-medium font-sans">(Click card or press Spacebar to flip)</span>
+                        </div>
+                      )
                     ) : (
                       <p className="text-xs text-slate-400 font-sans text-center py-6">
                         No mnemonic notes or hints have been added yet. Click 'Edit' to write one.
