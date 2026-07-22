@@ -737,12 +737,12 @@ export default function FlashcardViewer({
   // RENDER STAGE 2: IMMERSIVE FULL-SCREEN FLASHCARD FOCUS MODE (isSessionActive = true)
   // =========================================================================
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col h-screen w-screen overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
+    <div className="fixed inset-0 z-50 bg-slate-950 text-white flex flex-col h-[100dvh] w-full overflow-hidden animate-fadeIn select-none font-sans" id="flashcard-fullscreen-view">
       {/* 1. Fullscreen Top Header Bar */}
-      <header className="h-12 sm:h-14 px-4 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-900/90 backdrop-blur-md z-30">
+      <header className="h-12 sm:h-14 px-3 sm:px-4 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-900/90 backdrop-blur-md z-30">
         <button
           onClick={() => setIsSessionActive(false)}
-          className="p-2 text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition cursor-pointer border border-white/10"
+          className="p-1.5 sm:p-2 text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition cursor-pointer border border-white/10"
           title="Back"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -756,7 +756,7 @@ export default function FlashcardViewer({
 
         <button
           onClick={() => setIsSessionActive(false)}
-          className="p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer border border-white/10"
+          className="p-1.5 sm:p-2 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white rounded-full transition cursor-pointer border border-white/10"
           title="Close Session"
         >
           <X className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -765,7 +765,7 @@ export default function FlashcardViewer({
 
       {/* 2. Main Flashcard Canvas Area - Occupies full available space */}
       <main 
-        className="flex-1 p-3 sm:p-5 flex flex-col items-center justify-between max-w-2xl mx-auto w-full relative h-[calc(100vh-3.5rem)] overflow-hidden"
+        className="flex-1 px-3 py-2 sm:p-5 pb-3 sm:pb-6 flex flex-col items-center justify-between max-w-2xl mx-auto w-full relative h-full min-h-0 overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -852,7 +852,7 @@ export default function FlashcardViewer({
             transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
           };
 
-          const faceBaseClass = `absolute inset-0 bg-white text-slate-900 rounded-[28px] sm:rounded-[36px] p-5 sm:p-7 shadow-xl border flex flex-col justify-between z-10 transition-colors duration-300 ${statusTheme.borderClass}`;
+          const faceBaseClass = `absolute inset-0 bg-white text-slate-900 rounded-[24px] sm:rounded-[36px] p-3.5 sm:p-6 shadow-xl border flex flex-col justify-between z-10 transition-colors duration-300 ${statusTheme.borderClass}`;
 
           const frontFaceStyle: React.CSSProperties = {
             backfaceVisibility: 'hidden',
@@ -920,27 +920,27 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Middle: Main Word + Pronounce & Google Buttons directly under */}
-                    <div className="my-auto text-center space-y-3 sm:space-y-4 py-4 w-full overflow-hidden flex flex-col items-center justify-center">
+                    <div className="my-auto flex-1 min-h-0 text-center space-y-2 sm:space-y-4 py-2 sm:py-4 w-full overflow-y-auto flex flex-col items-center justify-center">
                       <span className="text-xs text-slate-800 font-medium font-bengali tracking-wide">
                         {getPlaceLabel('place1', 'Word')}
                       </span>
 
-                      <h1 className={`font-black tracking-tight font-bengali text-center text-4xl sm:text-5xl md:text-6xl leading-none px-1 transition-colors duration-300 ${statusTheme.wordColor}`}>
+                      <h1 className={`font-black tracking-tight font-bengali text-center text-3xl sm:text-5xl md:text-6xl leading-none px-1 transition-colors duration-300 ${statusTheme.wordColor}`}>
                         {currentActiveWord.word || (currentActiveWord as any).place1}
                       </h1>
 
                       {/* Pronunciation & Google search circular buttons directly under main word */}
-                      <div className="flex items-center justify-center gap-3 pt-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-3 pt-1 sm:pt-2" onClick={(e) => e.stopPropagation()}>
                         {variableToggles?.audio !== false && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               speakWord();
                             }}
-                            className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
+                            className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
                             title="Speak / Pronounce Word"
                           >
-                            <Volume2 className="w-5 h-5 text-slate-700" />
+                            <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
                           </button>
                         )}
 
@@ -950,20 +950,20 @@ export default function FlashcardViewer({
                             const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
                             window.open(googleUrl, '_blank');
                           }}
-                          className="w-10 h-10 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
+                          className="w-9 h-9 sm:w-11 sm:h-11 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/90 shadow-2xs"
                           title="Google Search Word"
                         >
-                          <GoogleIcon className="w-5 h-5" />
+                          <GoogleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
 
                       {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
                       {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
-                        <div className="pt-1 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
+                        <div className="pt-0.5 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
                           <span className="text-[11px] text-slate-500 font-medium font-bengali">
                             {getPlaceLabel('place4', 'Derivatives')}:
                           </span>
-                          <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
+                          <p className="text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100/80 border border-slate-200/60 px-3 py-0.5 sm:py-1 rounded-full font-bengali max-w-xs truncate">
                             {currentActiveWord.extraWord || (currentActiveWord as any).place4}
                             {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
                           </p>
@@ -972,16 +972,16 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Bottom: Action Buttons (< Not Learned | Confusion | Learned >) */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePrev();
                         }}
-                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
                         title="Previous Card"
                       >
-                        <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                        <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                       </button>
 
                       <button
@@ -989,7 +989,7 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('dont_know', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                           activeStatus === 'dont_know'
                             ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
                             : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
@@ -1004,7 +1004,7 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('confusion', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                           activeStatus === 'confusion'
                             ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
                             : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
@@ -1019,7 +1019,7 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('know', true);
                         }}
-                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                        className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                           activeStatus === 'know'
                             ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
                             : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
@@ -1034,10 +1034,10 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           handleNext();
                         }}
-                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                        className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
                         title="Next Card"
                       >
-                        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                        <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                       </button>
                     </div>
                   </div>
@@ -1091,26 +1091,26 @@ export default function FlashcardViewer({
                     </div>
 
                   {/* Horizontal Divider Line */}
-                  <div className="w-full border-b border-slate-200/90 my-3 sm:my-4" />
+                  <div className="w-full border-b border-slate-200/90 my-2 sm:my-3" />
 
                   {/* Middle Content Area */}
-                  <div className="my-auto space-y-3 sm:space-y-4 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
+                  <div className="my-auto flex-1 min-h-0 space-y-2 sm:space-y-4 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
                     {/* Two Column Grid for Place5 and Place6 */}
-                    <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
                       <div className="space-y-0.5">
-                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
+                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
                           {getPlaceLabel('place5', 'Synonyms')}
                         </span>
-                        <p className="font-black text-slate-950 font-bengali text-lg sm:text-2xl break-words leading-snug">
+                        <p className="font-black text-slate-950 font-bengali text-base sm:text-2xl break-words leading-snug">
                           {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [(currentActiveWord as any).synonym1, (currentActiveWord as any).synonym2].filter(Boolean).join(', ') || '-'}
                         </p>
                       </div>
 
                       <div className="space-y-0.5">
-                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
+                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium font-bengali block">
                           {getPlaceLabel('place6', 'Extra Meaning')}
                         </span>
-                        <p className="font-black text-slate-950 font-bengali text-lg sm:text-2xl break-words leading-snug">
+                        <p className="font-black text-slate-950 font-bengali text-base sm:text-2xl break-words leading-snug">
                           {(currentActiveWord as any).place6 || currentActiveWord.extraMeaning || '-'}
                         </p>
                       </div>
@@ -1118,8 +1118,8 @@ export default function FlashcardViewer({
 
                     {/* Place3: Example / Word in use */}
                     {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
-                      <div className="pt-2 space-y-1">
-                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
+                      <div className="pt-1 space-y-0.5">
+                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
                           {getPlaceLabel('place3', 'Word in use')}
                         </span>
                         <p className="text-xs sm:text-sm font-bold text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
@@ -1130,8 +1130,8 @@ export default function FlashcardViewer({
 
                     {/* Mnemonic / Note */}
                     {(noteText || currentActiveWord.mnemonic) && (
-                      <div className="pt-2 space-y-1">
-                        <span className="text-[11px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
+                      <div className="pt-1 space-y-0.5">
+                        <span className="text-[10px] sm:text-xs text-[#a855f7] font-medium block font-bengali">
                           '{getPlaceLabel('mnemonic', 'Mnemonic')}'
                         </span>
                         <p className="text-xs sm:text-sm font-bold italic text-slate-900 font-bengali leading-relaxed text-center break-words px-1">
@@ -1142,16 +1142,16 @@ export default function FlashcardViewer({
                   </div>
 
                   {/* Bottom: Action Buttons */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1.5 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePrev();
                       }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
                       title="Previous Card"
                     >
-                      <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                      <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                     </button>
 
                     <button
@@ -1159,7 +1159,7 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         rateAndMaybeConfirm('dont_know', true);
                       }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'dont_know'
                           ? 'bg-[#f43f5e] text-white shadow-md scale-102 ring-2 ring-rose-300'
                           : 'bg-[#f43f5e] hover:bg-rose-600 text-white shadow-xs'
@@ -1174,7 +1174,7 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         rateAndMaybeConfirm('confusion', true);
                       }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'confusion'
                           ? 'bg-[#a855f7] text-white shadow-md scale-102 ring-2 ring-purple-300'
                           : 'bg-[#a855f7] hover:bg-purple-600 text-white shadow-xs'
@@ -1189,7 +1189,7 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         rateAndMaybeConfirm('know', true);
                       }}
-                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[11px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
+                      className={`flex-1 py-1.5 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs transition cursor-pointer text-center justify-center items-center flex gap-1 ${
                         activeStatus === 'know'
                           ? 'bg-[#0d9488] text-white shadow-md scale-102 ring-2 ring-teal-300'
                           : 'bg-[#0d9488] hover:bg-teal-700 text-white shadow-xs'
@@ -1204,10 +1204,10 @@ export default function FlashcardViewer({
                         e.stopPropagation();
                         handleNext();
                       }}
-                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
+                      className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-slate-950 hover:bg-slate-800 text-white flex items-center justify-center transition cursor-pointer active:scale-90 flex-shrink-0 shadow-sm"
                       title="Next Card"
                     >
-                      <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                      <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
