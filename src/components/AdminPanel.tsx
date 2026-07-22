@@ -115,6 +115,9 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
   const [hasFetchedCourses, setHasFetchedCourses] = useState(false);
+  const [isDefaultCourseDeleted, setIsDefaultCourseDeleted] = useState(() => {
+    return localStorage.getItem('gre_default_course_deleted') === 'true';
+  });
 
   useEffect(() => {
     if (onCoursesUpdated && hasFetchedCourses) {
@@ -932,11 +935,22 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
     }
     try {
       await deleteDoc(doc(db, 'courses', courseId));
+      if (courseId === 'gre' || courseId === defaultGreCourse.id) {
+        setIsDefaultCourseDeleted(true);
+        localStorage.setItem('gre_default_course_deleted', 'true');
+      }
       fetchCustomCourses();
       alert('Course deleted successfully!');
     } catch (err) {
       console.error('Error deleting course:', err);
-      alert('Failed to delete course.');
+      if (courseId === 'gre' || courseId === defaultGreCourse.id) {
+        setIsDefaultCourseDeleted(true);
+        localStorage.setItem('gre_default_course_deleted', 'true');
+        fetchCustomCourses();
+        alert('Course deleted successfully!');
+      } else {
+        alert('Failed to delete course.');
+      }
     }
   };
 
@@ -1291,30 +1305,56 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
 
             <div className="space-y-4">
               {/* Default Course Card */}
-              <div 
-                onClick={() => handleOpenEditModal(defaultGreCourse)}
-                className="p-5 border border-indigo-150 hover:border-indigo-300 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs cursor-pointer group"
-                title="Click to edit default course settings"
-                style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">
-                      {defaultGreCourse.title}
-                    </h4>
-                    <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded font-black uppercase font-mono">default</span>
+              {!isDefaultCourseDeleted && (
+                <div 
+                  onClick={() => handleOpenEditModal(defaultGreCourse)}
+                  className="p-5 border border-indigo-150 hover:border-indigo-300 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs cursor-pointer group"
+                  title="Click to edit default course settings"
+                  style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">
+                        {defaultGreCourse.title}
+                      </h4>
+                      <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded font-black uppercase font-mono">default</span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">{defaultGreCourse.description}</p>
+                    <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
+                      <span>Words: {defaultGreCourse.words?.length || 1110}</span>
+                      <span>Groups: {defaultGreCourse.totalGroups}</span>
+                    </div>
+                    <span className="text-[9px] text-indigo-500 font-bold block pt-1 opacity-60 group-hover:opacity-100 transition">⚙️ Click here to change settings</span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">{defaultGreCourse.description}</p>
-                  <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
-                    <span>Words: {defaultGreCourse.words?.length || 1110}</span>
-                    <span>Groups: {defaultGreCourse.totalGroups}</span>
+                  <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(defaultGreCourse.id);
+                        alert(`Course share code "${defaultGreCourse.id}" copied to clipboard! Share this code with students.`);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
+                      title="Copy course share code"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Code</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCourse(defaultGreCourse.id);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
+                      title="Delete course"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete</span>
+                    </button>
                   </div>
-                  <span className="text-[9px] text-indigo-500 font-bold block pt-1 opacity-60 group-hover:opacity-100 transition">⚙️ Click here to change settings</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-indigo-600 font-extrabold font-mono uppercase bg-indigo-100/50 px-2.5 py-1 rounded-lg">EDITABLE SYSTEM DEFAULT</span>
-                </div>
-              </div>
+              )}
 
               {/* Custom uploaded courses card list */}
               {filteredCustomCoursesList.length === 0 ? (
