@@ -890,6 +890,8 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
         isDefault: newCourseIsDefault,
         isRestricted: newCourseIsRestricted,
         allowedUsers: allowedUsers,
+        price: 30,
+        bkashNumber: '01581624202',
         createdAt: new Date().toISOString(),
         createdBy: auth.currentUser?.email || 'admin@gmail.com',
         placeLabels: parsedPlaceLabels
@@ -986,6 +988,8 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
     allowedUsers: dbGreCourse?.allowedUsers || [],
+    price: dbGreCourse?.price ?? 30,
+    bkashNumber: dbGreCourse?.bkashNumber || '01581624202',
     createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
     createdBy: dbGreCourse?.createdBy || 'system'
   };

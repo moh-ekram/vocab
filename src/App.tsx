@@ -905,6 +905,8 @@ export default function App() {
     isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
     isRestricted: dbGreCourse?.isRestricted || false,
     allowedUsers: dbGreCourse?.allowedUsers || [],
+    price: dbGreCourse?.price ?? 30,
+    bkashNumber: dbGreCourse?.bkashNumber || '01581624202',
     createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
     createdBy: dbGreCourse?.createdBy || 'system'
   };

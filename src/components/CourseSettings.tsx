@@ -95,8 +95,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [localPlaceLabels, setLocalPlaceLabels] = useState<Record<string, string>>(course.placeLabels || {});
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
   const [isRestricted, setIsRestricted] = useState(!!course.isRestricted);
-  const [price, setPrice] = useState<number>(course.price || 0);
-  const [bkashNumber, setBkashNumber] = useState<string>(course.bkashNumber || '01700000000');
+  const [price, setPrice] = useState<number>(course.price ?? 30);
+  const [bkashNumber, setBkashNumber] = useState<string>(course.bkashNumber || '01581624202');
   const [allowedUsers, setAllowedUsers] = useState<string[]>(course.allowedUsers || []);
   const [allowedUsersExpiry, setAllowedUsersExpiry] = useState<Record<string, string>>(course.allowedUsersExpiry || {});
   const [newUserInput, setNewUserInput] = useState('');
@@ -887,8 +887,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setDescription(course.description);
     setIsDefault(!!course.isDefault);
     setIsRestricted(!!course.isRestricted);
-    setPrice(course.price || 0);
-    setBkashNumber(course.bkashNumber || '01700000000');
+    setPrice(course.price ?? 30);
+    setBkashNumber(course.bkashNumber || '01581624202');
     setAllowedUsers(course.allowedUsers || []);
     setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
