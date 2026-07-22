@@ -88,8 +88,10 @@ export default function FlashcardViewer({
     fallback: string
   ) => {
     if (!placeLabels) return fallback;
-    if ((placeLabels as any)[key] && typeof (placeLabels as any)[key] === 'string') return (placeLabels as any)[key];
-    if ((placeLabels as any).placeLabels?.[key] && typeof (placeLabels as any).placeLabels[key] === 'string') return (placeLabels as any).placeLabels[key];
+    const directVal = (placeLabels as any)[key];
+    if (typeof directVal === 'string' && directVal.trim() !== '') return directVal.trim();
+    const nestedVal = (placeLabels as any).placeLabels?.[key];
+    if (typeof nestedVal === 'string' && nestedVal.trim() !== '') return nestedVal.trim();
     return fallback;
   };
   // Session active state - true when inside the full-screen card focus mode, false when on intermediate filter setup screen
@@ -521,8 +523,9 @@ export default function FlashcardViewer({
 
   // Get active example sentence
   const activeExampleSentence = currentActiveWord.example || 
+    (currentActiveWord as any).place3 ||
     (sentencesData[currentActiveWord.id] && sentencesData[currentActiveWord.id][0]) || 
-    `Take the time to sit back and listen to ${currentActiveWord.word} and establish a routine for yourself.`;
+    `Take the time to sit back and listen to ${currentActiveWord.word || (currentActiveWord as any).place1 || 'this word'} and establish a routine for yourself.`;
 
   // =========================================================================
   // RENDER STAGE 1: INTERMEDIATE FILTER & SETUP SCREEN (isSessionActive = false)
@@ -862,8 +865,8 @@ export default function FlashcardViewer({
                       {getPlaceLabel('place1', 'Word')}
                     </span>
 
-                    <h1 className={`font-black text-slate-900 tracking-tight font-bengali text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none ${getWordFontSize(currentActiveWord.word)}`}>
-                      {currentActiveWord.word}
+                    <h1 className={`font-black text-slate-900 tracking-tight font-bengali text-center whitespace-nowrap overflow-hidden text-ellipsis px-1 leading-none ${getWordFontSize(currentActiveWord.word || (currentActiveWord as any).place1 || '')}`}>
+                      {currentActiveWord.word || (currentActiveWord as any).place1}
                     </h1>
 
                     {/* Pronunciation & Google search buttons directly under main word (icon-only outline style) */}
@@ -884,7 +887,7 @@ export default function FlashcardViewer({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
+                          const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
                           window.open(googleUrl, '_blank');
                         }}
                         className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200/80"
@@ -893,6 +896,19 @@ export default function FlashcardViewer({
                         <GoogleIcon className="w-5 h-5" />
                       </button>
                     </div>
+
+                    {/* Placemarker 4 (Derivative / Extra word) on Front side if enabled */}
+                    {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
+                      <div className="pt-1 flex flex-col items-center justify-center space-y-0.5" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-[11px] text-slate-400 font-medium font-bengali">
+                          {getPlaceLabel('place4', 'Derivatives')}:
+                        </span>
+                        <p className="text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100/80 border border-slate-200/60 px-3 py-1 rounded-full font-bengali max-w-xs truncate">
+                          {currentActiveWord.extraWord || (currentActiveWord as any).place4}
+                          {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Bottom: 4 Action Buttons (Not Learned, Confused, Learned, Skip) */}
@@ -971,54 +987,69 @@ export default function FlashcardViewer({
                   {/* Middle Content Area: items b, c, d, e */}
                   <div className="my-auto space-y-4 py-3 text-center w-full max-w-lg mx-auto overflow-y-auto">
                     {/* b. Placemarker 2 (Meaning) */}
-                    <div className="space-y-1 pt-1">
-                      <span className="text-xs text-slate-400 font-medium block font-bengali">
-                        {getPlaceLabel('place2', 'Meaning')}:
-                      </span>
-                      <p className="text-2xl sm:text-3xl font-bold text-slate-800 font-bengali leading-relaxed">
-                        {currentActiveWord.meaning}
-                      </p>
-                    </div>
+                    {variableToggles?.meaning !== false && (
+                      <div className="space-y-1 pt-1">
+                        <span className="text-xs text-slate-400 font-medium block font-bengali">
+                          {getPlaceLabel('place2', 'Meaning')}:
+                        </span>
+                        <p className="text-2xl sm:text-3xl font-bold text-slate-800 font-bengali leading-relaxed">
+                          {currentActiveWord.meaning || (currentActiveWord as any).place2}
+                        </p>
+                      </div>
+                    )}
 
-                    {/* c. Placemarker 5,6 (Synonyms / Extra meaning, just below placemarker 2) */}
-                    {((currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) || (currentActiveWord.extraWord || currentActiveWord.extraMeaning)) && (
+                    {/* c. Placemarker 5 & 6 (Synonyms) */}
+                    {variableToggles?.synonyms !== false && (currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2 || (currentActiveWord as any).place5 || (currentActiveWord as any).place6) && (
                       <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-700">
-                        {(currentActiveWord.synonyms || currentActiveWord.synonym1 || currentActiveWord.synonym2) && (
-                          <div className="space-y-0.5">
+                        <div className="space-y-0.5">
+                          <span className="text-xs text-slate-400 font-medium block font-bengali">
+                            {getPlaceLabel('place5', 'Synonyms')}:
+                          </span>
+                          <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
+                            {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
+                          </p>
+                        </div>
+
+                        {/* Additional place6 field or synonym2 if separate */}
+                        {((currentActiveWord as any).place6 || (currentActiveWord.synonym2 && placeLabels?.place6)) && (
+                          <div className="space-y-0.5 pt-1">
                             <span className="text-xs text-slate-400 font-medium block font-bengali">
-                              {getPlaceLabel('place5', 'Synonyms')}:
+                              {getPlaceLabel('place6', 'Extra Synonyms')}:
                             </span>
                             <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
-                              {currentActiveWord.synonyms || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ')}
-                            </p>
-                          </div>
-                        )}
-                        {(currentActiveWord.extraWord || currentActiveWord.extraMeaning) && (
-                          <div className="space-y-0.5">
-                            <span className="text-xs text-slate-400 font-medium block font-bengali">
-                              {getPlaceLabel('place4', 'Derivatives')}:
-                            </span>
-                            <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
-                              {currentActiveWord.extraWord}{currentActiveWord.extraMeaning ? ` - ${currentActiveWord.extraMeaning}` : ''}
+                              {(currentActiveWord as any).place6 || currentActiveWord.synonym2}
                             </p>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* d. Placemarker 3 (Word in use / example sentence) */}
-                    {activeExampleSentence && (
+                    {/* d. Placemarker 4 & 6 (Derivatives / Extra Info) */}
+                    {(variableToggles?.extraWord !== false || variableToggles?.extraMeaning !== false) && (currentActiveWord.extraWord || currentActiveWord.extraMeaning || (currentActiveWord as any).place4 || (currentActiveWord as any).place6) && (
+                      <div className="space-y-0.5 pt-2 border-t border-slate-100">
+                        <span className="text-xs text-slate-400 font-medium block font-bengali">
+                          {getPlaceLabel('place4', 'Derivatives')}:
+                        </span>
+                        <p className="font-semibold text-slate-800 font-bengali text-sm sm:text-base break-words">
+                          {currentActiveWord.extraWord || (currentActiveWord as any).place4}
+                          {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` - ${currentActiveWord.extraMeaning || (currentActiveWord as any).place6}` : ''}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* e. Placemarker 3 (Word in use / example sentence) */}
+                    {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
                       <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
                         <span className="text-xs text-slate-400 font-medium block font-bengali">
                           {getPlaceLabel('place3', 'Word in use')}:
                         </span>
                         <p className="text-sm sm:text-base font-semibold text-slate-800 font-bengali leading-relaxed break-words">
-                          {renderSentence(activeExampleSentence)}
+                          {renderSentence(activeExampleSentence || (currentActiveWord as any).place3 || '')}
                         </p>
                       </div>
                     )}
 
-                    {/* e. Category / Mnemonic (if present) */}
+                    {/* f. Category / Mnemonic (if present) */}
                     {(noteText || currentActiveWord.mnemonic) && (
                       <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-2xl text-center space-y-1">
                         <span className="text-xs text-slate-400 font-medium block font-bengali">

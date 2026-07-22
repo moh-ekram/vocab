@@ -1674,6 +1674,7 @@ export default function App() {
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
               settings={settings}
+              variableToggles={activeCourse?.variableToggles}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}
             />
@@ -1703,6 +1704,7 @@ export default function App() {
               }}
               activeCourseId={activeCourseId}
               enabledGames={activeCourse?.enabledGames}
+              variableToggles={activeCourse?.variableToggles}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}
             />
