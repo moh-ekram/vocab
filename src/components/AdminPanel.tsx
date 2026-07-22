@@ -1005,7 +1005,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   const defaultGreCourse: Course = {
     ...(dbGreCourse || {}),
     id: dbGreCourse?.id || 'gre',
-    title: (dbGreCourse?.title && !dbGreCourse.title.toUpperCase().includes('BARC')) ? dbGreCourse.title : "Barron's 1100 Vocabulary",
+    title: dbGreCourse?.title || "Sample 100 Vocabulary",
     description: dbGreCourse?.description || 'Standard preparation course with 1,110 high-frequency words grouped into 37 levels.',
     totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
     words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : words,
@@ -1376,7 +1376,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">{c.title?.toUpperCase().includes('BARC') ? "Barron's 1100 Vocabulary" : c.title}</h4>
+                        <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">{c.title}</h4>
                         <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
                         {c.isDefault && (
                           <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-black uppercase">default</span>

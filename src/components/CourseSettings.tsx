@@ -30,7 +30,8 @@ import {
   Gamepad2,
   GraduationCap,
   Sparkles,
-  Shuffle
+  Shuffle,
+  Tag
 } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -90,7 +91,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [excelAnalogySaveStatus, setExcelAnalogySaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Helper to clean title
-  const getCleanCourseTitle = (t?: string) => (!t || t.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : t;
+  const getCleanCourseTitle = (t?: string) => t || "Sample 100 Vocabulary";
 
   // --- GENERAL COURSE STATES ---
   const [title, setTitle] = useState(getCleanCourseTitle(course.title));

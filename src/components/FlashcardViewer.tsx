@@ -84,7 +84,7 @@ export default function FlashcardViewer({
 }: FlashcardViewerProps) {
   // Helper to resolve place labels handling both flat and nested placeLabels structure safely
   const getPlaceLabel = (
-    key: 'place1' | 'place2' | 'place3' | 'place4' | 'place5' | 'place6',
+    key: 'place1' | 'place2' | 'place3' | 'place4' | 'place5' | 'place6' | 'mnemonic' | string,
     fallback: string
   ) => {
     if (!placeLabels) return fallback;
@@ -1027,7 +1027,7 @@ export default function FlashcardViewer({
                           {getPlaceLabel('place5', 'Synonyms')}
                         </span>
                         <p className="font-black text-slate-950 font-bengali text-lg sm:text-2xl break-words leading-snug">
-                          {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [currentActiveWord.synonym1, currentActiveWord.synonym2].filter(Boolean).join(', ') || '-'}
+                          {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [(currentActiveWord as any).synonym1, (currentActiveWord as any).synonym2].filter(Boolean).join(', ') || '-'}
                         </p>
                       </div>
 

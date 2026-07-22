@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
+import { DEFAULT_SAMPLE_COURSE, SAMPLE_100_WORDS } from './data/sample100';
 import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
@@ -240,12 +241,12 @@ export default function App() {
   // --- PERSISTED STATES ---
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY);
-    return saved ? JSON.parse(saved) : ['gre'];
+    return saved ? JSON.parse(saved) : ['sample100'];
   });
 
   const [activeCourseId, setActiveCourseId] = useState<string>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY);
-    return saved ? saved : 'gre';
+    return saved ? saved : 'sample100';
   });
 
   const [customCourses, setCustomCourses] = useState<Course[]>(() => {
@@ -255,7 +256,7 @@ export default function App() {
         const parsed: Course[] = JSON.parse(saved);
         return parsed.map(c => ({
           ...c,
-          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : c.title
+          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Sample 100 Vocabulary" : c.title
         }));
       } catch (e) {
         return [];
@@ -270,7 +271,7 @@ export default function App() {
         const parsed: Course[] = JSON.parse(saved);
         return parsed.map(c => ({
           ...c,
-          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : c.title
+          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Sample 100 Vocabulary" : c.title
         }));
       } catch (e) {
         return [];
@@ -620,7 +621,7 @@ export default function App() {
         const loaded: Course[] = [];
         querySnapshot.forEach(doc => {
           const data = doc.data() as Course;
-          const cleanTitle = (!data.title || data.title.toUpperCase().includes('BARC')) ? "Barron's 1100 Vocabulary" : data.title;
+          const cleanTitle = data.title || "Sample 100 Vocabulary";
           loaded.push({ id: doc.id, ...data, title: cleanTitle } as Course);
         });
         setCustomCourses(loaded);
@@ -1076,33 +1077,34 @@ export default function App() {
 
   // Helper to clean course title
   const getCleanTitle = (t?: string) => {
-    if (!t || t.toUpperCase().includes('BARC')) return "Barron's 1100 Vocabulary";
+    if (!t) return "Sample 100 Vocabulary";
     return t;
   };
 
   // --- COURSE RESOLVERS ---
-  const dbGreCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'gre');
-  const defaultGreCourse: Course = {
-    ...(dbGreCourse || {}),
-    id: dbGreCourse?.id || 'gre',
-    title: getCleanTitle(dbGreCourse?.title),
-    description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
-    totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
-    words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : vocabulary,
-    isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
-    isRestricted: dbGreCourse?.isRestricted || false,
-    allowedUsers: dbGreCourse?.allowedUsers || [],
-    price: (dbGreCourse?.price && dbGreCourse.price > 0) ? dbGreCourse.price : 30,
-    bkashNumber: (dbGreCourse?.bkashNumber && dbGreCourse.bkashNumber !== '01700000000' && dbGreCourse.bkashNumber.trim() !== '') ? dbGreCourse.bkashNumber : '01581624202',
-    googleSearchQuery: dbGreCourse?.googleSearchQuery || '',
-    createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
-    createdBy: dbGreCourse?.createdBy || 'system'
+  const dbSampleCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'sample100' || c.id.trim().toLowerCase() === 'gre');
+  const defaultSampleCourse: Course = {
+    ...DEFAULT_SAMPLE_COURSE,
+    ...(dbSampleCourse || {}),
+    id: 'sample100',
+    title: dbSampleCourse?.title || DEFAULT_SAMPLE_COURSE.title,
+    description: dbSampleCourse?.description || DEFAULT_SAMPLE_COURSE.description,
+    totalGroups: dbSampleCourse?.totalGroups || DEFAULT_SAMPLE_COURSE.totalGroups,
+    words: (dbSampleCourse?.words && dbSampleCourse.words.length > 0) ? dbSampleCourse.words : SAMPLE_100_WORDS,
+    isDefault: true,
+    isRestricted: false,
+    allowedUsers: dbSampleCourse?.allowedUsers || [],
+    price: 0,
+    bkashNumber: dbSampleCourse?.bkashNumber || DEFAULT_SAMPLE_COURSE.bkashNumber,
+    googleSearchQuery: dbSampleCourse?.googleSearchQuery || '',
+    createdAt: dbSampleCourse?.createdAt || DEFAULT_SAMPLE_COURSE.createdAt,
+    createdBy: dbSampleCourse?.createdBy || 'system'
   };
 
   const rawAllCourses: Course[] = [
-    defaultGreCourse, 
-    ...customCourses.filter(c => c.id.trim().toLowerCase() !== 'gre'), 
-    ...importedCourses.filter(c => c.id.trim().toLowerCase() !== 'gre')
+    defaultSampleCourse, 
+    ...customCourses.filter(c => c.id.trim().toLowerCase() !== 'sample100' && c.id.trim().toLowerCase() !== 'gre'), 
+    ...importedCourses.filter(c => c.id.trim().toLowerCase() !== 'sample100' && c.id.trim().toLowerCase() !== 'gre')
   ];
   const allCourses: Course[] = [];
   const seenCourseIds = new Set<string>();
@@ -1113,7 +1115,7 @@ export default function App() {
       allCourses.push({
         ...c,
         title: getCleanTitle(c.title),
-        price: (c.price && c.price > 0) ? c.price : 30,
+        price: (c.price && c.price > 0) ? c.price : 0,
         bkashNumber: (c.bkashNumber && c.bkashNumber !== '01700000000' && c.bkashNumber.trim() !== '') ? c.bkashNumber : '01581624202'
       });
     }
@@ -1143,7 +1145,7 @@ export default function App() {
   const activeCourse = (() => {
     const normActiveId = activeCourseId?.trim().toLowerCase();
     const course = allCourses.find(c => c.id.trim().toLowerCase() === normActiveId);
-    if (!course) return defaultGreCourse;
+    if (!course) return defaultSampleCourse;
 
     // Check access permissions - enrolled courses or admin/creator can always access
     const userEmailLower = user?.email?.trim().toLowerCase();
@@ -1156,9 +1158,9 @@ export default function App() {
     }
 
     if (course.isRestricted) {
-      if (!userEmailLower) return defaultGreCourse;
+      if (!userEmailLower) return defaultSampleCourse;
       const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-      if (!isEmailInAllowed) return defaultGreCourse;
+      if (!isEmailInAllowed) return defaultSampleCourse;
 
       if (course.allowedUsersExpiry) {
         const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
@@ -1169,13 +1171,13 @@ export default function App() {
             today.setHours(0, 0, 0, 0);
             const expiryDate = new Date(expiryStr);
             expiryDate.setHours(23, 59, 59, 999);
-            if (today > expiryDate) return defaultGreCourse; // Expired!
+            if (today > expiryDate) return defaultSampleCourse; // Expired!
           }
         }
       }
     }
     return course;
-  })() || defaultGreCourse;
+  })() || defaultSampleCourse;
   const activeWords = activeCourse.words || [];
 
   // --- DATABASE STATE HANDLERS ---
