@@ -186,7 +186,7 @@ export default function MyCoursesView({
       }
     }
 
-    const isEnrolled = enrolledCourseIds.includes(c.id);
+    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === c.id.trim().toLowerCase());
 
     if (filter === 'enrolled') {
       return matchesSearch && isEnrolled && isUserAllowed;
@@ -194,6 +194,16 @@ export default function MyCoursesView({
       return matchesSearch && !isUserAllowed;
     }
     return matchesSearch;
+  }).sort((a, b) => {
+    const isAActive = activeCourseId && a.id.trim().toLowerCase() === activeCourseId.trim().toLowerCase();
+    const isBActive = activeCourseId && b.id.trim().toLowerCase() === activeCourseId.trim().toLowerCase();
+    const isAEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === a.id.trim().toLowerCase());
+    const isBEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === b.id.trim().toLowerCase());
+
+    const scoreA = (isAActive ? 10 : 0) + (isAEnrolled ? 5 : 0);
+    const scoreB = (isBActive ? 10 : 0) + (isBEnrolled ? 5 : 0);
+
+    return scoreB - scoreA;
   });
 
   return (
@@ -346,7 +356,7 @@ export default function MyCoursesView({
                     isActive ? 'text-white drop-shadow-xs' : 'text-slate-900'
                   }`}
                 >
-                  {course.title}
+                  {course.title?.toUpperCase().includes('BARC') ? "Barron's 1100 Vocabulary" : course.title}
                 </h3>
               </div>
 
@@ -452,7 +462,7 @@ export default function MyCoursesView({
                       <span className="text-[10px] text-slate-400 font-mono font-bold">Code: {course.id}</span>
                     </div>
                     <h3 className="text-xl font-black text-slate-900 tracking-tight leading-snug">
-                      {course.title}
+                      {course.title?.toUpperCase().includes('BARC') ? "Barron's 1100 Vocabulary" : course.title}
                     </h3>
                   </div>
                   <button 

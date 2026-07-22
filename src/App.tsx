@@ -67,9 +67,20 @@ const LOCAL_STORAGE_BLANK_PROGRESS_KEY = 'vocab_memorizer_blank_progress_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'vocab_memorizer_settings_v3';
 const LOCAL_STORAGE_ENROLLED_COURSES_KEY = 'vocab_memorizer_enrolled_courses_v2';
 const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
+const LOCAL_STORAGE_ACTIVE_TAB_KEY = 'vocab_memorizer_active_tab_v3';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_TAB_KEY);
+    return (saved as ActiveTab) || 'dashboard';
+  });
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem(LOCAL_STORAGE_ACTIVE_TAB_KEY, activeTab);
+    }
+  }, [activeTab]);
+
   const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | string | null>(null);
 
   // --- MOBILE SWIPE NAVIGATION SETUP ---
@@ -1028,12 +1039,18 @@ export default function App() {
     return `${year}-${month}-${day}`;
   }
 
+  // Helper to clean course title
+  const getCleanTitle = (t?: string) => {
+    if (!t || t.toUpperCase().includes('BARC')) return "Barron's 1100 Vocabulary";
+    return t;
+  };
+
   // --- COURSE RESOLVERS ---
   const dbGreCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'gre');
   const defaultGreCourse: Course = {
     ...(dbGreCourse || {}),
     id: dbGreCourse?.id || 'gre',
-    title: dbGreCourse?.title || 'BARC Vocabulary Book',
+    title: getCleanTitle(dbGreCourse?.title),
     description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
     totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
     words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : vocabulary,
@@ -1060,6 +1077,7 @@ export default function App() {
       seenCourseIds.add(cIdLower);
       allCourses.push({
         ...c,
+        title: getCleanTitle(c.title),
         price: (c.price && c.price > 0) ? c.price : 30,
         bkashNumber: (c.bkashNumber && c.bkashNumber !== '01700000000' && c.bkashNumber.trim() !== '') ? c.bkashNumber : '01581624202'
       });

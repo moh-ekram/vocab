@@ -1005,7 +1005,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
   const defaultGreCourse: Course = {
     ...(dbGreCourse || {}),
     id: dbGreCourse?.id || 'gre',
-    title: dbGreCourse?.title || 'BARC Vocabulary Book',
+    title: dbGreCourse?.title || "Barron's 1100 Vocabulary",
     description: dbGreCourse?.description || 'Standard preparation course with 1,110 high-frequency words grouped into 37 levels.',
     totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
     words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : words,

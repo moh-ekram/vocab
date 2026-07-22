@@ -24,7 +24,8 @@ import {
   ArrowLeft,
   Search,
   HelpCircle,
-  Brain
+  Brain,
+  SkipForward
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -255,10 +256,19 @@ export default function FlashcardViewer({
     setReportMessage(null);
   };
 
-  const handleSubmitReport = async () => {
+  const handleSubmitReport = async (selectedIssueType?: string) => {
     if (!reportingWord) return;
+    const issueToSubmit = selectedIssueType || reportType || 'wrong_meaning';
     setIsSubmittingReport(true);
     setReportMessage(null);
+
+    const issueLabels: Record<string, string> = {
+      wrong_meaning: 'ভুল অর্থ (Incorrect Meaning)',
+      wrong_spelling: 'ভুল বানান / বিচ্ছেদ',
+      wrong_category: 'ভুল সমাস / ক্যাটাগরি',
+      other_issue: 'অন্যান্য সমস্যা'
+    };
+
     try {
       const email = auth.currentUser?.email || 'anonymous@vocab.com';
       const uid = auth.currentUser?.uid || 'anonymous';
@@ -274,8 +284,8 @@ export default function FlashcardViewer({
         word: reportingWord.word,
         meaning: reportingWord.meaning,
         group: reportingWord.group,
-        issueType: reportType,
-        description: reportDescription.trim(),
+        issueType: issueToSubmit,
+        description: issueLabels[issueToSubmit] || issueToSubmit,
         reportedBy: email,
         reportedAt: new Date().toISOString(),
         courseId: courseId,
@@ -288,6 +298,7 @@ export default function FlashcardViewer({
       });
       setTimeout(() => {
         setReportingWord(null);
+        setReportMessage(null);
       }, 1500);
     } catch (err) {
       console.error('Error submitting report:', err);
@@ -519,31 +530,48 @@ export default function FlashcardViewer({
   if (!isSessionActive) {
     return (
       <div className="space-y-4 max-w-4xl mx-auto p-2 sm:p-4 font-sans" id="flashcard-setup-view">
-        {/* Compact Header Bar */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100/80">
-              <Sparkles className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
-                Flashcard Deck Setup
-              </h1>
-              <p className="text-xs font-medium text-slate-500">
-                {filteredWords.length} words selected
+        {/* Large Prominent Hero Card for Start Flashcards */}
+        <div 
+          onClick={() => filteredWords.length > 0 && setIsSessionActive(true)}
+          className={`p-6 sm:p-8 rounded-3xl border transition-all shadow-md relative overflow-hidden group ${
+            filteredWords.length > 0
+              ? 'bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white cursor-pointer hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] border-indigo-500/80'
+              : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-5 relative z-10">
+            <div className="space-y-2 text-center sm:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-indigo-100 text-xs font-bold border border-white/20">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span className="font-bengali">ফ্ল্যাশকার্ড সেশন</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Start Flashcards
+              </h2>
+              <p className="text-xs sm:text-sm text-indigo-100/90 font-medium font-bengali">
+                {filteredWords.length > 0
+                  ? `${filteredWords.length} টি শব্দ বাছাই করা হয়েছে`
+                  : 'কোনো শব্দ পাওয়া যায়নি (নিচের ফিল্টার পরিবর্তন করুন)'}
               </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (filteredWords.length > 0) setIsSessionActive(true);
+                }}
+                disabled={filteredWords.length === 0}
+                className="px-6 py-3.5 bg-white text-indigo-700 font-extrabold rounded-2xl text-sm sm:text-base shadow-lg transition group-hover:bg-indigo-50 flex items-center gap-2 cursor-pointer border border-white/40 active:scale-95"
+              >
+                <Play className="w-5 h-5 fill-current" />
+                <span className="font-bengali">শুরু করুন ({filteredWords.length})</span>
+              </button>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsSessionActive(true)}
-            disabled={filteredWords.length === 0}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-xs flex items-center gap-2"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            <span>Start Flashcards ({filteredWords.length})</span>
-          </button>
+          <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none" />
         </div>
 
         {/* Minimal Filter Configuration */}
@@ -551,7 +579,7 @@ export default function FlashcardViewer({
           {/* Group Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800">
+              <span className="font-bold text-slate-800 font-bengali">
                 Vocabulary Groups ({selectedGroups.length}/{uniqueGroups.length})
               </span>
               <div className="flex gap-2">
@@ -583,10 +611,10 @@ export default function FlashcardViewer({
                         prev.includes(gVal) ? prev.filter(x => x !== gVal) : [...prev, gVal]
                       );
                     }}
-                    className={`py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                    className={`py-1 text-xs font-bold rounded-md transition cursor-pointer ${
                       isSelected
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/60'
+                        ? 'bg-indigo-600 text-white shadow-3xs'
+                        : 'bg-white hover:bg-slate-100 text-slate-650 border border-slate-200/60'
                     }`}
                   >
                     {gVal}
@@ -599,13 +627,13 @@ export default function FlashcardViewer({
           {/* Status Tags Selection */}
           <div className="space-y-2 pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800">Status Tags</span>
+              <span className="font-bold text-slate-800 font-bengali">Status Filter</span>
               <button
                 onClick={() => {
                   setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
                   setUserHasManuallyChangedStatuses(true);
                 }}
-                className="text-indigo-600 font-bold hover:underline"
+                className="text-indigo-600 font-bold hover:underline text-[11px]"
               >
                 Select All
               </button>
@@ -631,13 +659,13 @@ export default function FlashcardViewer({
                       );
                       setUserHasManuallyChangedStatuses(true);
                     }}
-                    className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between transition cursor-pointer border ${
-                      isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-3xs' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100'
+                    className={`p-2 rounded-xl text-xs font-semibold flex items-center justify-between transition cursor-pointer border ${
+                      isSelected ? 'bg-indigo-50/80 border-indigo-200 text-indigo-900' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`w-2.5 h-2.5 rounded-full ${st.color}`} />
-                      <span>{st.label}</span>
+                      <span className={`w-2 h-2 rounded-full ${st.color}`} />
+                      <span className="text-[11px]">{st.label}</span>
                     </div>
                     {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
                   </button>
@@ -647,13 +675,13 @@ export default function FlashcardViewer({
           </div>
 
           {/* Folder & Order Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Bookmark Collection</label>
+              <label className="block font-bold text-slate-700 mb-1">Bookmark Collection</label>
               <select
                 value={selectedFolder}
                 onChange={(e) => setSelectedFolder(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="all">All Words (No Folder Limit)</option>
                 {folders.map(f => (
@@ -663,13 +691,13 @@ export default function FlashcardViewer({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Study Order</label>
+              <label className="block font-bold text-slate-700 mb-1">Study Order</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setStudyOrder('serial')}
-                  className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
-                    studyOrder === 'serial' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-1.5 text-[11px] font-bold rounded-lg border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'serial' ? 'bg-indigo-600 text-white border-indigo-600 shadow-3xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <ArrowUpDown className="w-3 h-3" />
@@ -678,8 +706,8 @@ export default function FlashcardViewer({
                 <button
                   type="button"
                   onClick={() => setStudyOrder('alphabetical')}
-                  className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
-                    studyOrder === 'alphabetical' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-1.5 text-[11px] font-bold rounded-lg border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'alphabetical' ? 'bg-indigo-600 text-white border-indigo-600 shadow-3xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <span className="font-mono text-[10px] font-black">A-Z</span>
@@ -687,8 +715,8 @@ export default function FlashcardViewer({
                 <button
                   type="button"
                   onClick={() => setStudyOrder('random')}
-                  className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
-                    studyOrder === 'random' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-1.5 text-[11px] font-bold rounded-lg border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'random' ? 'bg-indigo-600 text-white border-indigo-600 shadow-3xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <Sparkles className="w-3 h-3 text-amber-300" />
@@ -867,45 +895,54 @@ export default function FlashcardViewer({
                     </div>
                   </div>
 
-                  {/* Bottom: 3 Status Rating Buttons (Minimalist Outline Style) */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-2 sm:gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: 4 Action Buttons (Not Learned, Confused, Learned, Skip) */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'dont_know'
                           ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
                           : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
                       }`}
                       title="Not Learned / Red"
                     >
-                      <X className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Not Learned</span>
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Not Learned</span>
                     </button>
 
                     <button
                       onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'confusion'
                           ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
                           : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
                       }`}
                       title="Confused / Yellow"
                     >
-                      <HelpCircle className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Confused</span>
+                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Confused</span>
                     </button>
 
                     <button
                       onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'know'
                           ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
                           : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
                       }`}
                       title="Learned / Green"
                     >
-                      <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Learned</span>
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Learned</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleNext()}
+                      className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300/80 active:scale-95 shadow-2xs"
+                      title="Skip / স্কিপ"
+                    >
+                      <SkipForward className="w-3.5 h-3.5 stroke-[2.5] text-indigo-600" />
+                      <span className="font-bengali text-indigo-700 font-bold">Skip</span>
                     </button>
                   </div>
                 </div>
@@ -994,45 +1031,54 @@ export default function FlashcardViewer({
                     )}
                   </div>
 
-                  {/* Bottom: 3 Status Rating Buttons (Minimalist Outline Style) */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full gap-2 sm:gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Bottom: 4 Action Buttons (Not Learned, Confused, Learned, Skip) */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between w-full gap-1 sm:gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'dont_know'
                           ? 'bg-rose-500 text-white border-rose-600 shadow-sm scale-105'
                           : 'bg-rose-50/40 text-rose-500 hover:bg-rose-100/70 border-rose-200/80'
                       }`}
                       title="Not Learned / Red"
                     >
-                      <X className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Not Learned</span>
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Not Learned</span>
                     </button>
 
                     <button
                       onClick={() => rateAndMaybeConfirm('confusion', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'confusion'
                           ? 'bg-amber-500 text-white border-amber-600 shadow-sm scale-105'
                           : 'bg-amber-50/40 text-amber-500 hover:bg-amber-100/70 border-amber-200/80'
                       }`}
                       title="Confused / Yellow"
                     >
-                      <HelpCircle className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Confused</span>
+                      <HelpCircle className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Confused</span>
                     </button>
 
                     <button
                       onClick={() => rateAndMaybeConfirm('know', true)}
-                      className={`px-3.5 sm:px-5 py-2.5 rounded-full flex items-center gap-1.5 font-bold text-xs transition cursor-pointer border ${
+                      className={`px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border ${
                         activeStatus === 'know'
                           ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm scale-105'
                           : 'bg-emerald-50/40 text-emerald-500 hover:bg-emerald-100/70 border-emerald-200/80'
                       }`}
                       title="Learned / Green"
                     >
-                      <Check className="w-4 h-4 stroke-[2.5]" />
-                      <span className="hidden sm:inline">Learned</span>
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Learned</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleNext()}
+                      className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 rounded-full flex items-center gap-1 font-bold text-[10px] sm:text-xs transition cursor-pointer border bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300/80 active:scale-95 shadow-2xs"
+                      title="Skip / স্কিপ"
+                    >
+                      <SkipForward className="w-3.5 h-3.5 stroke-[2.5] text-indigo-600" />
+                      <span className="font-bengali text-indigo-700 font-bold">Skip</span>
                     </button>
                   </div>
                 </div>
@@ -1051,16 +1097,26 @@ export default function FlashcardViewer({
           />
           <div className="relative bg-white text-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 z-10 animate-fadeIn">
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center border border-rose-100">
-                  <AlertTriangle className="w-5 h-5" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center border border-rose-100">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-950 font-sans">Report Error</h3>
+                    <p className="text-xs text-slate-500 font-sans">
+                      Word: <span className="font-extrabold text-slate-800">{reportingWord.word}</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-950 font-sans">Report Error</h3>
-                  <p className="text-xs text-slate-500 font-sans">
-                    Word: <span className="font-extrabold text-slate-800">{reportingWord.word}</span>
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  disabled={isSubmittingReport}
+                  onClick={() => setReportingWord(null)}
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               {reportMessage ? (
@@ -1070,59 +1126,48 @@ export default function FlashcardViewer({
                   {reportMessage.text}
                 </div>
               ) : (
-                <div className="space-y-4 pt-1">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 font-sans">Issue Type:</label>
-                    <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3 pt-1">
+                  <p className="text-xs font-bold text-slate-600 font-bengali">
+                    সমস্যা নির্বাচন করুন (১-ক্লিকে রিপোর্ট জমা হবে):
+                  </p>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: 'wrong_meaning', label: 'ভুল অর্থ (Incorrect Meaning)', desc: 'অর্থ বা অনুবাদ সঠিক নয়' },
+                      { id: 'wrong_spelling', label: 'ভুল বানান / বিচ্ছেদ', desc: 'বানান বা সন্ধিবিচ্ছেদে ভুল আছে' },
+                      { id: 'wrong_category', label: 'ভুল সমাস / ক্যাটাগরি', desc: 'ব্যাকরণগত শ্রেণিবিভাগে ভুল' },
+                      { id: 'other_issue', label: 'অন্যান্য সমস্যা', desc: 'অন্য কোনো তথ্যে অসঙ্গতি' }
+                    ].map((opt) => (
                       <button
+                        key={opt.id}
                         type="button"
-                        onClick={() => setReportType('wrong_meaning')}
-                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'wrong_meaning' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-650'
-                        }`}
+                        disabled={isSubmittingReport}
+                        onClick={() => handleSubmitReport(opt.id)}
+                        className="w-full p-3 text-left bg-slate-50 hover:bg-rose-50 hover:border-rose-200 text-slate-800 hover:text-rose-700 rounded-2xl border border-slate-200/80 transition flex items-center justify-between group cursor-pointer active:scale-[0.98]"
                       >
-                        Incorrect Meaning
+                        <div>
+                          <p className="text-xs font-bold font-bengali group-hover:text-rose-600">{opt.label}</p>
+                          <p className="text-[11px] text-slate-400 font-bengali">{opt.desc}</p>
+                        </div>
+                        {isSubmittingReport ? (
+                          <Loader2 className="w-4 h-4 text-rose-500 animate-spin flex-shrink-0" />
+                        ) : (
+                          <span className="text-xs font-bold text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity font-bengali">
+                            জমা দিন →
+                          </span>
+                        )}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setReportType('wrong_synonym')}
-                        className={`py-2 px-3 text-left rounded-xl text-xs font-semibold border transition font-sans cursor-pointer ${
-                          reportType === 'wrong_synonym' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-650'
-                        }`}
-                      >
-                        Incorrect Synonyms
-                      </button>
-                    </div>
+                    ))}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 font-sans">Provide description:</label>
-                    <textarea
-                      value={reportDescription}
-                      onChange={(e) => setReportDescription(e.target.value)}
-                      rows={3}
-                      placeholder="Write correct info..."
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-500 font-sans leading-relaxed resize-none"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <button
-                      type="button"
-                      disabled={isSubmittingReport || !reportDescription.trim()}
-                      onClick={handleSubmitReport}
-                      className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition font-sans cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
-                    >
-                      {isSubmittingReport && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                      Send Report
-                    </button>
+                  <div className="pt-2">
                     <button
                       type="button"
                       disabled={isSubmittingReport}
                       onClick={() => setReportingWord(null)}
-                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-sans cursor-pointer"
+                      className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition font-bengali cursor-pointer"
                     >
-                      Cancel
+                      বাতিল করুন
                     </button>
                   </div>
                 </div>
