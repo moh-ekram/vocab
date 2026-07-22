@@ -91,6 +91,7 @@ export interface Course {
     place5?: string;
     place6?: string;
   };
+  googleSearchQuery?: string;
 }
 
 export interface AccessRequest {

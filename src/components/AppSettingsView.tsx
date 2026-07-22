@@ -162,37 +162,37 @@ export default function AppSettingsView({
           'ArrowDown': 'skip',
           'Enter': 'audio'
         },
-        flashcardAnimation: 'flip-h',
+        flashcardAnimation: 'shuffle',
         colorizeMainWord: true
       });
     }
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 md:p-8 space-y-6 max-w-4xl mx-auto font-sans text-slate-800" id="app-settings-page">
+    <div className="flex-1 p-3 sm:p-5 space-y-4 max-w-3xl mx-auto font-sans text-slate-800" id="app-settings-page">
       {/* Top title and resetting button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">Settings</h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium">Manage your account settings and preferences.</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Settings</h1>
+          <p className="text-[11px] text-slate-400 mt-0.5 font-medium">Manage preferences, default behaviors, and account sync.</p>
         </div>
         <button
           onClick={triggerResetSettings}
-          className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-white hover:bg-slate-800 hover:border-slate-800 border border-slate-200 rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 shadow-sm bg-white self-start sm:self-auto"
+          className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-white hover:bg-slate-800 hover:border-slate-800 border border-slate-200 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5 bg-white shadow-2xs"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset to Defaults</span>
+          <RotateCcw className="w-3 h-3" />
+          <span>Reset Defaults</span>
         </button>
       </div>
 
       {/* Navigation tabs styled elegantly & minimally */}
-      <div className="flex border-b border-slate-200 overflow-x-auto scrollbar-none gap-6 pb-px">
+      <div className="flex border-b border-slate-200 overflow-x-auto scrollbar-none gap-4 sm:gap-6 pb-px">
         {[
           { key: 'flashcards' as const, label: 'Flashcards', icon: Layers },
           { key: 'quiz' as const, label: 'Quizzes', icon: Sliders },
           { key: 'synonyms' as const, label: 'Synonyms', icon: Sparkles },
           { key: 'shortcuts' as const, label: 'Shortcuts', icon: Keyboard },
-          { key: 'account' as const, label: 'Account & Storage', icon: Settings }
+          { key: 'account' as const, label: 'Account & Sync', icon: Settings }
         ].map(tab => {
           const isActive = activeTab === tab.key;
           const Icon = tab.icon;
@@ -201,39 +201,39 @@ export default function AppSettingsView({
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               title={tab.label}
-              className={`pb-3 text-xs sm:text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer whitespace-nowrap px-1 ${
+              className={`pb-2 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all cursor-pointer whitespace-nowrap px-0.5 ${
                 isActive
                   ? 'border-slate-800 text-slate-900 font-bold'
                   : 'border-transparent text-slate-400 hover:text-slate-600'
               }`}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* Tab Content Panels */}
-      <div className="mt-4 transition-all duration-200">
+      <div className="mt-2 transition-all duration-200">
         
         {/* Flashcards Settings Tab */}
         {activeTab === 'flashcards' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-4">
               
               {/* Default Tag Filter */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">Flashcard Default Tags</label>
-                  <span className="text-[10px] text-slate-400 font-bold">Select at least one</span>
+                  <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase">Flashcard Default Tags</label>
+                  <span className="text-[10px] text-slate-400 font-medium">Select at least one</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { key: 'know' as WordStatus, icon: CheckCircle2, label: 'Known', color: 'text-emerald-500', activeBg: 'bg-slate-50 border-emerald-500 ring-1 ring-emerald-500/25 text-emerald-950' },
-                    { key: 'confusion' as WordStatus, icon: HelpCircle, label: 'Confused', color: 'text-amber-500', activeBg: 'bg-slate-50 border-amber-500 ring-1 ring-amber-500/25 text-amber-950' },
-                    { key: 'dont_know' as WordStatus, icon: XCircle, label: 'Unknown', color: 'text-rose-500', activeBg: 'bg-slate-50 border-rose-500 ring-1 ring-rose-500/25 text-rose-950' },
-                    { key: 'unrated' as WordStatus, icon: Circle, label: 'Unstudied', color: 'text-slate-400', activeBg: 'bg-slate-50 border-slate-500 ring-1 ring-slate-500/25 text-slate-950' }
+                    { key: 'know' as WordStatus, icon: CheckCircle2, label: 'Known', color: 'text-emerald-500', activeBg: 'bg-emerald-50/50 border-emerald-500 ring-1 ring-emerald-500/20 text-emerald-950' },
+                    { key: 'confusion' as WordStatus, icon: HelpCircle, label: 'Confused', color: 'text-amber-500', activeBg: 'bg-amber-50/50 border-amber-500 ring-1 ring-amber-500/20 text-amber-950' },
+                    { key: 'dont_know' as WordStatus, icon: XCircle, label: 'Unknown', color: 'text-rose-500', activeBg: 'bg-rose-50/50 border-rose-500 ring-1 ring-rose-500/20 text-rose-950' },
+                    { key: 'unrated' as WordStatus, icon: Circle, label: 'Unstudied', color: 'text-slate-400', activeBg: 'bg-slate-100/60 border-slate-400 ring-1 ring-slate-400/20 text-slate-950' }
                   ].map(st => {
                     const isSelected = settings.defaultFlashcardTags.includes(st.key);
                     const Icon = st.icon;
@@ -242,14 +242,14 @@ export default function AppSettingsView({
                         key={st.key}
                         type="button"
                         onClick={() => handleToggleTag(st.key)}
-                        className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                        className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected 
                             ? `${st.activeBg} font-semibold shadow-2xs` 
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 mb-1 transition-transform duration-150 group-hover:scale-105 ${isSelected ? st.color : 'text-slate-400'}`} />
-                        <span className={`text-[10px] tracking-tight ${isSelected ? 'font-bold' : 'font-medium'}`}>
+                        <Icon className={`w-3.5 h-3.5 ${isSelected ? st.color : 'text-slate-400'}`} />
+                        <span className={`text-[11px] tracking-tight ${isSelected ? 'font-bold' : 'font-medium'}`}>
                           {st.label}
                         </span>
                       </button>
@@ -259,9 +259,9 @@ export default function AppSettingsView({
               </div>
 
               {/* Default Study Order */}
-              <div className="space-y-3 pt-5 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Default Study Order</label>
-                <div className="grid grid-cols-3 gap-2.5">
+              <div className="space-y-2 pt-3.5 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Default Study Order</label>
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     { key: 'serial' as const, icon: ListOrdered, label: 'Sequential' },
                     { key: 'alphabetical' as const, icon: BookOpen, label: 'Alphabetical' },
@@ -274,14 +274,14 @@ export default function AppSettingsView({
                         key={item.key}
                         type="button"
                         onClick={() => handleOrderChange(item.key)}
-                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                        className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-sm font-semibold'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-2xs font-semibold'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 mb-1 transition-transform duration-150 group-hover:scale-105 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[10px] tracking-tight">
+                        <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                        <span className="text-[11px] tracking-tight">
                           {item.label}
                         </span>
                       </button>
@@ -291,9 +291,9 @@ export default function AppSettingsView({
               </div>
 
               {/* Card Flip Animation */}
-              <div className="space-y-3 pt-5 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Card Flip Animation</label>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <div className="space-y-2 pt-3.5 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Card Flip Animation</label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                   {[
                     { key: 'flip-h' as const, icon: MoveHorizontal, label: 'Flip (H)' },
                     { key: 'flip-v' as const, icon: MoveVertical, label: 'Flip (V)' },
@@ -302,7 +302,7 @@ export default function AppSettingsView({
                     { key: 'zoom' as const, icon: ZoomIn, label: 'Zoom' },
                     { key: 'shuffle' as const, icon: Shuffle, label: 'Shuffle' }
                   ].map(item => {
-                    const currentAnim = settings.flashcardAnimation || 'flip-h';
+                    const currentAnim = settings.flashcardAnimation || 'shuffle';
                     const isSelected = currentAnim === item.key;
                     const Icon = item.icon;
                     return (
@@ -310,14 +310,14 @@ export default function AppSettingsView({
                         key={item.key}
                         type="button"
                         onClick={() => handleAnimationChange(item.key)}
-                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                        className={`flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-sm font-semibold'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-2xs font-semibold'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <Icon className={`w-4.5 h-4.5 mb-1 transition-transform duration-150 group-hover:scale-105 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[9px] tracking-tight">
+                        <Icon className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                        <span className="text-[10px] tracking-tight">
                           {item.label}
                         </span>
                       </button>
@@ -327,20 +327,20 @@ export default function AppSettingsView({
               </div>
 
               {/* Colorize Main Words Option */}
-              <div className="pt-5 border-t border-slate-100 flex items-center justify-between gap-4">
-                <label className="text-xs font-bold text-slate-800 tracking-wider uppercase cursor-pointer" onClick={handleToggleColorizeMainWord}>
+              <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between gap-4">
+                <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase cursor-pointer" onClick={handleToggleColorizeMainWord}>
                   Colorize Main Words
                 </label>
                 <button
                   type="button"
                   onClick={handleToggleColorizeMainWord}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  className={`relative inline-flex h-4.5 w-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                     settings.colorizeMainWord !== false ? 'bg-slate-800' : 'bg-slate-200'
                   }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out ${
-                      settings.colorizeMainWord !== false ? 'translate-x-4' : 'translate-x-0'
+                    className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                      settings.colorizeMainWord !== false ? 'translate-x-3.5' : 'translate-x-0'
                     }`}
                   />
                 </button>
@@ -352,13 +352,13 @@ export default function AppSettingsView({
 
         {/* Quizzes Settings Tab */}
         {activeTab === 'quiz' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-4">
               
               {/* Default Quiz Length */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Default Quiz Length</label>
-                <div className="flex flex-wrap gap-2.5">
+              <div className="space-y-2">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Default Quiz Length</label>
+                <div className="flex flex-wrap gap-2">
                   {[5, 10, 15, 20, 25, 30].map(val => {
                     const isSelected = settings.quizLength === val;
                     return (
@@ -366,9 +366,9 @@ export default function AppSettingsView({
                         key={val}
                         type="button"
                         onClick={() => handleQuizLengthChange(val)}
-                        className={`w-9 h-9 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer flex items-center justify-center border ${
+                        className={`w-8 h-8 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer flex items-center justify-center border ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white font-bold shadow-sm scale-102'
+                            ? 'bg-slate-900 border-slate-900 text-white font-bold shadow-2xs'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-650'
                         }`}
                       >
@@ -380,12 +380,12 @@ export default function AppSettingsView({
               </div>
 
               {/* Default Quiz Type */}
-              <div className="space-y-3 pt-5 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Default Quiz Type</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="space-y-2 pt-3.5 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Default Quiz Type</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {[
-                    { key: 'mcq_en_bn' as const, icon: Languages, label: 'English to Bengali MCQ' },
-                    { key: 'mcq_bn_en' as const, icon: BookOpen, label: 'Bengali to English MCQ' },
+                    { key: 'mcq_en_bn' as const, icon: Languages, label: 'English → Bengali MCQ' },
+                    { key: 'mcq_bn_en' as const, icon: BookOpen, label: 'Bengali → English MCQ' },
                     { key: 'typing_spelling' as const, icon: Keyboard, label: 'Spelling & Written' }
                   ].map(item => {
                     const currentQuizType = settings.defaultQuizType || 'mcq_en_bn';
@@ -396,14 +396,14 @@ export default function AppSettingsView({
                         key={item.key}
                         type="button"
                         onClick={() => handleQuizTypeChange(item.key)}
-                        className={`flex flex-col sm:flex-row items-center gap-2 p-3 rounded-xl border transition-all duration-150 cursor-pointer text-left group ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white font-semibold'
+                            ? 'bg-slate-900 border-slate-900 text-white font-semibold shadow-2xs'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
                         }`}
                       >
-                        <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[10px] tracking-tight">
+                        <Icon className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                        <span className="text-[11px] tracking-tight truncate">
                           {item.label}
                         </span>
                       </button>
@@ -413,9 +413,9 @@ export default function AppSettingsView({
               </div>
 
               {/* Default Match Size */}
-              <div className="space-y-3 pt-5 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Default Match Size</label>
-                <div className="flex flex-wrap gap-2.5">
+              <div className="space-y-2 pt-3.5 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Default Match Size</label>
+                <div className="flex flex-wrap gap-2">
                   {[4, 6, 8, 10, 12].map(val => {
                     const currentMatchSize = settings.defaultMatchSize || 8;
                     const isSelected = currentMatchSize === val;
@@ -424,9 +424,9 @@ export default function AppSettingsView({
                         key={val}
                         type="button"
                         onClick={() => handleMatchSizeChange(val)}
-                        className={`w-9 h-9 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer flex items-center justify-center border ${
+                        className={`w-8 h-8 rounded-lg font-bold text-xs transition-all duration-150 cursor-pointer flex items-center justify-center border ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white font-bold shadow-sm scale-102'
+                            ? 'bg-slate-900 border-slate-900 text-white font-bold shadow-2xs'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
                         }`}
                       >
@@ -438,20 +438,20 @@ export default function AppSettingsView({
               </div>
 
               {/* Auto Play Speech Pronunciation */}
-              <div className="pt-5 border-t border-slate-100 flex items-center justify-between gap-4">
-                <label className="text-xs font-bold text-slate-800 tracking-wider uppercase cursor-pointer" onClick={handleToggleAudio}>
+              <div className="pt-3.5 border-t border-slate-100 flex items-center justify-between gap-4">
+                <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase cursor-pointer" onClick={handleToggleAudio}>
                   Auto Play Pronunciation
                 </label>
                 <button
                   type="button"
                   onClick={handleToggleAudio}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  className={`relative inline-flex h-4.5 w-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                     settings.autoPlayAudio ? 'bg-slate-800' : 'bg-slate-200'
                   }`}
                 >
                   <span
-                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition duration-200 ease-in-out ${
-                      settings.autoPlayAudio ? 'translate-x-4' : 'translate-x-0'
+                    className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                      settings.autoPlayAudio ? 'translate-x-3.5' : 'translate-x-0'
                     }`}
                   />
                 </button>
@@ -463,20 +463,20 @@ export default function AppSettingsView({
 
         {/* Synonyms Settings Tab */}
         {activeTab === 'synonyms' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-6">
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-4">
               
               {/* Synonym Default Tags */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">Synonym Default Tags</label>
-                  <span className="text-[10px] text-slate-400 font-bold">Select at least one</span>
+                  <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase">Synonym Default Tags</label>
+                  <span className="text-[10px] text-slate-400 font-medium">Select at least one</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { key: 'know' as const, icon: CheckCircle, label: 'Known', color: 'text-emerald-500', activeBg: 'bg-slate-50 border-emerald-500 ring-1 ring-emerald-500/25 text-emerald-950' },
-                    { key: 'dont_know' as const, icon: XCircle, label: 'Unknown', color: 'text-rose-500', activeBg: 'bg-slate-50 border-rose-500 ring-1 ring-rose-500/25 text-rose-950' },
-                    { key: 'unrated' as const, icon: Circle, label: 'Unstudied', color: 'text-slate-400', activeBg: 'bg-slate-50 border-slate-500 ring-1 ring-slate-500/25 text-slate-950' }
+                    { key: 'know' as const, icon: CheckCircle, label: 'Known', color: 'text-emerald-500', activeBg: 'bg-emerald-50/50 border-emerald-500 ring-1 ring-emerald-500/20 text-emerald-950' },
+                    { key: 'dont_know' as const, icon: XCircle, label: 'Unknown', color: 'text-rose-500', activeBg: 'bg-rose-50/50 border-rose-500 ring-1 ring-rose-500/20 text-rose-950' },
+                    { key: 'unrated' as const, icon: Circle, label: 'Unstudied', color: 'text-slate-400', activeBg: 'bg-slate-100/60 border-slate-400 ring-1 ring-slate-400/20 text-slate-950' }
                   ].map(st => {
                     const defaultTags = settings.defaultSynonymTags || ['dont_know', 'unrated'];
                     const isSelected = defaultTags.includes(st.key);
@@ -486,14 +486,14 @@ export default function AppSettingsView({
                         key={st.key}
                         type="button"
                         onClick={() => handleToggleSynonymTag(st.key)}
-                        className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                        className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected 
                             ? `${st.activeBg} font-semibold shadow-2xs` 
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-500'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 mb-1 transition-transform duration-150 group-hover:scale-105 ${isSelected ? st.color : 'text-slate-400'}`} />
-                        <span className={`text-[10px] tracking-tight ${isSelected ? 'font-bold' : 'font-medium'}`}>
+                        <Icon className={`w-3.5 h-3.5 ${isSelected ? st.color : 'text-slate-400'}`} />
+                        <span className={`text-[11px] tracking-tight ${isSelected ? 'font-bold' : 'font-medium'}`}>
                           {st.label}
                         </span>
                       </button>
@@ -503,9 +503,9 @@ export default function AppSettingsView({
               </div>
 
               {/* Default Synonym Order */}
-              <div className="space-y-3 pt-5 border-t border-slate-100">
-                <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Default Synonym Order</label>
-                <div className="grid grid-cols-3 gap-2.5">
+              <div className="space-y-2 pt-3.5 border-t border-slate-100">
+                <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Default Synonym Order</label>
+                <div className="grid grid-cols-3 gap-2">
                   {[
                     { key: 'serial' as const, icon: ListOrdered, label: 'Sequential' },
                     { key: 'alphabetical' as const, icon: BookOpen, label: 'Alphabetical' },
@@ -519,14 +519,14 @@ export default function AppSettingsView({
                         key={item.key}
                         type="button"
                         onClick={() => handleSynonymOrderChange(item.key)}
-                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-150 cursor-pointer group ${
+                        className={`flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer ${
                           isSelected
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-sm font-semibold'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-2xs font-semibold'
                             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 mb-1 transition-transform duration-150 group-hover:scale-105 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[10px] tracking-tight">
+                        <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                        <span className="text-[11px] tracking-tight">
                           {item.label}
                         </span>
                       </button>
@@ -541,11 +541,11 @@ export default function AppSettingsView({
 
         {/* Shortcuts Settings Tab */}
         {activeTab === 'shortcuts' && (
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-5">
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-3">
               
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-                <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">Keyboard Shortcuts</label>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <label className="text-[11px] font-bold text-slate-700 tracking-wider uppercase">Keyboard Shortcuts</label>
                 <button
                   type="button"
                   onClick={() => {
@@ -561,13 +561,13 @@ export default function AppSettingsView({
                       }
                     });
                   }}
-                  className="text-[10px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg font-bold transition-all duration-150 cursor-pointer"
+                  className="text-[10px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md font-semibold transition-all duration-150 cursor-pointer"
                 >
                   Reset Shortcuts
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
                   { id: 'Space', label: 'Spacebar', icon: RectangleHorizontal },
                   { id: 'Enter', label: 'Enter Key', icon: CornerDownLeft },
@@ -614,16 +614,16 @@ export default function AppSettingsView({
                   const KeyIcon = keyObj.icon;
    
                   return (
-                    <div key={keyObj.id} className="flex items-center justify-between gap-2 p-2.5 bg-slate-50 hover:bg-slate-100/70 rounded-xl border border-slate-150 transition-all duration-150">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-2xs flex-shrink-0">
-                          <KeyIcon className="w-3 h-3" />
+                    <div key={keyObj.id} className="flex items-center justify-between gap-2 p-1.5 px-2 bg-slate-50/80 hover:bg-slate-100/80 rounded-lg border border-slate-150 transition-all duration-150">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="w-5.5 h-5.5 rounded-md flex items-center justify-center border border-slate-200 bg-white text-slate-400 shadow-2xs flex-shrink-0">
+                          <KeyIcon className="w-2.5 h-2.5" />
                         </div>
-                        <span className="text-[11px] font-bold text-slate-700 truncate">{keyObj.label}</span>
+                        <span className="text-[11px] font-semibold text-slate-700 truncate">{keyObj.label}</span>
                       </div>
    
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <div className={`w-5.5 h-5.5 rounded-md flex items-center justify-center border ${actionDetail.bg}`} title={actionDetail.label}>
+                        <div className={`w-4.5 h-4.5 rounded flex items-center justify-center border ${actionDetail.bg}`} title={actionDetail.label}>
                           <ActionIcon className={`w-2.5 h-2.5 ${actionDetail.color}`} />
                         </div>
                         <div className="relative">
@@ -638,7 +638,7 @@ export default function AppSettingsView({
                                 }
                               });
                             }}
-                            className="w-24 sm:w-28 bg-white hover:bg-slate-50 border border-slate-200 text-[10px] font-semibold rounded-lg pl-1.5 pr-4 py-1 focus:outline-none focus:ring-1 focus:ring-slate-800 text-slate-700 cursor-pointer appearance-none transition-all duration-150"
+                            className="w-22 sm:w-26 bg-white hover:bg-slate-50 border border-slate-200 text-[10px] font-medium rounded-md pl-1.5 pr-3.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-slate-800 text-slate-700 cursor-pointer appearance-none transition-all duration-150"
                           >
                             <option value="none">Disabled</option>
                             <option value="know">Learned</option>
@@ -665,23 +665,23 @@ export default function AppSettingsView({
 
         {/* Account & Storage Settings Tab */}
         {activeTab === 'account' && (
-          <div className="space-y-6">
+          <div className="space-y-3">
             
             {/* Cloud Sync Status */}
-            <div className="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 space-y-4">
-              <label className="block text-xs font-bold text-slate-800 tracking-wider uppercase">Cloud Sync Status</label>
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-3">
+              <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">Cloud Sync Status</label>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-0.5">
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Logged in as:</p>
-                  <p className="text-sm font-bold text-slate-800 truncate">
+                  <p className="text-xs font-bold text-slate-800 truncate">
                     {userEmail ? userEmail : 'Not logged in (Local only)'}
                   </p>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sync status:</p>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
                     {syncStatus === 'synced' ? 'Synced' : 
                      syncStatus === 'syncing' ? 'Syncing...' : 'Local Memory'}
                   </span>
@@ -691,7 +691,7 @@ export default function AppSettingsView({
               {userEmail && onForceSync && (
                 <button
                   onClick={onForceSync}
-                  className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer"
                 >
                   Backup Now
                 </button>
@@ -699,32 +699,32 @@ export default function AppSettingsView({
             </div>
 
             {/* Danger Zone */}
-            <div className="bg-rose-50/40 border border-rose-200 rounded-xl p-5 sm:p-6 space-y-4">
-              <div className="flex items-center gap-2 text-rose-800">
-                <Trash2 className="w-4 h-4 text-rose-600" />
-                <h2 className="text-xs font-bold tracking-wider uppercase">Danger Zone</h2>
+            <div className="bg-rose-50/40 border border-rose-200 rounded-xl p-3.5 sm:p-4 space-y-3">
+              <div className="flex items-center gap-1.5 text-rose-800">
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <h2 className="text-[11px] font-bold tracking-wider uppercase">Danger Zone</h2>
               </div>
               
-              <p className="text-xs text-rose-600/90 leading-relaxed font-semibold">
-                Click here to permanently delete all your study progress, streaks, and custom lists. This action cannot be undone.
+              <p className="text-[11px] text-rose-600/90 leading-relaxed font-medium">
+                Permanently delete all study progress, streaks, and custom lists. This action cannot be undone.
               </p>
 
               <button
                 onClick={onClearAllProgress}
-                className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm shadow-rose-500/10 hover:shadow-md"
+                className="w-full sm:w-auto px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset All Progress</span>
               </button>
             </div>
 
             {/* How it works */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 sm:p-6 space-y-3">
-              <div className="flex items-center gap-2 text-slate-750">
-                <Info className="w-4 h-4 text-slate-600" />
-                <h3 className="text-xs font-bold tracking-wider uppercase">How it works</h3>
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-2">
+              <div className="flex items-center gap-1.5 text-slate-700">
+                <Info className="w-3.5 h-3.5 text-slate-500" />
+                <h3 className="text-[11px] font-bold tracking-wider uppercase">How it works</h3>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+              <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
                 Your preferences are saved locally and synced with your cloud account automatically.
               </p>
             </div>

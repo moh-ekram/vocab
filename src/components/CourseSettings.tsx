@@ -97,6 +97,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [isRestricted, setIsRestricted] = useState(!!course.isRestricted);
   const [price, setPrice] = useState<number>((course.price && course.price > 0) ? course.price : 30);
   const [bkashNumber, setBkashNumber] = useState<string>((course.bkashNumber && course.bkashNumber !== '01700000000' && course.bkashNumber.trim() !== '') ? course.bkashNumber : '01581624202');
+  const [googleSearchQuery, setGoogleSearchQuery] = useState<string>(course.googleSearchQuery || '');
   const [allowedUsers, setAllowedUsers] = useState<string[]>(course.allowedUsers || []);
   const [allowedUsersExpiry, setAllowedUsersExpiry] = useState<Record<string, string>>(course.allowedUsersExpiry || {});
   const [newUserInput, setNewUserInput] = useState('');
@@ -889,6 +890,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     setIsRestricted(!!course.isRestricted);
     setPrice((course.price && course.price > 0) ? course.price : 30);
     setBkashNumber((course.bkashNumber && course.bkashNumber !== '01700000000' && course.bkashNumber.trim() !== '') ? course.bkashNumber : '01581624202');
+    setGoogleSearchQuery(course.googleSearchQuery || '');
     setAllowedUsers(course.allowedUsers || []);
     setAllowedUsersExpiry(course.allowedUsersExpiry || {});
     setBulkInput((course.allowedUsers || []).join('\n'));
@@ -1660,6 +1662,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         totalGroups: uniqueGroupsSize || 1,
         price: Number(price) || 0,
         bkashNumber: bkashNumber.trim(),
+        googleSearchQuery: googleSearchQuery.trim(),
         verifiedPayments: verifiedPayments,
         placeLabels: localPlaceLabels,
       };
@@ -1855,6 +1858,23 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       placeholder="e.g. 017XXXXXXXX"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-extrabold text-slate-700 block flex items-center justify-between">
+                    <span>Google Search Auto-Query Format (গুগল সার্চ টেমপ্লেট)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Default: word meaning</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={googleSearchQuery}
+                    onChange={(e) => setGoogleSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                    placeholder="e.g. {word} meaning in Bengali or definition"
+                  />
+                  <p className="text-[11px] text-slate-500 font-medium leading-normal pt-0.5">
+                    কোর্সের শব্দের পাশে গুগল বাটনে ক্লিক করলে সার্চবারে অটোমেটিক কী লেখা থাকবে তা সংজ্ঞায়িত করুন। <code className="bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-bold">{'{word}'}</code> ট্যাগ ব্যাবহার করলে সেটি মূল শব্দ দ্বারা রিপ্লেস হবে (যেমন: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">{'{word} meaning in Bengali'}</code>) অথবা শুধু বাড়তি সাফিক্স লিখতে পারেন (যেমন: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">definition and examples</code>)।
+                  </p>
                 </div>
 
                 <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-start gap-3.5">

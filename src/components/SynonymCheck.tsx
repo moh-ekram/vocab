@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, CustomFolder, AppSettings } from '../types';
+import { getGoogleSearchUrl } from '../lib/searchUtils';
 import { 
   CheckCircle2, 
   XCircle, 
@@ -36,6 +37,7 @@ interface SynonymCheckProps {
   onToggleBookmark: (wordId: string, folderId: string) => void;
   settings?: AppSettings;
   onBack?: () => void;
+  googleSearchQuery?: string;
 }
 
 export default function SynonymCheck({ 
@@ -49,7 +51,8 @@ export default function SynonymCheck({
   onUpdateNotes,
   onToggleBookmark,
   settings,
-  onBack
+  onBack,
+  googleSearchQuery
 }: SynonymCheckProps) {
   
   // Filter States - Dynamic unique groups from words list
@@ -345,7 +348,7 @@ export default function SynonymCheck({
             break;
           case 'google':
             e.preventDefault();
-            const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}+meaning`;
+            const googleUrl = getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery);
             window.open(googleUrl, '_blank');
             break;
           default:

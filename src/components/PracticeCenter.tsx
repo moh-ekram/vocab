@@ -47,6 +47,7 @@ interface PracticeCenterProps {
     place5?: string;
     place6?: string;
   };
+  googleSearchQuery?: string;
 }
 
 export default function PracticeCenter({
@@ -69,7 +70,8 @@ export default function PracticeCenter({
   onQuizComplete,
   activeCourseId,
   enabledGames,
-  placeLabels
+  placeLabels,
+  googleSearchQuery
 }: PracticeCenterProps) {
   const [subTab, setSubTab] = useState<'hub' | 'quiz' | 'match' | 'synonym' | 'blank' | 'odd_one_out' | 'analogy'>('hub');
 
@@ -344,6 +346,7 @@ export default function PracticeCenter({
           onToggleBookmark={onToggleBookmark}
           settings={settings}
           onBack={() => setSubTab('hub')}
+          googleSearchQuery={googleSearchQuery}
         />
       )}
 

@@ -52,15 +52,43 @@ export default function StatsDashboard({
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Once a day Flashcard Practice cover animation for dashboard banner
+  // Max 2 times a day with at least 12 hours interval Flashcard Practice cover animation for dashboard banner
   const [showFlashcardCoverAnim, setShowFlashcardCoverAnim] = useState(false);
 
   useEffect(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const lastAnimDate = localStorage.getItem('flashcard_banner_anim_date');
-    if (lastAnimDate !== todayStr) {
-      setShowFlashcardCoverAnim(true);
-      localStorage.setItem('flashcard_banner_anim_date', todayStr);
+    try {
+      const now = Date.now();
+      const todayStr = new Date().toISOString().split('T')[0];
+      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
+
+      const rawData = localStorage.getItem('flashcard_banner_anim_data');
+      let animRecord: { count: number; lastTimestamp: number; date: string } | null = null;
+
+      if (rawData) {
+        try {
+          animRecord = JSON.parse(rawData);
+        } catch {
+          animRecord = null;
+        }
+      }
+
+      if (!animRecord || animRecord.date !== todayStr) {
+        // First trigger of the day
+        setShowFlashcardCoverAnim(true);
+        localStorage.setItem(
+          'flashcard_banner_anim_data',
+          JSON.stringify({ count: 1, lastTimestamp: now, date: todayStr })
+        );
+      } else if (animRecord.count < 2 && (now - animRecord.lastTimestamp >= TWELVE_HOURS_MS)) {
+        // Second trigger of the day (at least 12 hours later)
+        setShowFlashcardCoverAnim(true);
+        localStorage.setItem(
+          'flashcard_banner_anim_data',
+          JSON.stringify({ count: animRecord.count + 1, lastTimestamp: now, date: todayStr })
+        );
+      }
+    } catch (e) {
+      console.error('Error handling flashcard animation tracking:', e);
     }
   }, []);
 
@@ -420,8 +448,8 @@ export default function StatsDashboard({
                 y: ['0%', '0%', '15%']
               }}
               transition={{ 
-                duration: 1.0, 
-                times: [0, 0.25, 1],
+                duration: 3.0, 
+                times: [0, 0.65, 1],
                 ease: [0.22, 1, 0.36, 1] 
               }}
               onAnimationComplete={() => setShowFlashcardCoverAnim(false)}

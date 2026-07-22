@@ -178,7 +178,7 @@ export default function App() {
       },
 
       // Default flashcard rotation animation
-      flashcardAnimation: parsed.flashcardAnimation || 'flip-h',
+      flashcardAnimation: (parsed.flashcardAnimation && parsed.flashcardAnimation !== 'flip-h') ? parsed.flashcardAnimation : 'shuffle',
 
       // Default colorize main word setting
       colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true
@@ -907,6 +907,7 @@ export default function App() {
     allowedUsers: dbGreCourse?.allowedUsers || [],
     price: (dbGreCourse?.price && dbGreCourse.price > 0) ? dbGreCourse.price : 30,
     bkashNumber: (dbGreCourse?.bkashNumber && dbGreCourse.bkashNumber !== '01700000000' && dbGreCourse.bkashNumber.trim() !== '') ? dbGreCourse.bkashNumber : '01581624202',
+    googleSearchQuery: dbGreCourse?.googleSearchQuery || '',
     createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
     createdBy: dbGreCourse?.createdBy || 'system'
   };
@@ -1480,6 +1481,7 @@ export default function App() {
               initialGroup={selectedGroupFromDash}
               settings={settings}
               placeLabels={activeCourse?.placeLabels}
+              googleSearchQuery={activeCourse?.googleSearchQuery}
             />
           )}
 
@@ -1508,6 +1510,7 @@ export default function App() {
               activeCourseId={activeCourseId}
               enabledGames={activeCourse?.enabledGames}
               placeLabels={activeCourse?.placeLabels}
+              googleSearchQuery={activeCourse?.googleSearchQuery}
             />
           )}
 

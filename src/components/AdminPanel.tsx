@@ -990,6 +990,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
     allowedUsers: dbGreCourse?.allowedUsers || [],
     price: (dbGreCourse?.price && dbGreCourse.price > 0) ? dbGreCourse.price : 30,
     bkashNumber: (dbGreCourse?.bkashNumber && dbGreCourse.bkashNumber !== '01700000000' && dbGreCourse.bkashNumber.trim() !== '') ? dbGreCourse.bkashNumber : '01581624202',
+    googleSearchQuery: dbGreCourse?.googleSearchQuery || '',
     createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
     createdBy: dbGreCourse?.createdBy || 'system'
   };
@@ -2395,7 +2396,7 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
                     <div className="p-4 flex items-center justify-between">
                       <span>Flashcard Rotation Animation</span>
                       <span className="bg-slate-100 text-slate-800 px-3 py-1 rounded-lg font-bold font-mono">
-                        {selectedUser.settings?.flashcardAnimation || 'flip-h'}
+                        {selectedUser.settings?.flashcardAnimation || 'shuffle'}
                       </span>
                     </div>
                   </div>
