@@ -537,7 +537,7 @@ export default function FlashcardViewer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredWords, currentIndex, currentActiveWord.id, isSessionActive, settings?.shortcuts]);
+  }, [filteredWords, currentIndex, currentActiveWord.id, currentActiveWord.word, googleSearchQuery, isSessionActive, settings?.shortcuts]);
 
   // Text to Speech
   const speakWord = () => {
@@ -1001,12 +1001,12 @@ export default function FlashcardViewer({
                 </h1>
                 <div className="pt-1">
                   <a
-                    href={`https://www.google.com/search?q=${encodeURIComponent(currentActiveWord.word)}`}
+                    href={getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery)}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-semibold transition cursor-pointer shadow-xs"
-                    title="Search on Google"
+                    title={`Search on Google (${googleSearchQuery || 'word meaning'})`}
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path
@@ -1122,47 +1122,37 @@ export default function FlashcardViewer({
               </div>
 
               {/* Center Content: Back Face */}
-              <div className="my-auto text-center space-y-3 py-2 overflow-y-auto max-h-[220px] scrollbar-none w-full flex flex-col items-center justify-center">
-                {/* Place 2: Primary Content - Note: Place 1 (word) is omitted on 2nd page as requested */}
-                {currentActiveWord.meaning && (
-                  <div className="text-center w-full">
-                    {placeLabels?.place2 && (
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block pb-0.5">
-                        {placeLabels.place2}
-                      </span>
-                    )}
-                    <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
-                      {currentActiveWord.meaning}
-                    </p>
-                  </div>
-                )}
+              {(() => {
+                const hasPlace2 = Boolean(currentActiveWord.meaning?.trim());
+                const hasPlace3 = Boolean(currentActiveWord.synonyms?.trim());
+                const hasMnemonic = Boolean(noteText?.trim());
+                const p5 = currentActiveWord.extraWord?.trim();
+                const p6 = currentActiveWord.extraMeaning?.trim();
+                const hasPlace5or6 = Boolean(p5 || p6);
 
-                {/* Place 3 and Mnemonic (Place 4 / Notes) */}
-                {(() => {
-                  const hasPlace3 = Boolean(currentActiveWord.synonyms?.trim());
-                  const hasMnemonic = Boolean(noteText?.trim());
+                const blocks: React.ReactNode[] = [];
 
-                  if (!hasPlace3 && !hasMnemonic) return null;
+                // Block 1: Place 2 (Meaning) - Note: Place 1 (word) is strictly omitted on backside
+                if (hasPlace2) {
+                  blocks.push(
+                    <div key="place2" className="text-center w-full">
+                      {placeLabels?.place2 && (
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block pb-0.5">
+                          {placeLabels.place2}
+                        </span>
+                      )}
+                      <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
+                        {currentActiveWord.meaning}
+                      </p>
+                    </div>
+                  );
+                }
 
-                  return (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600 w-full flex flex-col items-center justify-center space-y-2">
-                      {hasPlace3 && hasMnemonic ? (
-                        /* Both place3 and mnemonic present */
-                        <div className="w-full space-y-2 text-center">
-                          <div className="text-center">
-                            {placeLabels?.place3 && (
-                              <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">
-                                {placeLabels.place3}
-                              </span>
-                            )}
-                            <span>{currentActiveWord.synonyms}</span>
-                          </div>
-                          <div className="text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali text-center">
-                            "{noteText}"
-                          </div>
-                        </div>
-                      ) : hasPlace3 ? (
-                        /* Only Place 3 present -> Centered */
+                // Block 2: Place 3 (Synonyms) & Mnemonic (Place 4 / Notes)
+                if (hasPlace3 || hasMnemonic) {
+                  blocks.push(
+                    <div key="place3-mnemonic" className="w-full flex flex-col items-center justify-center space-y-2 text-xs font-semibold text-slate-600">
+                      {hasPlace3 && (
                         <div className="w-full text-center">
                           {placeLabels?.place3 && (
                             <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">
@@ -1171,8 +1161,8 @@ export default function FlashcardViewer({
                           )}
                           <span className="inline-block text-center">{currentActiveWord.synonyms}</span>
                         </div>
-                      ) : (
-                        /* Only Mnemonic present -> Centered */
+                      )}
+                      {hasMnemonic && (
                         <div className="w-full text-center">
                           <div className="text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali text-center max-w-full">
                             "{noteText}"
@@ -1181,19 +1171,13 @@ export default function FlashcardViewer({
                       )}
                     </div>
                   );
-                })()}
+                }
 
-                {/* Place 5 & Place 6 */}
-                {(() => {
-                  const p5 = currentActiveWord.extraWord?.trim();
-                  const p6 = currentActiveWord.extraMeaning?.trim();
-
-                  if (!p5 && !p6) return null;
-
-                  return (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600 w-full flex flex-col items-center justify-center">
+                // Block 3: Place 5 (Extra Word) & Place 6 (Extra Meaning)
+                if (hasPlace5or6) {
+                  blocks.push(
+                    <div key="place5-place6" className="w-full flex flex-col items-center justify-center text-xs font-semibold text-slate-600">
                       {p5 && p6 ? (
-                        /* Both Place 5 & Place 6 present */
                         <div className="text-center w-full">
                           {(placeLabels?.place5 || placeLabels?.place6) && (
                             <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
@@ -1205,7 +1189,6 @@ export default function FlashcardViewer({
                           </p>
                         </div>
                       ) : p5 ? (
-                        /* Only Place 5 present -> Centered */
                         <div className="text-center w-full">
                           {placeLabels?.place5 && (
                             <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
@@ -1215,7 +1198,6 @@ export default function FlashcardViewer({
                           <p className="font-bold text-emerald-700">{p5}</p>
                         </div>
                       ) : (
-                        /* Only Place 6 present -> Centered */
                         <div className="text-center w-full">
                           {placeLabels?.place6 && (
                             <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
@@ -1227,8 +1209,31 @@ export default function FlashcardViewer({
                       )}
                     </div>
                   );
-                })()}
-              </div>
+                }
+
+                if (blocks.length === 0) {
+                  return (
+                    <div className="my-auto text-center py-2 w-full flex flex-col items-center justify-center">
+                      <p className="text-sm font-medium text-slate-400 italic">No additional details available</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="my-auto text-center py-2 overflow-y-auto max-h-[220px] scrollbar-none w-full flex flex-col items-center justify-center">
+                    {blocks.map((block, index) => (
+                      <div
+                        key={index}
+                        className={`w-full flex flex-col items-center justify-center ${
+                          index > 0 ? 'pt-2.5 mt-2.5 border-t border-slate-100' : ''
+                        }`}
+                      >
+                        {block}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Card Footer Response Controls */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
