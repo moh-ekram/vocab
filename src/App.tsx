@@ -1121,6 +1121,70 @@ export default function App() {
     }
   };
 
+  // Batch Rate/Tag multiple words at once
+  const handleBatchRateWords = (wordIds: string[], status: WordStatus) => {
+    if (!wordIds || wordIds.length === 0) return;
+    const timestamp = new Date().toISOString();
+    const todayStr = getTodayString();
+
+    let newlyRatedCount = 0;
+
+    setProgress(prev => {
+      const nextProgress = { ...prev };
+      wordIds.forEach(wordId => {
+        const oldStatus = prev[wordId]?.status || 'unrated';
+        if (status !== 'unrated' && oldStatus !== status) {
+          newlyRatedCount++;
+        }
+        nextProgress[wordId] = {
+          ...(prev[wordId] || { id: wordId, status: 'unrated', notes: '', bookmarks: [] }),
+          status,
+          updatedAt: timestamp
+        };
+      });
+      return nextProgress;
+    });
+
+    if (newlyRatedCount > 0) {
+      setGoal(prev => {
+        const currentCount = prev.history[todayStr] || 0;
+        const newHistory = { ...prev.history, [todayStr]: currentCount + newlyRatedCount };
+
+        let newStreak = prev.streak;
+        if (prev.lastStudyDate !== todayStr) {
+          newStreak += 1;
+        }
+
+        return {
+          ...prev,
+          streak: newStreak,
+          lastStudyDate: todayStr,
+          history: newHistory
+        };
+      });
+    }
+
+    if (!navigator.onLine) {
+      wordIds.forEach(wordId => {
+        addUpdateToSyncQueue({
+          wordId,
+          status,
+          progressData: {
+            status,
+            updatedAt: timestamp,
+            notes: progress[wordId]?.notes || '',
+            bookmarks: progress[wordId]?.bookmarks || []
+          },
+          timestamp
+        });
+      });
+      getQueuedSyncItems().then(items => {
+        setPendingSyncCount(items.length);
+        triggerBackgroundSync();
+      });
+    }
+  };
+
   // Update personal Notes
   const handleUpdateNotes = (wordId: string, notes: string) => {
     const timestamp = new Date().toISOString();
@@ -1555,6 +1619,8 @@ export default function App() {
               setActiveCourseId={setActiveCourseId}
               setEnrolledCourseIds={setEnrolledCourseIds}
               onImportCourse={handleImportCourse}
+              onRateWord={handleRateWord}
+              onBatchRateWords={handleBatchRateWords}
               onSelectGroup={(gNum) => {
                 setSelectedGroupFromDash(gNum);
                 setActiveTab('flashcard');
@@ -1630,6 +1696,7 @@ export default function App() {
               words={activeWords}
               progress={progress}
               folders={folders}
+              settings={settings}
               onRateWord={handleRateWord}
               onUpdateNotes={handleUpdateNotes}
               onToggleBookmark={handleToggleBookmark}

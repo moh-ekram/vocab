@@ -36,7 +36,8 @@ import {
   Trash2,
   PlusCircle,
   BookOpen,
-  Edit
+  Edit,
+  Lock
 } from 'lucide-react';
 
 interface FirestoreUserDoc {
@@ -1001,6 +1002,15 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
 
   const filteredCustomCoursesList = customCourses.filter(c => c.id.trim().toLowerCase() !== 'gre');
 
+  const getCourseUserCount = (courseId: string) => {
+    return users.filter(u => {
+      const enrolled = (u as any).enrolledCourseIds || [];
+      if (Array.isArray(enrolled) && enrolled.includes(courseId)) return true;
+      if (courseId.trim().toLowerCase() === 'gre') return true;
+      return false;
+    }).length;
+  };
+
   return (
     <div className="space-y-8 font-sans" id="admin-panel-container">
       {/* Header Banner */}
@@ -1278,104 +1288,114 @@ export default function AdminPanel({ words, onCoursesUpdated }: AdminPanelProps)
       {activeAdminTab === 'courses' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Course Management Left Panel */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6 lg:col-span-2">
-            <div>
-              <h3 className="font-extrabold text-slate-800 text-base">Course Management</h3>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-5 lg:col-span-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-slate-900 text-base">Course Management List</h3>
+                <p className="text-xs text-slate-400 font-medium">Minimal course list overview</p>
+              </div>
+              <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-mono">
+                {1 + filteredCustomCoursesList.length} Courses
+              </span>
             </div>
 
-            <div className="space-y-4">
-              {/* Default Course Card */}
-              <div 
-                onClick={() => handleOpenEditModal(defaultGreCourse)}
-                className="p-5 border border-indigo-150 hover:border-indigo-300 rounded-2xl bg-indigo-50/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs cursor-pointer group"
-                title="Click to edit default course settings"
-                style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">
-                      {defaultGreCourse.title}
-                    </h4>
-                    <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded font-black uppercase font-mono">default</span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium">{defaultGreCourse.description}</p>
-                  <div className="text-[10px] text-slate-400 font-bold flex gap-3 font-mono">
-                    <span>Words: {defaultGreCourse.words?.length || 1110}</span>
-                    <span>Groups: {defaultGreCourse.totalGroups}</span>
-                  </div>
-                  <span className="text-[9px] text-indigo-500 font-bold block pt-1 opacity-60 group-hover:opacity-100 transition">⚙️ Click here to change settings</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-indigo-600 font-extrabold font-mono uppercase bg-indigo-100/50 px-2.5 py-1 rounded-lg">EDITABLE SYSTEM DEFAULT</span>
-                </div>
-              </div>
+            <div className="space-y-3">
+              {/* Combine Default GRE + Custom Courses into a clean minimal list */}
+              {[defaultGreCourse, ...filteredCustomCoursesList].map((c) => {
+                const isDefault = c.id.trim().toLowerCase() === 'gre';
+                const wordCount = c.words?.length || (isDefault ? 1110 : 0);
+                const userCount = getCourseUserCount(c.id);
 
-              {/* Custom uploaded courses card list */}
-              {filteredCustomCoursesList.length === 0 ? (
-                <div className="p-10 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl text-xs flex flex-col items-center gap-2 animate-fadeIn" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
-                  <BookOpen className="w-8 h-8 text-slate-300" />
-                  <div>
-                    <p className="font-bold text-slate-600">No custom courses found in Firestore.</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Use the right side panel to upload spreadsheet files and build dynamic custom courses!</p>
-                  </div>
-                </div>
-              ) : (
-                filteredCustomCoursesList.map(c => (
+                return (
                   <div 
                     key={c.id} 
                     onClick={() => handleOpenEditModal(c)}
-                    className="p-5 border border-slate-150 hover:border-indigo-300 rounded-2xl bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition hover:shadow-xs animate-fadeIn cursor-pointer group"
-                    title="Click to modify settings"
-                    style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
+                    className="p-4 border border-slate-200/80 hover:border-indigo-400 rounded-xl bg-white hover:bg-indigo-50/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition shadow-2xs hover:shadow-xs cursor-pointer group"
+                    title="Click to view & edit course settings"
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-extrabold text-slate-800 text-sm group-hover:text-indigo-600 transition">{c.title}</h4>
-                        <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-black uppercase font-mono">{c.id}</span>
-                        {c.isDefault && (
-                          <span className="text-[9px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-black uppercase">default</span>
-                        )}
-                        {c.isRestricted && (
-                          <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-black uppercase">restricted</span>
+                    {/* Course Name & Id */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition truncate">
+                          {c.title}
+                        </h4>
+                        <span className="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono font-bold uppercase">
+                          {c.id}
+                        </span>
+                        {isDefault && (
+                          <span className="text-[9px] text-indigo-600 bg-indigo-100/70 px-1.5 py-0.5 rounded font-black uppercase">
+                            Default
+                          </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 font-medium">{c.description}</p>
-                      <div className="text-[10px] text-slate-400 font-bold flex gap-4 font-mono">
-                        <span>Words: {c.words?.length || 0}</span>
-                        <span>Groups: {c.totalGroups}</span>
-                        <span>By: {c.createdBy || 'Unknown'}</span>
-                      </div>
-                      <span className="text-[9px] text-indigo-500 font-bold block pt-1 opacity-60 group-hover:opacity-100 transition">⚙️ Click here to change settings</span>
+                      <p className="text-xs text-slate-500 line-clamp-1 font-normal">
+                        {c.description || 'No description provided'}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(c.id);
-                          alert(`Course share code "${c.id}" copied to clipboard! Share this code with students.`);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-extrabold text-xs rounded-xl transition cursor-pointer"
-                        title="Copy course share code"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Code</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteCourse(c.id);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-rose-105 hover:border-rose-200 bg-rose-50/50 hover:bg-rose-50 text-rose-600 hover:text-rose-700 transition font-bold text-xs rounded-xl cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
+
+                    {/* Stats & Badges: Words, Users, Restricted */}
+                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-wrap text-xs">
+                      {/* Word Count */}
+                      <div className="flex items-center gap-1 text-slate-700 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-150">
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
+                        <span className="font-semibold">{wordCount}</span>
+                        <span className="text-slate-400 text-[10px]">words</span>
+                      </div>
+
+                      {/* Enrolled User Count */}
+                      <div className="flex items-center gap-1 text-slate-700 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-150">
+                        <Users className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="font-semibold">{userCount}</span>
+                        <span className="text-slate-400 text-[10px]">users</span>
+                      </div>
+
+                      {/* Restricted Status */}
+                      <div>
+                        {c.isRestricted ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[11px] font-bold">
+                            <Lock className="w-3 h-3 text-amber-600" />
+                            <span>Restricted</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-bold">
+                            <CheckCircle className="w-3 h-3 text-emerald-600" />
+                            <span>Public</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(c.id);
+                            alert(`Course share code "${c.id}" copied to clipboard!`);
+                          }}
+                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition"
+                          title="Copy Course Code"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        {!isDefault && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCourse(c.id);
+                            }}
+                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                            title="Delete Course"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))
-              )}
+                );
+              })}
             </div>
           </div>
 

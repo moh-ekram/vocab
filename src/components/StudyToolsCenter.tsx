@@ -10,12 +10,13 @@ import {
 import CustomLists from './CustomLists';
 import SearchDictionary from './SearchDictionary';
 import DailyPlanner from './DailyPlanner';
-import { VocabularyWord, WordStatus, CustomFolder, UserProgress, StudyGoal } from '../types';
+import { VocabularyWord, WordStatus, CustomFolder, UserProgress, StudyGoal, AppSettings } from '../types';
 
 interface StudyToolsCenterProps {
   words: VocabularyWord[];
   progress: Record<string, UserProgress>;
   folders: CustomFolder[];
+  settings?: AppSettings;
   onRateWord: (wordId: string, status: WordStatus) => void;
   onUpdateNotes: (wordId: string, notes: string) => void;
   onToggleBookmark: (wordId: string, folderId: string) => void;
@@ -33,6 +34,7 @@ export default function StudyToolsCenter({
   words,
   progress,
   folders,
+  settings,
   onRateWord,
   onUpdateNotes,
   onToggleBookmark,
@@ -239,6 +241,7 @@ export default function StudyToolsCenter({
           words={words}
           progress={progress}
           folders={folders}
+          settings={settings}
           onRateWord={onRateWord}
           onUpdateNotes={onUpdateNotes}
           onToggleBookmark={onToggleBookmark}

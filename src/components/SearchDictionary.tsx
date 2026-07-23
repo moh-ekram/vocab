@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VocabularyWord, UserProgress, CustomFolder, WordStatus } from '../types';
+import { VocabularyWord, UserProgress, CustomFolder, WordStatus, AppSettings } from '../types';
 import { 
   Search, 
   Volume2, 
@@ -25,6 +25,7 @@ interface SearchDictionaryProps {
   words: VocabularyWord[];
   progress: Record<string, UserProgress>;
   folders: CustomFolder[];
+  settings?: AppSettings;
   onRateWord: (wordId: string, status: WordStatus) => void;
   onUpdateNotes: (wordId: string, notes: string) => void;
   onToggleBookmark: (wordId: string, folderId: string) => void;
@@ -34,6 +35,7 @@ export default function SearchDictionary({
   words,
   progress,
   folders,
+  settings,
   onRateWord,
   onUpdateNotes,
   onToggleBookmark
@@ -470,7 +472,17 @@ export default function SearchDictionary({
                     </td>
 
                     {/* Word row */}
-                    <td className="px-4 py-2.5 font-bold font-mono text-slate-900 border-r border-slate-100 tracking-tight">
+                    <td className={`px-4 py-2.5 font-extrabold font-mono border-r border-slate-100 tracking-tight transition-colors ${
+                      settings?.colorizeMainWord !== false
+                        ? status === 'know'
+                          ? 'text-emerald-600 font-black'
+                          : status === 'dont_know'
+                          ? 'text-rose-600 font-black'
+                          : status === 'confusion'
+                          ? 'text-amber-600 font-black'
+                          : 'text-slate-900'
+                        : 'text-slate-900'
+                    }`}>
                       {w.word}
                     </td>
 

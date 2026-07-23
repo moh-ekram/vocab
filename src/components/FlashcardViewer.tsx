@@ -568,6 +568,20 @@ export default function FlashcardViewer({
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
 
+  const getWordColorClass = (status: WordStatus) => {
+    if (settings?.colorizeMainWord === false) return 'text-slate-900';
+    switch (status) {
+      case 'know':
+        return 'text-emerald-600 font-extrabold';
+      case 'dont_know':
+        return 'text-rose-600 font-extrabold';
+      case 'confusion':
+        return 'text-amber-600 font-extrabold';
+      default:
+        return 'text-slate-900';
+    }
+  };
+
   const handleSaveCustomSentence = () => {
     if (!customSentenceInput.trim() || !currentActiveWord.id) return;
     const existing = progress[currentActiveWord.id]?.notes || '';
@@ -996,7 +1010,7 @@ export default function FlashcardViewer({
 
               {/* Center Content: Front Face */}
               <div className="my-auto text-center space-y-2 py-4">
-                <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} text-slate-900 tracking-tight font-sans`}>
+                <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} ${getWordColorClass(activeStatus)} tracking-tight font-sans transition-colors duration-200`}>
                   {currentActiveWord.word}
                 </h1>
                 <div className="pt-1">
