@@ -52,6 +52,15 @@ export interface AppSettings {
   colorizeMainWord?: boolean;
 }
 
+export interface SyncLogEntry {
+  id: string;
+  timestamp: string;
+  type: 'auto' | 'manual' | 'offline_queue' | 'cloud_fetch';
+  message: string;
+  status: 'success' | 'error';
+  itemCount?: number;
+}
+
 export interface StudySession {
   date: string; // YYYY-MM-DD
   wordsStudied: number;

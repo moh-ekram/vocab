@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
-import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
+import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings, SyncLogEntry } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
 import PracticeCenter from './components/PracticeCenter';
@@ -337,6 +337,32 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
+  const [syncLogs, setSyncLogs] = useState<SyncLogEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('memorizer_sync_logs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+
+  const addSyncLog = (type: 'auto' | 'manual' | 'offline_queue' | 'cloud_fetch', message: string, status: 'success' | 'error' = 'success', itemCount?: number) => {
+    const newEntry: SyncLogEntry = {
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: new Date().toISOString(),
+      type,
+      message,
+      status,
+      itemCount
+    };
+    setSyncLogs(prev => {
+      const updated = [newEntry, ...prev].slice(0, 15);
+      try {
+        localStorage.setItem('memorizer_sync_logs', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   // Load from IndexedDB on initial mount as a secure backup
   useEffect(() => {
     const loadIndexedDBCache = async () => {
@@ -461,9 +487,11 @@ export default function App() {
       await clearSyncQueue();
       setPendingSyncCount(0);
       setSyncStatus('synced');
+      addSyncLog('offline_queue', 'Synced queued offline changes to Cloud', 'success', queuedItems.length);
     } catch (err) {
       console.error('Error syncing offline queue to firestore:', err);
       setSyncStatus('error');
+      addSyncLog('offline_queue', 'Offline queue synchronization failed', 'error');
     }
   };
 
@@ -847,6 +875,7 @@ export default function App() {
           updatedAt: new Date().toISOString()
         }, { merge: true });
         setSyncStatus('synced');
+        addSyncLog('auto', 'Saved study progress and preferences to Cloud', 'success');
       } catch (err) {
         console.error('Error saving to Firestore:', err);
         setSyncStatus('error');
@@ -881,9 +910,11 @@ export default function App() {
         updatedAt: new Date().toISOString()
       }, { merge: true });
       setSyncStatus('synced');
+      addSyncLog('manual', 'Manual cloud backup completed successfully', 'success');
     } catch (err) {
       console.error('Manual sync failed:', err);
       setSyncStatus('error');
+      addSyncLog('manual', 'Manual cloud backup failed', 'error');
     }
   };
 
@@ -1722,6 +1753,7 @@ export default function App() {
               userEmail={user?.email}
               syncStatus={syncStatus}
               onForceSync={forceSyncToCloud}
+              syncLogs={syncLogs}
             />
           )}
 
