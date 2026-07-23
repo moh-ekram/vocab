@@ -47,7 +47,6 @@ interface PracticeCenterProps {
     place5?: string;
     place6?: string;
   };
-  variableToggles?: Record<string, boolean>;
   googleSearchQuery?: string;
 }
 

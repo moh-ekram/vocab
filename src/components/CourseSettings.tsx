@@ -30,8 +30,7 @@ import {
   Gamepad2,
   GraduationCap,
   Sparkles,
-  Shuffle,
-  Tag
+  Shuffle
 } from 'lucide-react';
 import { doc, setDoc, collection, getDocs, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -90,11 +89,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [excelAnalogyUploadError, setExcelAnalogyUploadError] = useState<string | null>(null);
   const [excelAnalogySaveStatus, setExcelAnalogySaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Helper to clean title
-  const getCleanCourseTitle = (t?: string) => t || "Sample 100 Vocabulary";
-
   // --- GENERAL COURSE STATES ---
-  const [title, setTitle] = useState(getCleanCourseTitle(course.title));
+  const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description);
   const [localPlaceLabels, setLocalPlaceLabels] = useState<Record<string, string>>(course.placeLabels || {});
   const [isDefault, setIsDefault] = useState(!!course.isDefault);
@@ -888,7 +884,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
   // Synchronize on course prop changes
   useEffect(() => {
-    setTitle(getCleanCourseTitle(course.title));
+    setTitle(course.title);
     setDescription(course.description);
     setIsDefault(!!course.isDefault);
     setIsRestricted(!!course.isRestricted);
@@ -1351,18 +1347,13 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         }
 
         // Extract place labels from headers
-        let detectedLabels: Record<string, string> = { ...localPlaceLabels };
+        let detectedLabels: Record<string, string> = {};
         const firstRowKeys = Object.keys(rawRows[0]);
         firstRowKeys.forEach(k => {
           const match = k.match(/^place(1|2|3|4|5|6):(.*)$/i);
           if (match) {
             const num = match[1];
             detectedLabels[`place${num}`] = match[2].trim();
-          } else {
-            const lowerK = k.toLowerCase().trim();
-            if (['word in use', 'write your sentence', 'example sentence', 'sentence'].includes(lowerK) && !detectedLabels.place3) {
-              detectedLabels.place3 = k.trim();
-            }
           }
         });
         if (Object.keys(detectedLabels).length > 0) {
@@ -1406,8 +1397,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           const synonym2Key = findKey(['synonym2', 'syn2'], 'place6');
           const synonymsKey = findKey(['synonyms', 'synonym']);
           const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
-          const extraMeaningKey = findKey(['extra meaning'], 'place6');
-          const exampleKey = findKey(['example', 'example sentence', 'word in use', 'write your sentence', 'sentence'], 'place3');
+          const extraMeaningKey = findKey(['extra meaning']);
+          const exampleKey = findKey(['example', 'example sentence'], 'place3');
           const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
 
           const baseWord = wordKey && row[wordKey] !== undefined ? String(row[wordKey]).trim() : '';
@@ -1669,7 +1660,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
       const updatedCourse: Course = {
         ...course,
-        title: getCleanCourseTitle(title.trim()),
+        title: title.trim(),
         description: description.trim(),
         isDefault: isDefault,
         isRestricted: isRestricted,
@@ -1986,50 +1977,6 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
                     );
                   })}
-                </div>
-
-                {/* --- Placemarker Custom Labels Controller --- */}
-                <div className="pt-6 border-t border-slate-100 space-y-4">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-indigo-600" />
-                      <span>Placemarker & Column Header Custom Labels (প্লেসমার্কার ও হেডার লেবেল)</span>
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium mt-1">
-                      Customize the display headers shown on flashcards, games, and quizzes for place1 to place6.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {[
-                      { key: 'place1', defaultLabel: 'Word', title: 'place1: Main Word Label', placeholder: 'e.g. English Word or শব্দ' },
-                      { key: 'place2', defaultLabel: 'Meaning', title: 'place2: Meaning Label', placeholder: 'e.g. Bangla Meaning or অর্থ' },
-                      { key: 'place3', defaultLabel: 'Word in use', title: 'place3: Example Sentence Label', placeholder: 'e.g. Usage or বাক্যে প্রয়োগ' },
-                      { key: 'place4', defaultLabel: 'Derivatives', title: 'place4: Derivatives / Extra Info Label', placeholder: 'e.g. Derivative or ডেরিভেটিভস' },
-                      { key: 'place5', defaultLabel: 'Synonyms', title: 'place5: Synonyms Label', placeholder: 'e.g. Synonyms or সমার্থক শব্দ' },
-                      { key: 'place6', defaultLabel: 'Extra Meaning', title: 'place6: Extra Meaning / Synonym 2 Label', placeholder: 'e.g. Extra Meaning or অন্যান্য অর্থ' },
-                    ].map(p => (
-                      <div key={p.key} className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-700 block flex items-center justify-between">
-                          <span>{p.title}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">Default: {p.defaultLabel}</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={localPlaceLabels[p.key] || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setLocalPlaceLabels(prev => ({
-                              ...prev,
-                              [p.key]: val
-                            }));
-                          }}
-                          placeholder={p.placeholder}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition"
-                        />
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}

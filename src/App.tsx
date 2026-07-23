@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vocabulary } from './data/vocabulary';
-import { DEFAULT_SAMPLE_COURSE, SAMPLE_100_WORDS } from './data/sample100';
-import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings, FlashcardCustomStyle } from './types';
-import { DEFAULT_FLASHCARD_STYLE } from './lib/flashcardPresets';
+import { UserProgress, WordStatus, CustomFolder, StudyGoal, ActiveTab, AppSettings } from './types';
 import StatsDashboard from './components/StatsDashboard';
 import FlashcardViewer from './components/FlashcardViewer';
 import PracticeCenter from './components/PracticeCenter';
@@ -34,9 +32,7 @@ import {
   Sun,
   Moon,
   ChevronLeft,
-  ChevronRight,
-  Download,
-  RefreshCw
+  ChevronRight
 } from 'lucide-react';
 
 import {
@@ -71,44 +67,9 @@ const LOCAL_STORAGE_BLANK_PROGRESS_KEY = 'vocab_memorizer_blank_progress_v2';
 const LOCAL_STORAGE_SETTINGS_KEY = 'vocab_memorizer_settings_v3';
 const LOCAL_STORAGE_ENROLLED_COURSES_KEY = 'vocab_memorizer_enrolled_courses_v2';
 const LOCAL_STORAGE_ACTIVE_COURSE_KEY = 'vocab_memorizer_active_course_v2';
-const LOCAL_STORAGE_ACTIVE_TAB_KEY = 'vocab_memorizer_active_tab_v3';
 
 export default function App() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('User response to install prompt:', outcome);
-      setDeferredPrompt(null);
-    } else {
-      alert("To install Bishorghor Vocabulary on your mobile device:\n\n1. Safari (iOS): Tap Share button -> 'Add to Home Screen'\n2. Chrome (Android): Tap menu (3 dots) -> 'Install App' or 'Add to Home screen'");
-    }
-  };
-
-  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_TAB_KEY);
-    return (saved as ActiveTab) || 'dashboard';
-  });
-
-  useEffect(() => {
-    if (activeTab) {
-      localStorage.setItem(LOCAL_STORAGE_ACTIVE_TAB_KEY, activeTab);
-    }
-  }, [activeTab]);
-
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [selectedGroupFromDash, setSelectedGroupFromDash] = useState<number | string | null>(null);
 
   // --- MOBILE SWIPE NAVIGATION SETUP ---
@@ -243,23 +204,19 @@ export default function App() {
   // --- PERSISTED STATES ---
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_ENROLLED_COURSES_KEY);
-    return saved ? JSON.parse(saved) : ['sample100'];
+    return saved ? JSON.parse(saved) : ['gre'];
   });
 
   const [activeCourseId, setActiveCourseId] = useState<string>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_ACTIVE_COURSE_KEY);
-    return saved ? saved : 'sample100';
+    return saved ? saved : 'gre';
   });
 
   const [customCourses, setCustomCourses] = useState<Course[]>(() => {
     const saved = localStorage.getItem('vocab_memorizer_cached_custom_courses');
     if (saved) {
       try {
-        const parsed: Course[] = JSON.parse(saved);
-        return parsed.map(c => ({
-          ...c,
-          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Sample 100 Vocabulary" : c.title
-        }));
+        return JSON.parse(saved);
       } catch (e) {
         return [];
       }
@@ -270,11 +227,7 @@ export default function App() {
     const saved = localStorage.getItem('vocab_memorizer_imported_courses');
     if (saved) {
       try {
-        const parsed: Course[] = JSON.parse(saved);
-        return parsed.map(c => ({
-          ...c,
-          title: (!c.title || c.title.toUpperCase().includes('BARC')) ? "Sample 100 Vocabulary" : c.title
-        }));
+        return JSON.parse(saved);
       } catch (e) {
         return [];
       }
@@ -333,8 +286,6 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
     const parsed = saved ? JSON.parse(saved) : {};
-    const cachedCustomStyle = localStorage.getItem('vocab_flashcard_custom_style');
-    const parsedCustomStyle = cachedCustomStyle ? JSON.parse(cachedCustomStyle) : undefined;
     return {
       defaultFlashcardTags: parsed.defaultFlashcardTags || ['know', 'confusion', 'dont_know', 'unrated'],
       defaultFlashcardOrder: parsed.defaultFlashcardOrder || 'random',
@@ -361,30 +312,9 @@ export default function App() {
       flashcardAnimation: (parsed.flashcardAnimation && parsed.flashcardAnimation !== 'flip-h') ? parsed.flashcardAnimation : 'shuffle',
 
       // Default colorize main word setting
-      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true,
-
-      // Global Flashcard Custom Style from Admin
-      flashcardCustomStyle: parsed.flashcardCustomStyle || parsedCustomStyle || DEFAULT_FLASHCARD_STYLE
+      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true
     };
   });
-
-  // Real-time listener for global admin flashcard design settings
-  useEffect(() => {
-    try {
-      const unsub = onSnapshot(doc(db, 'system_settings', 'flashcard_design'), (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data() as FlashcardCustomStyle;
-          setSettings(prev => ({ ...prev, flashcardCustomStyle: data }));
-          localStorage.setItem('vocab_flashcard_custom_style', JSON.stringify(data));
-        }
-      }, (err) => {
-        console.warn("Could not listen to system_settings/flashcard_design:", err);
-      });
-      return () => unsub();
-    } catch (e) {
-      console.warn("Firestore flashcard design listener error:", e);
-    }
-  }, []);
 
   const [quizScore, setQuizScore] = useState<number>(() => {
     const saved = localStorage.getItem('vocab_memorizer_quiz_score');
@@ -645,9 +575,7 @@ export default function App() {
         const querySnapshot = await getDocs(coursesRef);
         const loaded: Course[] = [];
         querySnapshot.forEach(doc => {
-          const data = doc.data() as Course;
-          const cleanTitle = data.title || "Sample 100 Vocabulary";
-          loaded.push({ id: doc.id, ...data, title: cleanTitle } as Course);
+          loaded.push({ id: doc.id, ...doc.data() } as Course);
         });
         setCustomCourses(loaded);
         localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(loaded));
@@ -660,6 +588,9 @@ export default function App() {
 
   // Filter custom courses based on user permissions
   const filteredCustomCourses = customCourses.filter(c => {
+    // If the user is already enrolled in this course, bypass restriction checks entirely
+    if (enrolledCourseIds.includes(c.id)) return true;
+
     // Admin user email bypasses all restrictions
     const isAdmin = user?.email === 'mohammad.001ekram@gmail.com';
     if (isAdmin) return true;
@@ -667,7 +598,7 @@ export default function App() {
     // Course creator bypasses restrictions
     if (c.createdBy === user?.email) return true;
 
-    // If restricted, check if user's email is listed in allowed users and not expired
+    // If restricted, check if user's email or mobile is listed
     if (c.isRestricted) {
       if (!user?.email) return false;
       const userIdentifier = user.email.trim().toLowerCase();
@@ -1097,36 +1028,29 @@ export default function App() {
     return `${year}-${month}-${day}`;
   }
 
-  // Helper to clean course title
-  const getCleanTitle = (t?: string) => {
-    if (!t) return "Sample 100 Vocabulary";
-    return t;
-  };
-
   // --- COURSE RESOLVERS ---
-  const dbSampleCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'sample100' || c.id.trim().toLowerCase() === 'gre');
-  const defaultSampleCourse: Course = {
-    ...DEFAULT_SAMPLE_COURSE,
-    ...(dbSampleCourse || {}),
-    id: 'sample100',
-    title: dbSampleCourse?.title || DEFAULT_SAMPLE_COURSE.title,
-    description: dbSampleCourse?.description || DEFAULT_SAMPLE_COURSE.description,
-    totalGroups: dbSampleCourse?.totalGroups || DEFAULT_SAMPLE_COURSE.totalGroups,
-    words: (dbSampleCourse?.words && dbSampleCourse.words.length > 0) ? dbSampleCourse.words : SAMPLE_100_WORDS,
-    isDefault: true,
-    isRestricted: false,
-    allowedUsers: dbSampleCourse?.allowedUsers || [],
-    price: 0,
-    bkashNumber: dbSampleCourse?.bkashNumber || DEFAULT_SAMPLE_COURSE.bkashNumber,
-    googleSearchQuery: dbSampleCourse?.googleSearchQuery || '',
-    createdAt: dbSampleCourse?.createdAt || DEFAULT_SAMPLE_COURSE.createdAt,
-    createdBy: dbSampleCourse?.createdBy || 'system'
+  const dbGreCourse = customCourses.find(c => c.id.trim().toLowerCase() === 'gre');
+  const defaultGreCourse: Course = {
+    ...(dbGreCourse || {}),
+    id: dbGreCourse?.id || 'gre',
+    title: dbGreCourse?.title || 'BARC Vocabulary Book',
+    description: dbGreCourse?.description || '38 Groups containing 1100 Barron\'s Word Preparation Course (Default)',
+    totalGroups: dbGreCourse?.totalGroups || (dbGreCourse?.words && dbGreCourse.words.length > 0 ? new Set(dbGreCourse.words.map(w => w.group)).size : 37),
+    words: (dbGreCourse?.words && dbGreCourse.words.length > 0) ? dbGreCourse.words : vocabulary,
+    isDefault: dbGreCourse !== undefined ? dbGreCourse.isDefault : true,
+    isRestricted: dbGreCourse?.isRestricted || false,
+    allowedUsers: dbGreCourse?.allowedUsers || [],
+    price: (dbGreCourse?.price && dbGreCourse.price > 0) ? dbGreCourse.price : 30,
+    bkashNumber: (dbGreCourse?.bkashNumber && dbGreCourse.bkashNumber !== '01700000000' && dbGreCourse.bkashNumber.trim() !== '') ? dbGreCourse.bkashNumber : '01581624202',
+    googleSearchQuery: dbGreCourse?.googleSearchQuery || '',
+    createdAt: dbGreCourse?.createdAt || new Date('2026-01-01').toISOString(),
+    createdBy: dbGreCourse?.createdBy || 'system'
   };
 
   const rawAllCourses: Course[] = [
-    defaultSampleCourse, 
-    ...customCourses.filter(c => c.id.trim().toLowerCase() !== 'sample100' && c.id.trim().toLowerCase() !== 'gre'), 
-    ...importedCourses.filter(c => c.id.trim().toLowerCase() !== 'sample100' && c.id.trim().toLowerCase() !== 'gre')
+    defaultGreCourse, 
+    ...customCourses.filter(c => c.id.trim().toLowerCase() !== 'gre'), 
+    ...importedCourses.filter(c => c.id.trim().toLowerCase() !== 'gre')
   ];
   const allCourses: Course[] = [];
   const seenCourseIds = new Set<string>();
@@ -1136,8 +1060,7 @@ export default function App() {
       seenCourseIds.add(cIdLower);
       allCourses.push({
         ...c,
-        title: getCleanTitle(c.title),
-        price: (c.price && c.price > 0) ? c.price : 0,
+        price: (c.price && c.price > 0) ? c.price : 30,
         bkashNumber: (c.bkashNumber && c.bkashNumber !== '01700000000' && c.bkashNumber.trim() !== '') ? c.bkashNumber : '01581624202'
       });
     }
@@ -1167,21 +1090,22 @@ export default function App() {
   const activeCourse = (() => {
     const normActiveId = activeCourseId?.trim().toLowerCase();
     const course = allCourses.find(c => c.id.trim().toLowerCase() === normActiveId);
-    if (!course) return defaultSampleCourse;
+    if (!course) return defaultGreCourse;
 
-    // Check access permissions - admin or creator can always access
+    // Check access permissions - enrolled courses or admin/creator can always access
     const userEmailLower = user?.email?.trim().toLowerCase();
     const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
     const isCreator = course.createdBy?.trim().toLowerCase() === userEmailLower;
+    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === normActiveId);
 
-    if (!course.isRestricted || isAdmin || isCreator) {
+    if (isEnrolled || isAdmin || isCreator) {
       return course;
     }
 
     if (course.isRestricted) {
-      if (!userEmailLower) return defaultSampleCourse;
+      if (!userEmailLower) return defaultGreCourse;
       const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-      if (!isEmailInAllowed) return defaultSampleCourse;
+      if (!isEmailInAllowed) return defaultGreCourse;
 
       if (course.allowedUsersExpiry) {
         const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
@@ -1192,13 +1116,13 @@ export default function App() {
             today.setHours(0, 0, 0, 0);
             const expiryDate = new Date(expiryStr);
             expiryDate.setHours(23, 59, 59, 999);
-            if (today > expiryDate) return defaultSampleCourse; // Expired!
+            if (today > expiryDate) return defaultGreCourse; // Expired!
           }
         }
       }
     }
     return course;
-  })() || defaultSampleCourse;
+  })() || defaultGreCourse;
   const activeWords = activeCourse.words || [];
 
   // --- DATABASE STATE HANDLERS ---
@@ -1446,32 +1370,25 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 w-full max-w-full overflow-x-hidden" id="main-layout-stage">
       {/* Top Header / Main Banner (Unified for Mobile & Desktop) */}
-      <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white px-3 py-2 md:px-8 md:py-4 flex items-center justify-between shadow-md flex-shrink-0 z-20 gap-2 w-full max-w-full overflow-hidden" id="main-header-banner">
-        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 sm:flex-initial">
-          <div className="p-1.5 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20 flex-shrink-0">
+      <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 md:px-8 md:py-5 flex items-center justify-between shadow-md flex-shrink-0" id="main-header-banner">
+        <div className="flex items-center gap-2.5 md:gap-3.5 min-w-0">
+          <div className="p-2 md:p-2.5 bg-indigo-600 rounded-xl text-white shadow-md shadow-indigo-500/20 flex-shrink-0">
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-xs sm:text-sm md:text-xl font-black tracking-tight font-sans text-white uppercase leading-none truncate">
-                Memorizer
-              </h1>
-              {/* Mobile status indicator dot */}
-              <div 
-                className={`sm:hidden w-2 h-2 rounded-full flex-shrink-0 ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} 
-                title={isOnline ? 'Online' : 'Offline'} 
-              />
-            </div>
-            <p className="text-[9px] md:text-xs font-semibold text-emerald-400 mt-0.5 truncate max-w-[85px] sm:max-w-xs md:max-w-md" title={activeCourse?.title}>
+            <h1 className="text-lg md:text-2xl font-black tracking-tight font-sans text-white uppercase leading-none">
+              Memorizer
+            </h1>
+            <p className="text-[10px] md:text-xs font-semibold text-emerald-400 mt-1 truncate max-w-[120px] sm:max-w-xs md:max-w-md" title={activeCourse?.title}>
               {activeCourse?.title || 'Default Course'}
             </p>
           </div>
         </div>
 
         {/* User Stats & Auth (Unified Header UI) */}
-        <div className="flex items-center gap-1 md:gap-2.5 flex-shrink-0">
-          {/* Connection Status Badge (Visible on sm+ screens) */}
-          <div className="hidden sm:flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-xl text-[10px] font-bold">
+        <div className="flex items-center gap-1.5 md:gap-3.5 flex-shrink-0">
+          {/* Connection Status Badge (Visible for both logged in and anonymous users) */}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-1 md:px-2.5 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-bold">
             <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-pulse'}`} />
             <span className={isOnline ? 'text-emerald-300' : 'text-amber-300'}>
               {isOnline ? 'Online' : 'Offline'}
@@ -1482,30 +1399,19 @@ export default function App() {
           {/* Dark Mode Toggle */}
           <button
             onClick={() => setDarkMode(prev => !prev)}
-            className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-lg md:rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
+            className="p-1.5 md:p-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/15 text-indigo-200 hover:text-white transition cursor-pointer flex items-center justify-center"
             title={darkMode ? "Switch to Light Mode" : "Switch to Night Mode"}
             id="dark-mode-toggle"
           >
             {darkMode ? <Sun className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-300" /> : <Moon className="w-3.5 h-3.5 md:w-4 md:h-4 text-slate-300" />}
           </button>
 
-          {/* Install PWA App Button */}
-          <button
-            onClick={handleInstallApp}
-            className="p-1.5 md:px-2.5 md:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/30 rounded-lg md:rounded-xl transition cursor-pointer text-[10px] md:text-xs font-bold shadow-xs flex items-center gap-1"
-            title="Install App / Add to Home Screen"
-            id="pwa-install-btn"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Install App</span>
-          </button>
-
           {user ? (
-            <div className="flex items-center gap-1 md:gap-2.5 bg-white/5 border border-white/10 px-1.5 py-1 md:px-3 md:py-1.5 rounded-lg md:rounded-xl">
-              <div className="w-5 h-5 md:w-7 md:h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
+            <div className="flex items-center gap-2 md:gap-3 bg-white/5 border border-white/10 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl">
+              <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/15 text-white flex items-center justify-center font-bold text-[10px] md:text-xs border border-white/10 flex-shrink-0">
                 {user.email ? user.email[0].toUpperCase() : 'U'}
               </div>
-              <div className="hidden md:block text-left max-w-[120px] lg:max-w-[150px]">
+              <div className="hidden sm:block text-left max-w-[120px] md:max-w-[150px]">
                 <p className="text-[11px] md:text-xs font-extrabold text-white truncate">
                   {user.displayName || user.email?.split('@')[0]}
                 </p>
@@ -1514,8 +1420,8 @@ export default function App() {
                 </span>
               </div>
               
-              {/* Sync Status Info (Desktop) */}
-              <div className="hidden lg:flex items-center gap-1.5 bg-indigo-950/45 border border-indigo-500/15 px-2 py-1 rounded-lg text-[9px]">
+              {/* Sync Status Info */}
+              <div className="hidden md:flex items-center gap-1.5 bg-indigo-950/45 border border-indigo-500/15 px-2 py-1 rounded-lg text-[9px]">
                 <div className={`w-1.5 h-1.5 rounded-full ${
                   syncStatus === 'synced' ? 'bg-emerald-400 animate-pulse' :
                   syncStatus === 'syncing' ? 'bg-indigo-400 animate-spin' :
@@ -1532,12 +1438,11 @@ export default function App() {
               {/* Force Sync button */}
               <button
                 onClick={forceSyncToCloud}
-                className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 p-1 md:px-2 md:py-0.5 rounded-md transition flex items-center gap-1"
+                className="text-[10px] text-indigo-200 hover:text-white font-extrabold cursor-pointer hover:underline bg-white/10 px-2 py-0.5 rounded-md transition"
                 disabled={syncStatus === 'syncing' || !isOnline}
                 title="Force Sync"
               >
-                <RefreshCw className={`w-3 h-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{syncStatus === 'syncing' ? 'Syncing...' : 'Sync'}</span>
+                {syncStatus === 'syncing' ? '...' : 'Sync'}
               </button>
 
               <button
@@ -1551,9 +1456,9 @@ export default function App() {
           ) : (
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="text-[10px] md:text-xs font-extrabold px-2 py-1 md:px-4 md:py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg md:rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20 whitespace-nowrap"
+              className="text-[10px] md:text-xs font-extrabold px-3 py-2 md:px-4 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition cursor-pointer shadow-md shadow-indigo-500/20"
             >
-              Login
+              Cloud Backup (Login)
             </button>
           )}
         </div>
@@ -1562,7 +1467,7 @@ export default function App() {
       {/* Unified Horizontal Menu Bar (Sits directly under the main banner) */}
       <div 
         ref={navContainerRef}
-        className="bg-white dark:bg-slate-900 border-b border-slate-200/60 dark:border-slate-800 overflow-x-auto flex items-center justify-start md:justify-center gap-1.5 md:gap-2.5 p-1.5 sm:p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" 
+        className="bg-white border-b border-slate-200/60 overflow-x-auto flex items-center justify-center gap-1.5 md:gap-2.5 p-2 md:px-8 md:py-3 scrollbar-none flex-shrink-0 relative w-full" 
         id="horizontal-menu-navigation"
       >
         <button
@@ -1734,7 +1639,6 @@ export default function App() {
               setEnrolledCourseIds={setEnrolledCourseIds}
               progress={progress}
               onImportCourse={handleImportCourse}
-              onSelectTab={setActiveTab}
             />
           )}
 
@@ -1752,8 +1656,6 @@ export default function App() {
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
               settings={settings}
-              onUpdateSettings={setSettings}
-              variableToggles={activeCourse?.variableToggles}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}
             />
@@ -1783,7 +1685,6 @@ export default function App() {
               }}
               activeCourseId={activeCourseId}
               enabledGames={activeCourse?.enabledGames}
-              variableToggles={activeCourse?.variableToggles}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}
             />

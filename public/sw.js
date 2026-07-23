@@ -5,110 +5,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-comp
 const DB_NAME = 'VocabOfflineCache';
 const DB_VERSION = 1;
 
-const STATIC_CACHE_NAME = 'vocab-pwa-static-v2';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
-];
-
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static shell assets');
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.warn('[SW] Caching assets warning:', err);
-      });
-    }).then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE_NAME) {
-            console.log('[SW] Clearing old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// Offline Fetch Interceptor for Static Assets
-self.addEventListener('fetch', (event) => {
-  const request = event.request;
-  const url = new URL(request.url);
-
-  // Skip non-GET methods and external backend / Firestore / extension APIs
-  if (request.method !== 'GET') return;
-  if (
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('identitytoolkit.googleapis.com') ||
-    url.hostname.includes('firebase') ||
-    url.protocol === 'chrome-extension:'
-  ) {
-    return;
-  }
-
-  // HTML Page Navigation Strategy: Network-first, fallback to cache
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(STATIC_CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(request).then((cachedResponse) => {
-            return cachedResponse || caches.match('/index.html');
-          });
-        })
-    );
-    return;
-  }
-
-  // Static Assets Strategy (JS, CSS, Images, Fonts): Stale-While-Revalidate / Cache-first
-  if (
-    request.destination === 'script' ||
-    request.destination === 'style' ||
-    request.destination === 'image' ||
-    request.destination === 'font' ||
-    url.pathname.endsWith('.js') ||
-    url.pathname.endsWith('.css') ||
-    url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.jpg') ||
-    url.pathname.endsWith('.svg') ||
-    url.pathname.endsWith('.woff2')
-  ) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(STATIC_CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-              });
-            }
-            return networkResponse;
-          })
-          .catch(() => {
-            console.log('[SW] Offline fallback for asset:', request.url);
-          });
-        return cachedResponse || fetchPromise;
-      })
-    );
-    return;
-  }
+  event.waitUntil(self.clients.claim());
 });
 
 // Function to open IndexedDB

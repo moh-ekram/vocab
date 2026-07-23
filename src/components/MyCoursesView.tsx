@@ -43,7 +43,6 @@ interface MyCoursesViewProps {
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
   progress: Record<string, UserProgress>;
   onImportCourse: (course: Course) => void;
-  onSelectTab?: (tab: string) => void;
 }
 
 export default function MyCoursesView({
@@ -54,8 +53,7 @@ export default function MyCoursesView({
   setActiveCourseId,
   setEnrolledCourseIds,
   progress,
-  onImportCourse,
-  onSelectTab
+  onImportCourse
 }: MyCoursesViewProps) {
   const [filter, setFilter] = useState<'all' | 'enrolled' | 'locked'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,24 +142,6 @@ export default function MyCoursesView({
   };
 
   const handleFreeEnroll = (course: Course) => {
-    const userEmailLower = user?.email?.trim().toLowerCase();
-    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-    const isCreator = course.createdBy === user?.email;
-    
-    let isAllowed = !course.isRestricted || isAdmin || isCreator;
-    if (course.isRestricted && !isAdmin && !isCreator) {
-      if (userEmailLower && course.allowedUsers?.some(a => a.trim().toLowerCase() === userEmailLower)) {
-        isAllowed = true;
-      } else {
-        isAllowed = false;
-      }
-    }
-
-    if (!isAllowed) {
-      setSelectedBuyCourse(course);
-      return;
-    }
-
     setEnrolledCourseIds(prev => {
       if (!prev.includes(course.id)) {
         return [...prev, course.id];
@@ -182,35 +162,31 @@ export default function MyCoursesView({
     
     let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
     
-    if (c.isRestricted && !isAdmin && !isCreator) {
-      if (!userEmailLower) {
-        isUserAllowed = false;
-      } else {
-        const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-        if (isEmailInAllowed) {
-          isUserAllowed = true;
-          if (c.allowedUsersExpiry) {
-            const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-            if (matchingKey) {
-              const expiryStr = c.allowedUsersExpiry[matchingKey];
-              if (expiryStr) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const expiryDate = new Date(expiryStr);
-                expiryDate.setHours(23, 59, 59, 999);
-                if (today > expiryDate) {
-                  isUserAllowed = false;
-                }
+    if (c.isRestricted && !isAdmin && !isCreator && userEmailLower) {
+      const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+      if (isEmailInAllowed) {
+        isUserAllowed = true;
+        if (c.allowedUsersExpiry) {
+          const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+          if (matchingKey) {
+            const expiryStr = c.allowedUsersExpiry[matchingKey];
+            if (expiryStr) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const expiryDate = new Date(expiryStr);
+              expiryDate.setHours(23, 59, 59, 999);
+              if (today > expiryDate) {
+                isUserAllowed = false;
               }
             }
           }
-        } else {
-          isUserAllowed = false;
         }
+      } else {
+        isUserAllowed = false;
       }
     }
 
-    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === c.id.trim().toLowerCase());
+    const isEnrolled = enrolledCourseIds.includes(c.id);
 
     if (filter === 'enrolled') {
       return matchesSearch && isEnrolled && isUserAllowed;
@@ -218,16 +194,6 @@ export default function MyCoursesView({
       return matchesSearch && !isUserAllowed;
     }
     return matchesSearch;
-  }).sort((a, b) => {
-    const isAActive = activeCourseId && a.id.trim().toLowerCase() === activeCourseId.trim().toLowerCase();
-    const isBActive = activeCourseId && b.id.trim().toLowerCase() === activeCourseId.trim().toLowerCase();
-    const isAEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === a.id.trim().toLowerCase());
-    const isBEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === b.id.trim().toLowerCase());
-
-    const scoreA = (isAActive ? 10 : 0) + (isAEnrolled ? 5 : 0);
-    const scoreB = (isBActive ? 10 : 0) + (isBEnrolled ? 5 : 0);
-
-    return scoreB - scoreA;
   });
 
   return (
@@ -305,31 +271,27 @@ export default function MyCoursesView({
           const isCreator = course.createdBy === user?.email;
           let isUserAllowed = !course.isRestricted || isAdmin || isCreator;
           
-          if (course.isRestricted && !isAdmin && !isCreator) {
-            if (!userEmailLower) {
-              isUserAllowed = false;
-            } else {
-              const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-              if (isEmailInAllowed) {
-                isUserAllowed = true;
-                if (course.allowedUsersExpiry) {
-                  const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-                  if (matchingKey) {
-                    const expiryStr = course.allowedUsersExpiry[matchingKey];
-                    if (expiryStr) {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const expiryDate = new Date(expiryStr);
-                      expiryDate.setHours(23, 59, 59, 999);
-                      if (today > expiryDate) {
-                        isUserAllowed = false;
-                      }
+          if (course.isRestricted && !isAdmin && !isCreator && userEmailLower) {
+            const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+            if (isEmailInAllowed) {
+              isUserAllowed = true;
+              if (course.allowedUsersExpiry) {
+                const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
+                if (matchingKey) {
+                  const expiryStr = course.allowedUsersExpiry[matchingKey];
+                  if (expiryStr) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const expiryDate = new Date(expiryStr);
+                    expiryDate.setHours(23, 59, 59, 999);
+                    if (today > expiryDate) {
+                      isUserAllowed = false;
                     }
                   }
                 }
-              } else {
-                isUserAllowed = false;
               }
+            } else {
+              isUserAllowed = false;
             }
           }
 
@@ -340,84 +302,64 @@ export default function MyCoursesView({
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={() => setSelectedDetailCourse(course)}
-              className={`p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group min-h-[140px] ${
+              className={`p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group min-h-[120px] ${
                 isActive 
                   ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-4 ring-emerald-500/20 hover:bg-emerald-600' 
                   : 'bg-white border-slate-200/90 text-slate-900 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5'
               }`}
             >
-              <div>
-                {/* Course Status Badges */}
-                <div className="flex items-center justify-between gap-1 mb-1.5 flex-wrap">
+              {/* Header Row Badge */}
+              <div className="flex justify-between items-center gap-1.5 mb-2.5">
+                <div className="flex items-center gap-1 flex-wrap">
                   {isActive ? (
-                    <span className="px-2 py-0.5 bg-emerald-700 text-white font-black text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                      <Check className="w-3 h-3" /> Active
+                    <span className="px-2.5 py-0.5 bg-emerald-700/80 text-emerald-100 font-black text-[9px] rounded-full uppercase tracking-wider border border-emerald-300/40 flex items-center gap-1 shadow-2xs">
+                      <Check className="w-3 h-3 text-emerald-200" /> Active Course
                     </span>
                   ) : !isUserAllowed ? (
-                    <span className="px-2 py-0.5 bg-rose-600 text-white font-black text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                      <Lock className="w-3 h-3" /> Restricted (৳{(course.price && course.price > 0) ? course.price : 30})
+                    <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 border border-rose-200 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Locked (৳{(course.price && course.price > 0) ? course.price : 30})
                     </span>
-                  ) : isEnrolled ? (
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider border border-indigo-100">
+                  ) : (
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
                       Enrolled
                     </span>
-                  ) : null}
+                  )}
+
+                  {course.isDefault && (
+                    <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-full uppercase tracking-wider ${
+                      isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      Default
+                    </span>
+                  )}
                 </div>
 
-                {/* Course Title */}
-                <div className="my-1">
-                  <h3 
-                    className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 ${
-                      isActive ? 'text-white' : 'text-slate-900'
-                    }`}
-                  >
-                    {course.title}
-                  </h3>
-                </div>
-
-                {/* Word Count */}
-                <div className="mt-1.5 text-xs sm:text-sm font-bold">
-                  <span className={isActive ? 'text-emerald-100' : 'text-indigo-600 font-black'}>
-                    {wordsCount} Words
-                  </span>
-                </div>
+                <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-emerald-100' : 'text-slate-400'}`}>
+                  #{course.id}
+                </span>
               </div>
 
-              {/* Action Button: Buy or Flashcards */}
-              <div className="mt-3">
-                {!isUserAllowed ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedBuyCourse(course);
-                    }}
-                    className="w-full py-2.5 px-3 text-xs sm:text-sm font-black rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 bg-pink-600 hover:bg-pink-700 text-white shadow-pink-600/10"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>কোর্স কিনুন (৳{(course.price && course.price > 0) ? course.price : 30})</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isEnrolled) {
-                        handleFreeEnroll(course);
-                      } else {
-                        setActiveCourseId(course.id);
-                      }
-                      onSelectTab?.('flashcard');
-                    }}
-                    className={`w-full py-2.5 px-3 text-xs sm:text-sm font-black rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
-                      isActive
-                        ? 'bg-white text-emerald-800 hover:bg-emerald-50'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/10'
-                    }`}
-                  >
-                    <BookOpen className={`w-4 h-4 ${isActive ? 'text-emerald-700' : 'text-white'}`} />
-                    <span>স্টার্ট ফ্ল্যাশকার্ড</span>
-                    <ArrowRight className="w-3.5 h-3.5 opacity-80" />
-                  </button>
-                )}
+              {/* Course Title - Large Poppins / Kalpurush / SutonnyMJ font */}
+              <div className="my-1.5">
+                <h3 
+                  className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 ${
+                    isActive ? 'text-white drop-shadow-xs' : 'text-slate-900'
+                  }`}
+                >
+                  {course.title}
+                </h3>
+              </div>
+
+              {/* Word Count - Large Poppins / Kalpurush / SutonnyMJ font */}
+              <div className={`mt-3 pt-2.5 border-t flex justify-between items-center ${
+                isActive ? 'border-emerald-400/50 text-emerald-100' : 'border-slate-100 text-slate-500'
+              }`}>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-85">
+                  Total Words
+                </span>
+                <span className={`text-sm sm:text-base font-black ${isActive ? 'text-white' : 'text-indigo-600'}`}>
+                  {wordsCount} Words
+                </span>
               </div>
             </motion.div>
           );
@@ -450,31 +392,12 @@ export default function MyCoursesView({
           const isCreator = course.createdBy === user?.email;
           let isUserAllowed = !course.isRestricted || isAdmin || isCreator;
           
-          if (course.isRestricted && !isAdmin && !isCreator) {
-            if (!userEmailLower) {
-              isUserAllowed = false;
+          if (course.isRestricted && !isAdmin && !isCreator && userEmailLower) {
+            const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
+            if (isEmailInAllowed) {
+              isUserAllowed = true;
             } else {
-              const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-              if (isEmailInAllowed) {
-                isUserAllowed = true;
-                if (course.allowedUsersExpiry) {
-                  const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-                  if (matchingKey) {
-                    const expiryStr = course.allowedUsersExpiry[matchingKey];
-                    if (expiryStr) {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const expiryDate = new Date(expiryStr);
-                      expiryDate.setHours(23, 59, 59, 999);
-                      if (today > expiryDate) {
-                        isUserAllowed = false;
-                      }
-                    }
-                  }
-                }
-              } else {
-                isUserAllowed = false;
-              }
+              isUserAllowed = false;
             }
           }
 
@@ -633,40 +556,25 @@ export default function MyCoursesView({
                       <ShoppingBag className="w-4 h-4" />
                       <span>Request Access (Buy Course - ৳{(course.price && course.price > 0) ? course.price : 30})</span>
                     </button>
-                  ) : (
-                    <div className="flex-1 flex gap-2">
-                      <button
-                        onClick={() => {
-                          if (!isEnrolled) {
-                            handleFreeEnroll(course);
-                          } else {
-                            setActiveCourseId(course.id);
-                          }
-                          setSelectedDetailCourse(null);
-                          onSelectTab?.('flashcard');
-                        }}
-                        className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10 active:scale-95"
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        <span>স্টার্ট ফ্ল্যাশকার্ড (Start Flashcard)</span>
-                      </button>
-
-                      {!isActive && (
-                        <button
-                          onClick={() => {
-                            if (!isEnrolled) {
-                              handleFreeEnroll(course);
-                            } else {
-                              setActiveCourseId(course.id);
-                            }
-                            setSelectedDetailCourse(null);
-                          }}
-                          className="py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-extrabold rounded-xl transition cursor-pointer flex items-center justify-center gap-1 border border-indigo-200"
-                        >
-                          <span>Set Active</span>
-                        </button>
-                      )}
+                  ) : isActive ? (
+                    <div className="flex-1 text-center py-2.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 select-none">
+                      ✓ Currently Active Course
                     </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!isEnrolled) {
+                          handleFreeEnroll(course);
+                        } else {
+                          setActiveCourseId(course.id);
+                        }
+                        setSelectedDetailCourse(null);
+                      }}
+                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      <span>Set as Active Course</span>
+                    </button>
                   )}
 
                   {isUserAllowed && isEnrolled && !course.isDefault && (
