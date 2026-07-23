@@ -1052,46 +1052,66 @@ export default function FlashcardViewer({
               </div>
 
               {/* Card Footer Response Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                    activeStatus === 'dont_know'
-                      ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                      : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
-                  }`}
-                  title="Not Learned / Hard"
-                >
-                  <X className="w-6 h-6 stroke-[3]" />
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'dont_know'
+                        ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                        : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                    }`}
+                    title="Not Learned / Hard"
+                  >
+                    <X className="w-6 h-6 stroke-[3]" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    don't know
+                  </span>
+                </div>
 
-                <button
-                  onClick={() => setIsFlipped(prev => !prev)}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                  title="Flip Card"
-                >
-                  <RotateCcw className="w-5 h-5" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => setIsFlipped(prev => !prev)}
+                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                    title="Flip Card"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    flip
+                  </span>
+                </div>
 
-                <button
-                  onClick={handleNext}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
-                  title="Skip Card"
-                >
-                  <SkipForward className="w-5 h-5" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={handleNext}
+                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                    title="Skip Card"
+                  >
+                    <SkipForward className="w-5 h-5" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    skip
+                  </span>
+                </div>
 
-                <button
-                  onClick={() => rateAndMaybeConfirm('know', true)}
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                    activeStatus === 'know'
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
-                  }`}
-                  title="Learned / Easy"
-                >
-                  <Check className="w-6 h-6 stroke-[3]" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => rateAndMaybeConfirm('know', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'know'
+                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                    }`}
+                    title="Learned / Easy"
+                  >
+                    <Check className="w-6 h-6 stroke-[3]" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    know
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1236,46 +1256,66 @@ export default function FlashcardViewer({
               })()}
 
               {/* Card Footer Response Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                    activeStatus === 'dont_know'
-                      ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                      : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
-                  }`}
-                  title="Not Learned / Hard"
-                >
-                  <X className="w-6 h-6 stroke-[3]" />
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'dont_know'
+                        ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                        : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                    }`}
+                    title="Not Learned / Hard"
+                  >
+                    <X className="w-6 h-6 stroke-[3]" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    don't know
+                  </span>
+                </div>
 
-                <button
-                  onClick={() => setIsFlipped(prev => !prev)}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                  title="Flip Card"
-                >
-                  <RotateCcw className="w-5 h-5" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => setIsFlipped(prev => !prev)}
+                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                    title="Flip Card"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    flip
+                  </span>
+                </div>
 
-                <button
-                  onClick={handleNext}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
-                  title="Skip Card"
-                >
-                  <SkipForward className="w-5 h-5" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={handleNext}
+                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                    title="Skip Card"
+                  >
+                    <SkipForward className="w-5 h-5" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    skip
+                  </span>
+                </div>
 
-                <button
-                  onClick={() => rateAndMaybeConfirm('know', true)}
-                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                    activeStatus === 'know'
-                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
-                  }`}
-                  title="Learned / Easy"
-                >
-                  <Check className="w-6 h-6 stroke-[3]" />
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => rateAndMaybeConfirm('know', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'know'
+                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                    }`}
+                    title="Learned / Easy"
+                  >
+                    <Check className="w-6 h-6 stroke-[3]" />
+                  </button>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
+                    know
+                  </span>
+                </div>
               </div>
             </div>
           </div>
