@@ -1670,6 +1670,7 @@ export default function App() {
               setEnrolledCourseIds={setEnrolledCourseIds}
               progress={progress}
               onImportCourse={handleImportCourse}
+              onSelectTab={setActiveTab}
             />
           )}
 

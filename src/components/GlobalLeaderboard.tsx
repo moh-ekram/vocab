@@ -142,81 +142,55 @@ export default function GlobalLeaderboard() {
   return (
     <div className="space-y-6 animate-fadeIn font-sans" id="global-leaderboard-panel">
       
-      {/* Header banner */}
-      <div className="bg-gradient-to-r from-indigo-900 to-indigo-850 text-white rounded-3xl p-6 md:p-8 shadow-md border border-indigo-950 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Crown className="w-8 h-8 text-amber-400 animate-bounce" />
+      {/* Header banner with My Current Rank status integrated */}
+      <div className="bg-gradient-to-r from-indigo-900 via-indigo-850 to-indigo-950 text-white rounded-3xl p-6 md:p-8 shadow-md border border-indigo-950 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <Crown className="w-8 h-8 text-amber-400 animate-bounce shrink-0" />
             <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white">Global Memory Leaderboard</h1>
           </div>
-          <p className="text-indigo-200 text-sm font-sans font-medium leading-relaxed max-w-xl">
-            Compare your memory retention and quiz performance in real-time with other real-world students.
-          </p>
         </div>
 
-        <button 
-          onClick={() => fetchLeaderboardData(true)}
-          disabled={loading}
-          className="px-4 py-2.5 bg-indigo-700/50 hover:bg-indigo-600/60 border border-indigo-650/80 rounded-xl transition-all font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </div>
+        <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto justify-between lg:justify-end">
+          {/* My Current Rank Badge */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-4 py-2.5 flex items-center gap-4">
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">My Current Rank</span>
+              {currentUserRank !== null && currentUserData ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-black text-amber-300 font-mono">#{currentUserRank}</span>
+                  <span className="text-[11px] font-medium text-indigo-200">Place</span>
+                </div>
+              ) : (
+                <span className="text-xs font-semibold text-indigo-200">Not Ranked</span>
+              )}
+            </div>
 
-      {/* Point Rules & My Rank Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* How points are calculated */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200/60 p-6 shadow-xs space-y-4">
-          <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-            <Star className="w-5 h-5 text-indigo-600 fill-indigo-100" />
-            <span>How Points are Calculated</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Words Learned</span>
-              <p className="text-lg font-black text-indigo-600 font-mono">+10 XP</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each 'Known' word</p>
-            </div>
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Quiz Performance</span>
-              <p className="text-lg font-black text-emerald-600 font-mono">+15 XP</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each correct quiz answer</p>
-            </div>
-            <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
-              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Streak Bonus</span>
-              <p className="text-lg font-black text-amber-600 font-mono">+25 XP</p>
-              <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">Per day of active study streak</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Current User Rank Summary Card */}
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/30 border border-indigo-200/60 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
-          <div className="space-y-2">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-indigo-500 font-sans">My Current Rank</h3>
-            {currentUserRank !== null && currentUserData ? (
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-indigo-950 font-mono">#{currentUserRank}</span>
-                <span className="text-xs font-semibold text-slate-500">Place</span>
-              </div>
-            ) : (
-              <p className="text-xs font-bold text-slate-500">Sign in or earn points to see your ranking!</p>
+            {currentUserData && (
+              <>
+                <div className="h-8 w-px bg-white/15" />
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Total Points</span>
+                  <span className="text-sm font-black text-white font-mono">{currentUserData.points} XP</span>
+                </div>
+                <div className="h-8 w-px bg-white/15 hidden sm:block" />
+                <div className="hidden sm:block">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 block">Known Words</span>
+                  <span className="text-sm font-black text-emerald-300 font-mono">{currentUserData.knowCount}</span>
+                </div>
+              </>
             )}
           </div>
 
-          {currentUserData && (
-            <div className="flex justify-between items-center pt-4 border-t border-indigo-150/50 text-xs font-sans font-semibold text-slate-600">
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">My Total Points</p>
-                <p className="text-base font-black text-indigo-600 font-mono">{currentUserData.points} XP</p>
-              </div>
-              <div className="text-right space-y-0.5">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">Words Known</p>
-                <p className="text-sm font-black text-slate-700 font-mono">{currentUserData.knowCount}</p>
-              </div>
-            </div>
-          )}
+          {/* Refresh Button */}
+          <button 
+            onClick={() => fetchLeaderboardData(true)}
+            disabled={loading}
+            className="px-4 py-2.5 bg-indigo-700/60 hover:bg-indigo-600/80 border border-indigo-500/30 rounded-2xl transition-all font-bold text-xs flex items-center gap-2 cursor-pointer disabled:opacity-50 text-white shrink-0 shadow-xs"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
@@ -428,6 +402,31 @@ export default function GlobalLeaderboard() {
         <div className="pt-2 border-t border-slate-50 flex justify-between items-center text-[11px] text-slate-400 font-sans font-semibold">
           <span>Total Students: {filteredLeaderboard.length}</span>
           <span>Displaying Top 10 Members Only</span>
+        </div>
+      </div>
+
+      {/* How points are calculated moved to bottom */}
+      <div className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-xs space-y-4">
+        <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <Star className="w-5 h-5 text-indigo-600 fill-indigo-100" />
+          <span>How Points are Calculated</span>
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Words Learned</span>
+            <p className="text-lg font-black text-indigo-600 font-mono">+10 XP</p>
+            <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each 'Known' word</p>
+          </div>
+          <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Quiz Performance</span>
+            <p className="text-lg font-black text-emerald-600 font-mono">+15 XP</p>
+            <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">For each correct quiz answer</p>
+          </div>
+          <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-1">Streak Bonus</span>
+            <p className="text-lg font-black text-amber-600 font-mono">+25 XP</p>
+            <p className="text-[11px] text-slate-400 font-sans mt-0.5 font-semibold">Per day of active study streak</p>
+          </div>
         </div>
       </div>
     </div>

@@ -4,11 +4,11 @@ import {
   BookOpen, Check, Trash2, Lock, Sparkles, Volume2, PlusCircle, 
   FileSpreadsheet, HelpCircle, Shuffle, GraduationCap, Trophy, 
   Gamepad2, Search, CheckCircle, AlertCircle, ShoppingBag, X, 
-  Copy, ArrowRight, Star, Heart, Calendar, ShieldAlert
+  Copy, ArrowRight, Star, Heart, Calendar, ShieldAlert, Layers, Play
 } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { Course, UserProgress } from '../types';
+import { Course, UserProgress, ActiveTab } from '../types';
 import { isCourseEnrolled, isCourseAccessible } from '../lib/courseAccess';
 
 const getEnglishFeatureLabel = (key: string, placeLabels?: Record<string, string>) => {
@@ -44,6 +44,7 @@ interface MyCoursesViewProps {
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
   progress: Record<string, UserProgress>;
   onImportCourse: (course: Course) => void;
+  onSelectTab?: (tab: ActiveTab) => void;
 }
 
 export default function MyCoursesView({
@@ -54,7 +55,8 @@ export default function MyCoursesView({
   setActiveCourseId,
   setEnrolledCourseIds,
   progress,
-  onImportCourse
+  onImportCourse,
+  onSelectTab
 }: MyCoursesViewProps) {
   const [filter, setFilter] = useState<'all' | 'enrolled' | 'locked'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -170,60 +172,57 @@ export default function MyCoursesView({
 
   return (
     <div className="space-y-6" id="my-courses-view-root" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
-      {/* 1. Luxurious Banner */}
-      <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-xl border border-indigo-950">
+      {/* 1. Banner */}
+      <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 rounded-2xl p-4 sm:p-6 text-white relative overflow-hidden shadow-lg border border-indigo-950">
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
         
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-[10px] font-black uppercase tracking-widest font-sans">
-            <Trophy className="w-3.5 h-3.5 text-amber-400" /> Course & Syllabus Hub
+        <div className="relative z-10 max-w-3xl space-y-1.5">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-[10px] font-black uppercase tracking-widest font-sans">
+            <Trophy className="w-3 h-3 text-amber-400" /> Course & Syllabus Hub
           </span>
-          <h2 className="text-xl sm:text-3xl font-black tracking-tight leading-tight text-white">
+          <h2 className="text-lg sm:text-2xl font-black tracking-tight leading-tight text-white">
             My Courses & Syllabus Directory
           </h2>
-          <p className="text-xs sm:text-sm text-indigo-150 leading-relaxed font-medium opacity-90">
-            Select an active course, review vocabulary size, and explore enabled study features. Click any course card to open its details.
-          </p>
         </div>
       </div>
 
       {/* 2. Advanced Search & Tabs Control */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200/70 shadow-xs">
+      <div className="flex flex-col sm:flex-row gap-2.5 justify-between items-center bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-xs max-w-full overflow-hidden">
         {/* Search Input */}
         <div className="relative w-full sm:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search courses by name or keyword..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-[11px] font-normal transition text-slate-700 placeholder:text-slate-400 placeholder:font-normal"
           />
         </div>
 
         {/* Tab Filters */}
-        <div className="flex bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto" id="course-filter-toggles">
+        <div className="flex bg-slate-100/80 p-1 rounded-xl w-full sm:w-auto overflow-x-auto max-w-full gap-1 shrink-0" id="course-filter-toggles">
           <button
             onClick={() => setFilter('all')}
-            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-extrabold transition whitespace-nowrap cursor-pointer ${
-              filter === 'all' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] font-medium transition whitespace-nowrap cursor-pointer shrink-0 ${
+              filter === 'all' ? 'bg-white text-indigo-700 shadow-xs font-semibold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             All Courses
           </button>
           <button
             onClick={() => setFilter('enrolled')}
-            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-extrabold transition whitespace-nowrap cursor-pointer ${
-              filter === 'enrolled' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] font-medium transition whitespace-nowrap cursor-pointer shrink-0 ${
+              filter === 'enrolled' ? 'bg-white text-indigo-700 shadow-xs font-semibold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             My Active / Enrolled
           </button>
           <button
             onClick={() => setFilter('locked')}
-            className={`flex-1 sm:flex-initial px-4 py-1.5 rounded-lg text-xs font-extrabold transition whitespace-nowrap cursor-pointer ${
-              filter === 'locked' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`flex-1 sm:flex-initial px-2.5 py-1 rounded-lg text-[10px] font-medium transition whitespace-nowrap cursor-pointer shrink-0 ${
+              filter === 'locked' ? 'bg-white text-indigo-700 shadow-xs font-semibold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Locked Courses
@@ -283,7 +282,7 @@ export default function MyCoursesView({
                 </span>
               </div>
 
-              {/* Course Title - Large Poppins / Kalpurush / SutonnyMJ font */}
+              {/* Course Title */}
               <div className="my-1.5">
                 <h3 
                   className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 ${
@@ -294,16 +293,38 @@ export default function MyCoursesView({
                 </h3>
               </div>
 
-              {/* Word Count - Large Poppins / Kalpurush / SutonnyMJ font */}
-              <div className={`mt-3 pt-2.5 border-t flex justify-between items-center ${
+              {/* Word Count & Start Flashcard Button */}
+              <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 ${
                 isActive ? 'border-emerald-400/50 text-emerald-100' : 'border-slate-100 text-slate-500'
               }`}>
-                <span className="text-[11px] font-extrabold uppercase tracking-wider opacity-85">
-                  Total Words
-                </span>
-                <span className={`text-sm sm:text-base font-black ${isActive ? 'text-white' : 'text-indigo-600'}`}>
+                <span className={`text-xs sm:text-sm font-black ${isActive ? 'text-white' : 'text-indigo-600'}`}>
                   {wordsCount} Words
                 </span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isUserAllowed) {
+                      setSelectedBuyCourse(course);
+                      return;
+                    }
+                    setActiveCourseId(course.id);
+                    if (onSelectTab) {
+                      onSelectTab('flashcard');
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
+                    isActive
+                      ? 'bg-white text-emerald-800 hover:bg-emerald-50 font-black'
+                      : isUserAllowed
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
+                      : 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold'
+                  }`}
+                >
+                  <Play className="w-3 h-3 fill-current" />
+                  <span>Start Flashcard</span>
+                </button>
               </div>
             </motion.div>
           );
@@ -475,7 +496,7 @@ export default function MyCoursesView({
                 </div>
 
                 {/* Modal Footer Actions */}
-                <div className="p-4 bg-slate-50 border-t border-slate-150 flex items-center gap-2">
+                <div className="p-4 bg-slate-50 border-t border-slate-150 flex flex-wrap items-center gap-2">
                   {!isUserAllowed ? (
                     <button
                       onClick={() => {
@@ -487,25 +508,42 @@ export default function MyCoursesView({
                       <ShoppingBag className="w-4 h-4" />
                       <span>Request Access (Buy Course - ৳{(course.price && course.price > 0) ? course.price : 30})</span>
                     </button>
-                  ) : isActive ? (
-                    <div className="flex-1 text-center py-2.5 bg-emerald-50 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 select-none">
-                      ✓ Currently Active Course
-                    </div>
                   ) : (
-                    <button
-                      onClick={() => {
-                        if (!isEnrolled) {
-                          handleFreeEnroll(course);
-                        } else {
+                    <>
+                      <button
+                        onClick={() => {
+                          if (!isEnrolled) {
+                            handleFreeEnroll(course);
+                          }
                           setActiveCourseId(course.id);
-                        }
-                        setSelectedDetailCourse(null);
-                      }}
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
-                    >
-                      <ArrowRight className="w-4 h-4" />
-                      <span>Set as Active Course</span>
-                    </button>
+                          if (onSelectTab) {
+                            onSelectTab('flashcard');
+                          }
+                          setSelectedDetailCourse(null);
+                        }}
+                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10"
+                      >
+                        <Play className="w-4 h-4 fill-current" />
+                        <span>Start Flashcards</span>
+                      </button>
+
+                      {!isActive && (
+                        <button
+                          onClick={() => {
+                            if (!isEnrolled) {
+                              handleFreeEnroll(course);
+                            } else {
+                              setActiveCourseId(course.id);
+                            }
+                            setSelectedDetailCourse(null);
+                          }}
+                          className="py-2.5 px-3.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-black rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                          <span>Set Active</span>
+                        </button>
+                      )}
+                    </>
                   )}
 
                   {isUserAllowed && isEnrolled && !course.isDefault && (
