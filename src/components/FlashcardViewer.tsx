@@ -40,7 +40,9 @@ import {
   ArrowLeftRight,
   Eye,
   ZoomIn,
-  Shuffle
+  Shuffle,
+  Bookmark,
+  Star
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -973,40 +975,55 @@ export default function FlashcardViewer({
                 {/* FRONT FACE */}
                 <div className={faceBaseClass} style={frontFaceStyle}>
                   <div className="w-full h-full flex flex-col justify-between overflow-hidden">
-                    {/* Top Row: Group Badge & Status on Left, Minimal Report on Right */}
+                    {/* Top Row: Group Badge & Status on Left, Bookmark & Report on Right */}
                     <div className="flex items-center justify-between w-full flex-shrink-0">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
+                        <span className="px-3 py-1 text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
                           Group {currentActiveWord.group || 1}
                         </span>
                         {statusTheme.label && (
-                          <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
+                          <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dotBg}`} />
                             <span>{statusTheme.label}</span>
                           </span>
                         )}
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenReportModal(currentActiveWord);
-                        }}
-                        className="text-slate-400 hover:text-rose-500 p-1 rounded-full transition cursor-pointer active:scale-95"
-                        title="Report Issue"
-                      >
-                        <AlertTriangle className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (currentActiveWord.id) {
+                              const folderId = folders[0]?.id || 'default';
+                              onToggleBookmark(currentActiveWord.id, folderId);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer active:scale-95"
+                          title="Toggle Bookmark"
+                        >
+                          <Bookmark className={`w-4 h-4 ${(progress[currentActiveWord.id]?.bookmarks || []).length > 0 ? 'fill-amber-400 text-amber-500' : ''}`} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenReportModal(currentActiveWord);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer active:scale-95"
+                          title="Report Issue"
+                        >
+                          <AlertTriangle className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Middle: Main Word Centered + Pronounce & Search Minimal Icons */}
                     <div className={`flex-1 min-h-0 space-y-4 py-4 w-full overflow-y-auto flex flex-col ${wordVPosClass} ${wordPosClass}`}>
-                      <span className="text-xs uppercase tracking-widest text-slate-400 dark:text-slate-500 font-semibold font-sans">
+                      <span className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold font-sans">
                         {getPlaceLabel('place1', 'Vocabulary Word')}
                       </span>
 
                       <h1 
-                        className={`font-extrabold tracking-tight font-sans px-2 transition-colors duration-300 ${wordFontSizeClass} ${!customStyle?.wordColor ? statusTheme.wordColor : ''}`}
+                        className={`font-black tracking-tight font-sans px-2 transition-colors duration-300 ${wordFontSizeClass} ${!customStyle?.wordColor ? statusTheme.wordColor : ''}`}
                         style={customWordStyle}
                       >
                         {currentActiveWord.word || (currentActiveWord as any).place1}
@@ -1020,7 +1037,7 @@ export default function FlashcardViewer({
                               e.stopPropagation();
                               speakWord();
                             }}
-                            className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700"
+                            className="w-10 h-10 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 dark:bg-slate-800 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 shadow-xs"
                             title="Listen Pronunciation"
                           >
                             <Volume2 className="w-4 h-4" />
@@ -1033,7 +1050,7 @@ export default function FlashcardViewer({
                             const googleUrl = getGoogleSearchUrl(currentActiveWord.word || (currentActiveWord as any).place1 || '', googleSearchQuery);
                             window.open(googleUrl, '_blank');
                           }}
-                          className="w-10 h-10 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700"
+                          className="w-10 h-10 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-200 rounded-full transition-all flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 shadow-xs"
                           title="Search on Google"
                         >
                           <GoogleIcon className="w-4 h-4" />
@@ -1043,18 +1060,18 @@ export default function FlashcardViewer({
                       {/* Extra Word / Derivatives if toggled */}
                       {(variableToggles?.extraWord !== false && (currentActiveWord.extraWord || (currentActiveWord as any).place4)) && (
                         <div className="pt-2 flex flex-col items-center justify-center space-y-1" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-[11px] text-slate-400 font-medium">
+                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
                             {getPlaceLabel('place4', 'Derivatives')}:
                           </span>
-                          <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full max-w-xs truncate">
+                          <p className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-1 rounded-full max-w-xs truncate border border-slate-200/60 dark:border-slate-700/60">
                             {currentActiveWord.extraWord || (currentActiveWord as any).place4}
                             {(variableToggles?.extraMeaning !== false && (currentActiveWord.extraMeaning || (currentActiveWord as any).place6)) ? ` (${currentActiveWord.extraMeaning || (currentActiveWord as any).place6})` : ''}
                           </p>
                         </div>
                       )}
 
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500 pt-3 flex items-center gap-1 font-medium">
-                        <Sparkles className="w-3 h-3 text-indigo-400 animate-pulse" /> Tap card to reveal answer
+                      <span className="text-[11px] text-slate-400 dark:text-slate-500 pt-3 flex items-center gap-1.5 font-semibold">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" /> Tap card or press Spacebar to flip
                       </span>
                     </div>
 
@@ -1077,14 +1094,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('dont_know', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'dont_know'
                             ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
-                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+                            : 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200/80 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
                         }`}
                         title="Not Learned"
                       >
-                        <span>Not Learned</span>
+                        <span>পারিনা</span>
                       </button>
 
                       <button
@@ -1092,14 +1109,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('confusion', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'confusion'
                             ? 'bg-purple-500 text-white border-purple-500 shadow-sm'
-                            : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                            : 'bg-purple-50/80 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
                         }`}
                         title="Confused"
                       >
-                        <span>Confused</span>
+                        <span>কনফিউশন</span>
                       </button>
 
                       <button
@@ -1107,14 +1124,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('know', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'know'
                             ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
-                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                            : 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                         }`}
                         title="Learned"
                       >
-                        <span>Learned</span>
+                        <span>পারি</span>
                       </button>
 
                       <button
@@ -1137,41 +1154,56 @@ export default function FlashcardViewer({
                     {/* Top Header Row */}
                     <div className="flex items-center justify-between w-full flex-shrink-0">
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
+                        <span className="px-3 py-1 text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 rounded-full border border-indigo-200/50 dark:border-indigo-800/50">
                           Group {currentActiveWord.group || 1}
                         </span>
                         {statusTheme.label && (
-                          <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
+                          <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border flex items-center gap-1.5 ${statusTheme.badgeBg}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusTheme.dotBg}`} />
                             <span>{statusTheme.label}</span>
                           </span>
                         )}
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenReportModal(currentActiveWord);
-                        }}
-                        className="text-slate-400 hover:text-rose-500 p-1 rounded-full transition cursor-pointer active:scale-95"
-                        title="Report Issue"
-                      >
-                        <AlertTriangle className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (currentActiveWord.id) {
+                              const folderId = folders[0]?.id || 'default';
+                              onToggleBookmark(currentActiveWord.id, folderId);
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer active:scale-95"
+                          title="Toggle Bookmark"
+                        >
+                          <Bookmark className={`w-4 h-4 ${(progress[currentActiveWord.id]?.bookmarks || []).length > 0 ? 'fill-amber-400 text-amber-500' : ''}`} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenReportModal(currentActiveWord);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition cursor-pointer active:scale-95"
+                          title="Report Issue"
+                        >
+                          <AlertTriangle className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Top Section: Main Word Reference + Meaning */}
-                    <div className="my-auto text-center space-y-2 pt-2 w-full">
-                      <span className={`text-xs font-bold uppercase tracking-widest block ${statusTheme.wordColor}`}>
+                    <div className="my-auto text-center space-y-1.5 pt-1 w-full">
+                      <span className={`text-xs font-black uppercase tracking-widest block ${statusTheme.wordColor}`}>
                         {currentActiveWord.word || (currentActiveWord as any).place1}
                       </span>
                       {variableToggles?.meaning !== false && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium block font-bengali">
+                        <div className="space-y-0.5">
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-bold block font-bengali uppercase tracking-wider">
                             {getPlaceLabel('place2', 'Meaning')}
                           </span>
                           <h2 
-                            className={`font-extrabold font-bengali leading-tight tracking-tight text-center ${meaningSizeClass} ${!customStyle?.meaningColor ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
+                            className={`font-black font-bengali leading-tight tracking-tight text-center ${meaningSizeClass} ${!customStyle?.meaningColor ? 'text-emerald-600 dark:text-emerald-400' : ''}`}
                             style={customMeaningStyle}
                           >
                             {currentActiveWord.meaning || (currentActiveWord as any).place2}
@@ -1181,26 +1213,26 @@ export default function FlashcardViewer({
                     </div>
 
                     {/* Horizontal Divider Line */}
-                    <div className="w-full border-b border-slate-100 dark:border-slate-800 my-2 sm:my-3" />
+                    <div className="w-full border-b border-slate-100 dark:border-slate-800 my-1.5 sm:my-2" />
 
                     {/* Middle Content Area */}
-                    <div className="my-auto flex-1 min-h-0 space-y-3 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
+                    <div className="my-auto flex-1 min-h-0 space-y-2.5 text-center w-full max-w-lg mx-auto overflow-y-auto px-1">
                       {/* Grid for Synonyms & Extra Meaning */}
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3 text-center">
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-semibold font-bengali block">
+                      <div className="grid grid-cols-2 gap-2 text-center">
+                        <div className="p-2 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/40 space-y-0.5">
+                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-extrabold font-bengali uppercase tracking-wider block">
                             {getPlaceLabel('place5', 'Synonyms')}
                           </span>
-                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-sm sm:text-base break-words leading-snug">
+                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-xs sm:text-sm break-words leading-snug">
                             {currentActiveWord.synonyms || (currentActiveWord as any).place5 || [(currentActiveWord as any).synonym1, (currentActiveWord as any).synonym2].filter(Boolean).join(', ') || '-'}
                           </p>
                         </div>
 
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-semibold font-bengali block">
+                        <div className="p-2 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-0.5">
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold font-bengali uppercase tracking-wider block">
                             {getPlaceLabel('place6', 'Extra Meaning')}
                           </span>
-                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-sm sm:text-base break-words leading-snug">
+                          <p className="font-bold text-slate-800 dark:text-slate-200 font-bengali text-xs sm:text-sm break-words leading-snug">
                             {(currentActiveWord as any).place6 || currentActiveWord.extraMeaning || '-'}
                           </p>
                         </div>
@@ -1208,23 +1240,26 @@ export default function FlashcardViewer({
 
                       {/* Example Sentence */}
                       {variableToggles?.example !== false && (activeExampleSentence || (currentActiveWord as any).place3) && (
-                        <div className="pt-1 space-y-0.5">
-                          <span className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-semibold block font-bengali">
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-left space-y-1">
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-extrabold uppercase tracking-wider block font-bengali">
                             {getPlaceLabel('place3', 'Word in use')}
                           </span>
-                          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-bengali leading-relaxed text-center break-words px-1 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-bengali leading-relaxed break-words">
                             {renderSentence(activeExampleSentence || (currentActiveWord as any).place3 || '')}
                           </p>
                         </div>
                       )}
 
-                      {/* Mnemonic / Note */}
+                      {/* Mnemonic / Memory Shortcut Callout Card */}
                       {(noteText || currentActiveWord.mnemonic) && (
-                        <div className="pt-1 space-y-0.5">
-                          <span className="text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 font-semibold block font-bengali">
-                            {getPlaceLabel('mnemonic', 'Mnemonic / Note')}
-                          </span>
-                          <p className="text-xs sm:text-sm font-medium italic text-slate-600 dark:text-slate-300 font-bengali leading-relaxed text-center break-words px-1">
+                        <div className="p-2.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-left space-y-1 shadow-2xs">
+                          <div className="flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                            <Lightbulb className="w-3.5 h-3.5 fill-current" />
+                            <span className="text-[10px] font-black uppercase tracking-wider font-bengali">
+                              {getPlaceLabel('mnemonic', 'মনে রাখার ছন্দ / টেকনিক')}
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm font-semibold italic text-slate-800 dark:text-slate-200 font-bengali leading-relaxed break-words">
                             {noteText || currentActiveWord.mnemonic}
                           </p>
                         </div>
@@ -1249,14 +1284,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('dont_know', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'dont_know'
                             ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
-                            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+                            : 'bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 border-rose-200/80 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60'
                         }`}
                         title="Not Learned"
                       >
-                        <span>Not Learned</span>
+                        <span>পারিনা</span>
                       </button>
 
                       <button
@@ -1264,14 +1299,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('confusion', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'confusion'
                             ? 'bg-purple-500 text-white border-purple-500 shadow-sm'
-                            : 'bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
+                            : 'bg-purple-50/80 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60 hover:bg-purple-100 dark:hover:bg-purple-900/60'
                         }`}
                         title="Confused"
                       >
-                        <span>Confused</span>
+                        <span>কনফিউশন</span>
                       </button>
 
                       <button
@@ -1279,14 +1314,14 @@ export default function FlashcardViewer({
                           e.stopPropagation();
                           rateAndMaybeConfirm('know', true);
                         }}
-                        className={`flex-1 py-2 rounded-xl font-semibold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
+                        className={`flex-1 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer text-center justify-center items-center flex gap-1 border ${
                           activeStatus === 'know'
                             ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
-                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
+                            : 'bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                         }`}
                         title="Learned"
                       >
-                        <span>Learned</span>
+                        <span>পারি</span>
                       </button>
 
                       <button
