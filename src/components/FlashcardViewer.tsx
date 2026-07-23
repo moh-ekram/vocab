@@ -36,7 +36,8 @@ import {
   Lightbulb,
   ArrowLeft,
   Settings,
-  HelpCircle
+  HelpCircle,
+  SkipForward
 } from 'lucide-react';
 
 interface FlashcardViewerProps {
@@ -967,7 +968,7 @@ export default function FlashcardViewer({
               <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
                     activeStatus === 'dont_know'
                       ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
                       : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
@@ -979,15 +980,23 @@ export default function FlashcardViewer({
 
                 <button
                   onClick={() => setIsFlipped(prev => !prev)}
-                  className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
                   title="Flip Card"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
 
                 <button
+                  onClick={handleNext}
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                  title="Skip Card"
+                >
+                  <SkipForward className="w-5 h-5" />
+                </button>
+
+                <button
                   onClick={() => rateAndMaybeConfirm('know', true)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
                     activeStatus === 'know'
                       ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
                       : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
@@ -1136,7 +1145,7 @@ export default function FlashcardViewer({
               <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
                     activeStatus === 'dont_know'
                       ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
                       : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
@@ -1148,15 +1157,23 @@ export default function FlashcardViewer({
 
                 <button
                   onClick={() => setIsFlipped(prev => !prev)}
-                  className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
                   title="Flip Card"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
 
                 <button
+                  onClick={handleNext}
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center justify-center transition cursor-pointer"
+                  title="Skip Card"
+                >
+                  <SkipForward className="w-5 h-5" />
+                </button>
+
+                <button
                   onClick={() => rateAndMaybeConfirm('know', true)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                  className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
                     activeStatus === 'know'
                       ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
                       : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
