@@ -22,6 +22,7 @@ html, body, #root {
 /* Custom 3D Card Flip Animation Utilities */
 .perspective {
   perspective: 1200px;
+  -webkit-perspective: 1200px;
 }
 
 .transform-style-3d {
@@ -30,51 +31,78 @@ html, body, #root {
 }
 
 .backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
 }
 
 /* 5 Card Flip Animation Styles */
-/* 1. Horizontal Flip */
-.anim-horizontal {
+/* 1. Horizontal Flip (flip-h) */
+.anim-flip-h, .anim-horizontal {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.anim-horizontal.is-flipped {
+.anim-flip-h.is-flipped, .anim-horizontal.is-flipped {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
 }
-.backface-horizontal {
+.backface-flip-h, .backface-horizontal {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
 }
 
-/* 2. Vertical Flip */
-.anim-vertical {
+/* 2. Vertical Flip (flip-v) */
+.anim-flip-v, .anim-vertical {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.anim-vertical.is-flipped {
+.anim-flip-v.is-flipped, .anim-vertical.is-flipped {
   transform: rotateX(180deg);
   -webkit-transform: rotateX(180deg);
 }
-.backface-vertical {
+.backface-flip-v, .backface-vertical {
   transform: rotateX(180deg);
   -webkit-transform: rotateX(180deg);
 }
 
-/* 3. Zoom & Flip */
+/* 3. Slide & Flip (slide) */
+.anim-slide {
+  transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.anim-slide.is-flipped {
+  transform: translateX(28px) rotateY(180deg);
+  -webkit-transform: translateX(28px) rotateY(180deg);
+}
+.backface-slide {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+/* 4. Zoom & Flip (zoom) */
 .anim-zoom {
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .anim-zoom.is-flipped {
-  transform: scale(0.9) rotateY(180deg);
-  -webkit-transform: scale(0.9) rotateY(180deg);
+  transform: scale(0.88) rotateY(180deg);
+  -webkit-transform: scale(0.88) rotateY(180deg);
 }
 .backface-zoom {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
 }
 
-/* 4. Diagonal 3D Spin */
+/* 5. Fade & Flip (fade) */
+.anim-fade {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out;
+}
+.anim-fade.is-flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  opacity: 0.98;
+}
+.backface-fade {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+/* 6. Diagonal 3D Spin (diagonal fallback) */
 .anim-diagonal {
   transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -85,19 +113,6 @@ html, body, #root {
 .backface-diagonal {
   transform: rotate3d(1, 1, 0, 180deg);
   -webkit-transform: rotate3d(1, 1, 0, 180deg);
-}
-
-/* 5. Slide & Flip */
-.anim-slide {
-  transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1);
-}
-.anim-slide.is-flipped {
-  transform: translateX(18px) rotateY(180deg);
-  -webkit-transform: translateX(18px) rotateY(180deg);
-}
-.backface-slide {
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
 }
 
 .rotate-y-180, .flipped {

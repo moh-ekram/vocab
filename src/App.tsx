@@ -1590,6 +1590,7 @@ export default function App() {
               onToggleBookmark={handleToggleBookmark}
               initialGroup={selectedGroupFromDash}
               settings={settings}
+              onUpdateSettings={setSettings}
               placeLabels={activeCourse?.placeLabels}
               googleSearchQuery={activeCourse?.googleSearchQuery}
             />

@@ -49,6 +49,7 @@ interface FlashcardViewerProps {
   onToggleBookmark: (wordId: string, folderId: string) => void;
   initialGroup?: number | string | null;
   settings?: AppSettings;
+  onUpdateSettings?: (newSettings: AppSettings) => void;
   variableToggles?: Record<string, boolean>;
   placeLabels?: {
     place1?: string;
@@ -70,6 +71,7 @@ export default function FlashcardViewer({
   onToggleBookmark,
   initialGroup = null,
   settings,
+  onUpdateSettings,
   variableToggles,
   placeLabels,
   googleSearchQuery
@@ -218,14 +220,31 @@ export default function FlashcardViewer({
   });
   const [shuffleKey, setShuffleKey] = useState(0);
 
-  // Card orientation and flip animation styles (5 distinct 3D animation options)
-  type FlipAnimationType = 'horizontal' | 'vertical' | 'zoom' | 'diagonal' | 'slide';
+  // Card orientation and flip animation styles
+  type FlipAnimationKey = 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom' | 'shuffle';
   const [isFlipped, setIsFlipped] = useState(false);
-  const [flipAnimation, setFlipAnimation] = useState<FlipAnimationType>('horizontal');
+  const [localAnimation, setLocalAnimation] = useState<FlipAnimationKey>('shuffle');
   const [isAnimPickerOpen, setIsAnimPickerOpen] = useState(false);
 
   // Random animation state for shuffle option
   const [currentRandomAnim, setCurrentRandomAnim] = useState<'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom'>('flip-h');
+
+  // Effective animation setting
+  const effectiveAnimSetting: FlipAnimationKey = settings?.flashcardAnimation || localAnimation;
+
+  // Active animation key applied to CSS
+  const activeAnimKey: 'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom' =
+    effectiveAnimSetting === 'shuffle' ? currentRandomAnim : effectiveAnimSetting;
+
+  const handleSelectAnimation = (anim: FlipAnimationKey) => {
+    setLocalAnimation(anim);
+    if (onUpdateSettings && settings) {
+      onUpdateSettings({
+        ...settings,
+        flashcardAnimation: anim
+      });
+    }
+  };
 
   // Vocabulary Index State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -540,12 +559,12 @@ export default function FlashcardViewer({
   }, [currentActiveWord.id, isSessionActive, settings?.autoPlayAudio, variableToggles]);
 
   useEffect(() => {
-    if ((settings?.flashcardAnimation || 'shuffle') === 'shuffle') {
+    if (effectiveAnimSetting === 'shuffle') {
       const animations = ['flip-h', 'flip-v', 'slide', 'fade', 'zoom'] as const;
       const randomIdx = Math.floor(Math.random() * animations.length);
       setCurrentRandomAnim(animations[randomIdx]);
     }
-  }, [currentActiveWord.id, settings?.flashcardAnimation]);
+  }, [currentIndex, currentActiveWord.id, effectiveAnimSetting]);
 
   const activeStatus = progress[currentActiveWord.id]?.status || 'unrated';
 
@@ -589,17 +608,31 @@ export default function FlashcardViewer({
   if (!isSessionActive) {
     return (
       <div className="space-y-4 max-w-5xl mx-auto" id="flashcard-setup-view">
-        {/* Header Hero Banner */}
-        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md relative overflow-hidden flex items-center justify-between">
-          <div className="relative z-10 flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-white/10 text-amber-300 border border-white/10">
-              <Sparkles className="w-4 h-4" />
+        {/* Header Hero Banner / Start Flashcard Button */}
+        <button
+          type="button"
+          onClick={() => setIsSessionActive(true)}
+          disabled={filteredWords.length === 0}
+          className="w-full bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 hover:from-indigo-800 hover:to-slate-800 disabled:opacity-50 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-indigo-700/50 flex items-center justify-between transition cursor-pointer group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/30 text-amber-300 border border-indigo-400/30 group-hover:scale-105 transition">
+              <Play className="w-5 h-5 fill-current" />
             </div>
-            <h1 className="text-base sm:text-lg font-extrabold tracking-tight font-sans">
-              Flashcard Study Setup
-            </h1>
+            <div className="text-left">
+              <h1 className="text-base sm:text-lg font-extrabold tracking-tight font-sans text-white">
+                Start Flashcard
+              </h1>
+              <p className="text-xs text-indigo-200">
+                {filteredWords.length} words selected in current deck
+              </p>
+            </div>
           </div>
-        </div>
+          <span className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-xl text-xs sm:text-sm flex items-center gap-1.5 transition shadow-sm">
+            <span>Start Now</span>
+            <Play className="w-3.5 h-3.5 fill-current" />
+          </span>
+        </button>
 
         {/* Filter Configuration Controls */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
@@ -781,22 +814,23 @@ export default function FlashcardViewer({
             {/* Flip Animation Style Selector */}
             <div className="space-y-1.5 col-span-1 sm:col-span-2 pt-2 border-t border-slate-100">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Card Flip Animation (কার্ড ফ্লিপের ৫টি এনিমেশন)
+                Card Flip Animation (কার্ড ফ্লিপের এনিমেশন)
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {[
-                  { id: 'horizontal', label: 'Horizontal', icon: '🔄' },
-                  { id: 'vertical', label: 'Vertical', icon: '↕️' },
-                  { id: 'zoom', label: 'Zoom Flip', icon: '🔍' },
-                  { id: 'diagonal', label: 'Diagonal 3D', icon: '📐' },
-                  { id: 'slide', label: 'Slide Flip', icon: '↔️' },
+                  { id: 'flip-h', label: 'Flip (H)', icon: '🔄' },
+                  { id: 'flip-v', label: 'Flip (V)', icon: '↕️' },
+                  { id: 'slide', label: 'Slide', icon: '↔️' },
+                  { id: 'fade', label: 'Fade', icon: '👁️' },
+                  { id: 'zoom', label: 'Zoom', icon: '🔍' },
+                  { id: 'shuffle', label: 'Shuffle', icon: '🔀' },
                 ].map((anim) => (
                   <button
                     key={anim.id}
                     type="button"
-                    onClick={() => setFlipAnimation(anim.id as FlipAnimationType)}
-                    className={`py-2 px-1.5 text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
-                      flipAnimation === anim.id
+                    onClick={() => handleSelectAnimation(anim.id as FlipAnimationKey)}
+                    className={`py-2 px-1 text-[10px] sm:text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
+                      effectiveAnimSetting === anim.id
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
@@ -855,36 +889,37 @@ export default function FlashcardViewer({
               title="Change Card Flip Animation"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="capitalize text-[11px] hidden sm:inline">{flipAnimation} Flip</span>
+              <span className="capitalize text-[11px] hidden sm:inline">{effectiveAnimSetting.replace('flip-', '')} Flip</span>
             </button>
 
             {isAnimPickerOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-white/15 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
+              <div className="absolute right-0 mt-2 w-52 bg-slate-900 border border-white/15 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
                 <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Flip Animation (৫টি এনিমেশন)
+                  Flip Animation
                 </div>
                 {[
-                  { id: 'horizontal', label: '1. Horizontal (3D)', desc: 'সমান্তরাল ৩ডি ফ্লিপ' },
-                  { id: 'vertical', label: '2. Vertical (3D)', desc: 'উলম্ব ৩ডি ফ্লিপ' },
-                  { id: 'zoom', label: '3. Zoom & Flip', desc: 'জুম ৩ডি ফ্লিপ' },
-                  { id: 'diagonal', label: '4. 3D Diagonal', desc: 'কৌণিক ৩ডি স্পিন' },
-                  { id: 'slide', label: '5. Slide & Flip', desc: 'স্লাইড ৩ডি ফ্লিপ' },
+                  { id: 'flip-h', label: '1. Horizontal (3D)', desc: 'সমান্তরাল ৩ডি ফ্লিপ' },
+                  { id: 'flip-v', label: '2. Vertical (3D)', desc: 'উলম্ব ৩ডি ফ্লিপ' },
+                  { id: 'slide', label: '3. Slide & Flip', desc: 'স্লাইড ৩ডি ফ্লিপ' },
+                  { id: 'fade', label: '4. Fade & Flip', desc: 'ফেড ও ফ্লিপ' },
+                  { id: 'zoom', label: '5. Zoom & Flip', desc: 'জুম ৩ডি ফ্লিপ' },
+                  { id: 'shuffle', label: '6. Random Shuffle', desc: 'প্রতি কার্ডে নতুন এনিমেশন' },
                 ].map(anim => (
                   <button
                     key={anim.id}
                     onClick={() => {
-                      setFlipAnimation(anim.id as FlipAnimationType);
+                      handleSelectAnimation(anim.id as FlipAnimationKey);
                       setIsAnimPickerOpen(false);
                     }}
                     className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${
-                      flipAnimation === anim.id ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-white/10'
+                      effectiveAnimSetting === anim.id ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-white/10'
                     }`}
                   >
                     <div>
                       <div className="font-semibold text-xs">{anim.label}</div>
                       <div className="text-[10px] opacity-75">{anim.desc}</div>
                     </div>
-                    {flipAnimation === anim.id && <Check className="w-3.5 h-3.5 text-white" />}
+                    {effectiveAnimSetting === anim.id && <Check className="w-3.5 h-3.5 text-white" />}
                   </button>
                 ))}
               </div>
@@ -929,12 +964,14 @@ export default function FlashcardViewer({
             }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transform-style-3d anim-${flipAnimation} ${
+            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transform-style-3d anim-${activeAnimKey} ${
               isFlipped ? 'is-flipped' : ''
             }`}
           >
             {/* FRONT FACE */}
-            <div className="absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden">
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden transition-opacity duration-300 ${
+              isFlipped ? 'opacity-0 pointer-events-none invisible' : 'opacity-100 pointer-events-auto visible'
+            }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
@@ -1059,7 +1096,9 @@ export default function FlashcardViewer({
             </div>
 
             {/* BACK FACE */}
-            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${flipAnimation}`}>
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${activeAnimKey} transition-opacity duration-300 ${
+              isFlipped ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
+            }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
