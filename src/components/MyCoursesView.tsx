@@ -9,6 +9,7 @@ import {
 import { db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Course, UserProgress } from '../types';
+import { isCourseEnrolled, isCourseAccessible } from '../lib/courseAccess';
 
 const getEnglishFeatureLabel = (key: string, placeLabels?: Record<string, string>) => {
   switch (key) {
@@ -143,7 +144,7 @@ export default function MyCoursesView({
 
   const handleFreeEnroll = (course: Course) => {
     setEnrolledCourseIds(prev => {
-      if (!prev.includes(course.id)) {
+      if (!prev.some(id => id.trim().toLowerCase() === course.id.trim().toLowerCase())) {
         return [...prev, course.id];
       }
       return prev;
@@ -156,40 +157,11 @@ export default function MyCoursesView({
     const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           c.description.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const userEmailLower = user?.email?.trim().toLowerCase();
-    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-    const isCreator = c.createdBy === user?.email;
-    
-    let isUserAllowed = !c.isRestricted || isAdmin || isCreator;
-    
-    if (c.isRestricted && !isAdmin && !isCreator && userEmailLower) {
-      const isEmailInAllowed = c.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-      if (isEmailInAllowed) {
-        isUserAllowed = true;
-        if (c.allowedUsersExpiry) {
-          const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-          if (matchingKey) {
-            const expiryStr = c.allowedUsersExpiry[matchingKey];
-            if (expiryStr) {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const expiryDate = new Date(expiryStr);
-              expiryDate.setHours(23, 59, 59, 999);
-              if (today > expiryDate) {
-                isUserAllowed = false;
-              }
-            }
-          }
-        }
-      } else {
-        isUserAllowed = false;
-      }
-    }
-
-    const isEnrolled = enrolledCourseIds.includes(c.id);
+    const isEnrolled = isCourseEnrolled(c.id, enrolledCourseIds);
+    const isUserAllowed = isCourseAccessible(c, enrolledCourseIds, user?.email);
 
     if (filter === 'enrolled') {
-      return matchesSearch && isEnrolled && isUserAllowed;
+      return matchesSearch && (isEnrolled || isUserAllowed);
     } else if (filter === 'locked') {
       return matchesSearch && !isUserAllowed;
     }
@@ -262,38 +234,10 @@ export default function MyCoursesView({
       {/* 3. Compact Course Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4" id="courses-grid-container">
         {filteredCourses.map(course => {
-          const isActive = course.id === activeCourseId;
-          const isEnrolled = enrolledCourseIds.includes(course.id);
+          const isActive = course.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase();
+          const isEnrolled = isCourseEnrolled(course.id, enrolledCourseIds);
+          const isUserAllowed = isCourseAccessible(course, enrolledCourseIds, user?.email);
           const wordsCount = course.words?.length || 0;
-
-          const userEmailLower = user?.email?.trim().toLowerCase();
-          const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-          const isCreator = course.createdBy === user?.email;
-          let isUserAllowed = !course.isRestricted || isAdmin || isCreator;
-          
-          if (course.isRestricted && !isAdmin && !isCreator && userEmailLower) {
-            const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-            if (isEmailInAllowed) {
-              isUserAllowed = true;
-              if (course.allowedUsersExpiry) {
-                const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-                if (matchingKey) {
-                  const expiryStr = course.allowedUsersExpiry[matchingKey];
-                  if (expiryStr) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const expiryDate = new Date(expiryStr);
-                    expiryDate.setHours(23, 59, 59, 999);
-                    if (today > expiryDate) {
-                      isUserAllowed = false;
-                    }
-                  }
-                }
-              }
-            } else {
-              isUserAllowed = false;
-            }
-          }
 
           return (
             <motion.div
@@ -383,23 +327,10 @@ export default function MyCoursesView({
       <AnimatePresence>
         {selectedDetailCourse && (() => {
           const course = selectedDetailCourse;
-          const isActive = course.id === activeCourseId;
-          const isEnrolled = enrolledCourseIds.includes(course.id);
+          const isActive = course.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase();
+          const isEnrolled = isCourseEnrolled(course.id, enrolledCourseIds);
+          const isUserAllowed = isCourseAccessible(course, enrolledCourseIds, user?.email);
           const wordsCount = course.words?.length || 0;
-
-          const userEmailLower = user?.email?.trim().toLowerCase();
-          const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-          const isCreator = course.createdBy === user?.email;
-          let isUserAllowed = !course.isRestricted || isAdmin || isCreator;
-          
-          if (course.isRestricted && !isAdmin && !isCreator && userEmailLower) {
-            const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-            if (isEmailInAllowed) {
-              isUserAllowed = true;
-            } else {
-              isUserAllowed = false;
-            }
-          }
 
           const courseWords = course.words || [];
           const progressCount = courseWords.filter(w => progress[w.id]?.status === 'know').length;

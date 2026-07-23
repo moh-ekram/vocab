@@ -47,6 +47,7 @@ import {
 } from './lib/firebase';
 import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { Course } from './types';
+import { isCourseEnrolled, isCourseAccessible } from './lib/courseAccess';
 import AuthModal from './components/AuthModal';
 import firebaseConfigJson from '../firebase-applet-config.json';
 import { 
@@ -567,73 +568,31 @@ export default function App() {
     localStorage.setItem('vocab_memorizer_quiz_taken', String(quizTaken));
   }, [quizTaken]);
 
-  // Load custom courses with an offline-first caching mechanism (one-time fetch instead of continuous snapshot reads)
+  // Load custom courses with real-time snapshot updates and offline caching
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const coursesRef = collection(db, 'courses');
-        const querySnapshot = await getDocs(coursesRef);
+    let unsubscribe = () => {};
+    try {
+      const coursesRef = collection(db, 'courses');
+      unsubscribe = onSnapshot(coursesRef, (querySnapshot) => {
         const loaded: Course[] = [];
-        querySnapshot.forEach(doc => {
-          loaded.push({ id: doc.id, ...doc.data() } as Course);
+        querySnapshot.forEach(docSnap => {
+          loaded.push({ id: docSnap.id, ...docSnap.data() } as Course);
         });
         setCustomCourses(loaded);
         localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(loaded));
-      } catch (error) {
-        console.error("Error reading courses from Firestore (Offline-first mode active):", error);
-      }
-    };
-    fetchCourses();
+      }, (error) => {
+        console.warn("Error in real-time courses listener (Offline-first active):", error);
+      });
+    } catch (error) {
+      console.error("Error setting up courses snapshot:", error);
+    }
+    return () => unsubscribe();
   }, []);
 
-  // Filter custom courses based on user permissions
-  const filteredCustomCourses = customCourses.filter(c => {
-    // If the user is already enrolled in this course, bypass restriction checks entirely
-    if (enrolledCourseIds.includes(c.id)) return true;
-
-    // Admin user email bypasses all restrictions
-    const isAdmin = user?.email === 'mohammad.001ekram@gmail.com';
-    if (isAdmin) return true;
-
-    // Course creator bypasses restrictions
-    if (c.createdBy === user?.email) return true;
-
-    // If restricted, check if user's email or mobile is listed
-    if (c.isRestricted) {
-      if (!user?.email) return false;
-      const userIdentifier = user.email.trim().toLowerCase();
-      const isAllowed = c.allowedUsers?.some(allowed => {
-        const allowedClean = allowed.trim().toLowerCase();
-        return allowedClean === userIdentifier;
-      });
-
-      if (!isAllowed) return false;
-
-      // Check expiry date
-      if (c.allowedUsersExpiry) {
-        // Find matching key case-insensitively
-        const matchingKey = Object.keys(c.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userIdentifier);
-        if (matchingKey) {
-          const expiryStr = c.allowedUsersExpiry[matchingKey];
-          if (expiryStr) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const expiryDate = new Date(expiryStr);
-            expiryDate.setHours(23, 59, 59, 999); // Allow access until end of day
-            
-            if (today > expiryDate) {
-              return false; // Access expired!
-            }
-          }
-        }
-      }
-      return true;
-    }
-
-    // Public courses (not restricted) are accessible to anyone
-    return true;
-  });
+  // Filter custom courses based on strictly enforced permissions
+  const filteredCustomCourses = customCourses.filter(c => 
+    isCourseAccessible(c, enrolledCourseIds, user?.email)
+  );
 
   // Auto-enroll default custom courses so they are immediately visible to users
   useEffect(() => {
@@ -644,7 +603,7 @@ export default function App() {
           const newIds = [...prev];
           let updated = false;
           defaultIds.forEach(id => {
-            if (!newIds.includes(id)) {
+            if (!newIds.some(existing => existing.trim().toLowerCase() === id.trim().toLowerCase())) {
               newIds.push(id);
               updated = true;
             }
@@ -1092,36 +1051,11 @@ export default function App() {
     const course = allCourses.find(c => c.id.trim().toLowerCase() === normActiveId);
     if (!course) return defaultGreCourse;
 
-    // Check access permissions - enrolled courses or admin/creator can always access
-    const userEmailLower = user?.email?.trim().toLowerCase();
-    const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
-    const isCreator = course.createdBy?.trim().toLowerCase() === userEmailLower;
-    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === normActiveId);
-
-    if (isEnrolled || isAdmin || isCreator) {
+    // Check access permissions strictly via isCourseAccessible helper
+    if (isCourseAccessible(course, enrolledCourseIds, user?.email)) {
       return course;
     }
-
-    if (course.isRestricted) {
-      if (!userEmailLower) return defaultGreCourse;
-      const isEmailInAllowed = course.allowedUsers?.some(allowed => allowed.trim().toLowerCase() === userEmailLower);
-      if (!isEmailInAllowed) return defaultGreCourse;
-
-      if (course.allowedUsersExpiry) {
-        const matchingKey = Object.keys(course.allowedUsersExpiry).find(k => k.trim().toLowerCase() === userEmailLower);
-        if (matchingKey) {
-          const expiryStr = course.allowedUsersExpiry[matchingKey];
-          if (expiryStr) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const expiryDate = new Date(expiryStr);
-            expiryDate.setHours(23, 59, 59, 999);
-            if (today > expiryDate) return defaultGreCourse; // Expired!
-          }
-        }
-      }
-    }
-    return course;
+    return defaultGreCourse;
   })() || defaultGreCourse;
   const activeWords = activeCourse.words || [];
 

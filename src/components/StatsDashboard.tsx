@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
+import { isCourseEnrolled } from '../lib/courseAccess';
 import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2, Lock } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
@@ -42,7 +43,7 @@ export default function StatsDashboard({
 
   // Filter courses shown in the Enroll New Course modal
   // Strictly only show courses that are NOT yet enrolled! If a user has enrolled, they must not see it here.
-  const modalCourses = allCourses.filter(c => !enrolledCourseIds.includes(c.id));
+  const modalCourses = allCourses.filter(c => !isCourseEnrolled(c.id, enrolledCourseIds));
 
   // --- bKash Checkout States ---
   const [selectedBuyCourse, setSelectedBuyCourse] = useState<Course | null>(null);
