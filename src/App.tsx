@@ -660,9 +660,6 @@ export default function App() {
 
   // Filter custom courses based on user permissions
   const filteredCustomCourses = customCourses.filter(c => {
-    // If the user is already enrolled in this course, bypass restriction checks entirely
-    if (enrolledCourseIds.includes(c.id)) return true;
-
     // Admin user email bypasses all restrictions
     const isAdmin = user?.email === 'mohammad.001ekram@gmail.com';
     if (isAdmin) return true;
@@ -670,7 +667,7 @@ export default function App() {
     // Course creator bypasses restrictions
     if (c.createdBy === user?.email) return true;
 
-    // If restricted, check if user's email or mobile is listed
+    // If restricted, check if user's email is listed in allowed users and not expired
     if (c.isRestricted) {
       if (!user?.email) return false;
       const userIdentifier = user.email.trim().toLowerCase();
@@ -1172,13 +1169,12 @@ export default function App() {
     const course = allCourses.find(c => c.id.trim().toLowerCase() === normActiveId);
     if (!course) return defaultSampleCourse;
 
-    // Check access permissions - enrolled courses or admin/creator can always access
+    // Check access permissions - admin or creator can always access
     const userEmailLower = user?.email?.trim().toLowerCase();
     const isAdmin = userEmailLower === 'mohammad.001ekram@gmail.com';
     const isCreator = course.createdBy?.trim().toLowerCase() === userEmailLower;
-    const isEnrolled = enrolledCourseIds.some(id => id.trim().toLowerCase() === normActiveId);
 
-    if (isEnrolled || isAdmin || isCreator) {
+    if (!course.isRestricted || isAdmin || isCreator) {
       return course;
     }
 

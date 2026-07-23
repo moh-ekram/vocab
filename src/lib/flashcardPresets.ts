@@ -182,6 +182,27 @@ export function getBorderStyleClass(borderStyle?: 'none' | 'subtle' | 'bold' | '
   }
 }
 
+export function getElementSizeClass(size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl'): string {
+  switch (size) {
+    case 'xs':
+      return 'text-xs sm:text-sm';
+    case 'sm':
+      return 'text-sm sm:text-base';
+    case 'md':
+      return 'text-base sm:text-lg';
+    case 'lg':
+      return 'text-lg sm:text-xl';
+    case 'xl':
+      return 'text-xl sm:text-2xl';
+    case '2xl':
+      return 'text-2xl sm:text-3xl';
+    case '3xl':
+      return 'text-3xl sm:text-4xl';
+    default:
+      return 'text-base sm:text-lg';
+  }
+}
+
 export function getShadowStyleClass(shadowStyle?: 'none' | 'soft' | 'diffused' | 'glow' | 'deep'): string {
   switch (shadowStyle) {
     case 'none':

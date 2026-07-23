@@ -7,7 +7,8 @@ import {
   getWordVerticalPosClass, 
   getMeaningSizeClass, 
   getBorderStyleClass, 
-  getShadowStyleClass 
+  getShadowStyleClass,
+  getElementSizeClass
 } from '../lib/flashcardPresets';
 import sentencesDataRaw from '../data/sentences.json';
 const sentencesData = sentencesDataRaw as Record<string, string[]>;

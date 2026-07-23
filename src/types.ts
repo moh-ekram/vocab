@@ -30,6 +30,14 @@ export interface CustomFolder {
 
 export type ActiveTab = 'dashboard' | 'my_courses' | 'flashcard' | 'synonym' | 'quiz' | 'match' | 'dictionary' | 'lists' | 'planner' | 'settings' | 'admin' | 'leaderboard' | 'practice' | 'study_tools';
 
+export interface ElementStyleConfig {
+  fontSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
+  color?: string;
+  position?: 'left' | 'center' | 'right';
+  side?: 'front' | 'back';
+  visible?: boolean;
+}
+
 export interface FlashcardCustomStyle {
   presetId?: 'preset-1' | 'preset-2' | 'preset-3' | 'preset-4' | 'preset-5' | 'custom';
   // Main Word Styling
@@ -46,6 +54,8 @@ export interface FlashcardCustomStyle {
   borderRadius: '12px' | '16px' | '20px' | '24px' | '32px';
   borderStyle: 'none' | 'subtle' | 'bold' | 'accent' | 'neon';
   shadowStyle: 'none' | 'soft' | 'diffused' | 'glow' | 'deep';
+  // Detailed Per-Element Customization (place1..place6 + tags)
+  elements?: Record<string, ElementStyleConfig>;
   updatedAt?: string;
   updatedBy?: string;
 }
