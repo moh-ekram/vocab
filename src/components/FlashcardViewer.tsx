@@ -832,35 +832,14 @@ export default function FlashcardViewer({
       <header className="h-14 sm:h-16 px-4 sm:px-8 border-b border-white/10 flex items-center justify-between flex-shrink-0 bg-slate-950/60 backdrop-blur-md z-30">
         <button
           onClick={() => setIsSessionActive(false)}
-          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full transition cursor-pointer border border-white/10"
+          className="flex items-center gap-2 text-xs sm:text-sm font-bold text-indigo-200 hover:text-white bg-white/10 hover:bg-white/20 p-2 sm:p-2.5 rounded-full transition cursor-pointer border border-white/10"
+          title="Exit Focus Mode"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Exit Focus Mode</span>
         </button>
-
-        {/* Center Title & Counter */}
-        <div className="text-center">
-          <h2 className="text-xs sm:text-sm font-extrabold text-white tracking-wide flex items-center justify-center gap-1.5">
-            <span>Group {currentActiveWord.group || 1}</span>
-            <span className="text-indigo-400">•</span>
-            <span className="text-indigo-200 font-mono text-[11px] sm:text-xs">
-              {currentIndex + 1}/{filteredWords.length}
-            </span>
-          </h2>
-        </div>
 
         {/* Right Tools */}
         <div className="flex items-center gap-2">
-          {variableToggles?.audio !== false && (
-            <button
-              onClick={speakWord}
-              className="p-2 bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white rounded-full transition cursor-pointer"
-              title="Listen Audio"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-          )}
-
           <button
             onClick={() => handleOpenReportModal(currentActiveWord)}
             className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-full transition cursor-pointer"
@@ -935,11 +914,23 @@ export default function FlashcardViewer({
                 <p className="text-sm font-semibold font-mono text-slate-400">
                   {getPhoneticSpelling(currentActiveWord.word)}
                 </p>
-                {currentActiveWord.extraWord && (
-                  <p className="text-xs font-bold text-emerald-600 font-bengali pt-1">
-                    {currentActiveWord.extraWord}: {currentActiveWord.extraMeaning}
-                  </p>
-                )}
+                {(() => {
+                  const p5 = currentActiveWord.extraWord?.trim();
+                  const p6 = currentActiveWord.extraMeaning?.trim();
+                  if (!p5 && !p6) return null;
+                  if (p5 && p6) {
+                    return (
+                      <p className="text-xs font-bold text-emerald-600 font-bengali pt-1 text-center">
+                        {p5}: {p6}
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-xs font-bold text-emerald-600 font-bengali pt-1 text-center">
+                      {p5 || p6}
+                    </p>
+                  );
+                })()}
                 <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
                   Tap card to reveal definition ↺
                 </p>
@@ -1006,22 +997,112 @@ export default function FlashcardViewer({
               </div>
 
               {/* Center Content: Back Face */}
-              <div className="my-auto text-center space-y-3 py-2 overflow-y-auto max-h-[220px] scrollbar-none">
-                <h2 className="text-xl font-black text-slate-800">{currentActiveWord.word}</h2>
-                <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
-                  {currentActiveWord.meaning}
-                </p>
-                {currentActiveWord.synonyms && (
-                  <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
-                    <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">Synonyms</span>
-                    <span>{currentActiveWord.synonyms}</span>
+              <div className="my-auto text-center space-y-3 py-2 overflow-y-auto max-h-[220px] scrollbar-none w-full flex flex-col items-center justify-center">
+                {/* Place 2: Primary Content - Note: Place 1 (word) is omitted on 2nd page as requested */}
+                {currentActiveWord.meaning && (
+                  <div className="text-center w-full">
+                    {placeLabels?.place2 && (
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block pb-0.5">
+                        {placeLabels.place2}
+                      </span>
+                    )}
+                    <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
+                      {currentActiveWord.meaning}
+                    </p>
                   </div>
                 )}
-                {noteText && (
-                  <div className="pt-2 border-t border-slate-100 text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali">
-                    "{noteText}"
-                  </div>
-                )}
+
+                {/* Place 3 and Mnemonic (Place 4 / Notes) */}
+                {(() => {
+                  const hasPlace3 = Boolean(currentActiveWord.synonyms?.trim());
+                  const hasMnemonic = Boolean(noteText?.trim());
+
+                  if (!hasPlace3 && !hasMnemonic) return null;
+
+                  return (
+                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600 w-full flex flex-col items-center justify-center space-y-2">
+                      {hasPlace3 && hasMnemonic ? (
+                        /* Both place3 and mnemonic present */
+                        <div className="w-full space-y-2 text-center">
+                          <div className="text-center">
+                            {placeLabels?.place3 && (
+                              <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">
+                                {placeLabels.place3}
+                              </span>
+                            )}
+                            <span>{currentActiveWord.synonyms}</span>
+                          </div>
+                          <div className="text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali text-center">
+                            "{noteText}"
+                          </div>
+                        </div>
+                      ) : hasPlace3 ? (
+                        /* Only Place 3 present -> Centered */
+                        <div className="w-full text-center">
+                          {placeLabels?.place3 && (
+                            <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">
+                              {placeLabels.place3}
+                            </span>
+                          )}
+                          <span className="inline-block text-center">{currentActiveWord.synonyms}</span>
+                        </div>
+                      ) : (
+                        /* Only Mnemonic present -> Centered */
+                        <div className="w-full text-center">
+                          <div className="text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali text-center max-w-full">
+                            "{noteText}"
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Place 5 & Place 6 */}
+                {(() => {
+                  const p5 = currentActiveWord.extraWord?.trim();
+                  const p6 = currentActiveWord.extraMeaning?.trim();
+
+                  if (!p5 && !p6) return null;
+
+                  return (
+                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600 w-full flex flex-col items-center justify-center">
+                      {p5 && p6 ? (
+                        /* Both Place 5 & Place 6 present */
+                        <div className="text-center w-full">
+                          {(placeLabels?.place5 || placeLabels?.place6) && (
+                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
+                              {[placeLabels?.place5, placeLabels?.place6].filter(Boolean).join(' / ')}
+                            </span>
+                          )}
+                          <p className="font-bold text-emerald-700">
+                            {p5} : {p6}
+                          </p>
+                        </div>
+                      ) : p5 ? (
+                        /* Only Place 5 present -> Centered */
+                        <div className="text-center w-full">
+                          {placeLabels?.place5 && (
+                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
+                              {placeLabels.place5}
+                            </span>
+                          )}
+                          <p className="font-bold text-emerald-700">{p5}</p>
+                        </div>
+                      ) : (
+                        /* Only Place 6 present -> Centered */
+                        <div className="text-center w-full">
+                          {placeLabels?.place6 && (
+                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
+                              {placeLabels.place6}
+                            </span>
+                          )}
+                          <p className="font-bold text-emerald-700">{p6}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Card Footer Response Controls */}
