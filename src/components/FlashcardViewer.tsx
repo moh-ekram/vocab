@@ -883,12 +883,12 @@ export default function FlashcardViewer({
       <main className="flex-1 overflow-y-auto px-4 py-4 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full gap-4">
         
         {/* Flashcard Stack Stage */}
-        <div className="w-full relative my-auto">
+        <div className="w-full relative my-auto perspective">
           {/* Stacked Cards visual depth effect underneath */}
           <div className="absolute inset-x-6 sm:inset-x-8 bottom-[-14px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
           <div className="absolute inset-x-3 sm:inset-x-4 bottom-[-7px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
 
-          {/* Active Card Card Container */}
+          {/* Active Card Container - 3D Inner Wrapper */}
           <div
             onClick={() => {
               if (touchHandled.current) {
@@ -899,105 +899,165 @@ export default function FlashcardViewer({
             }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between w-full min-h-[380px] sm:min-h-[420px] relative z-10 cursor-pointer transition-transform duration-300 hover:scale-[1.01]"
+            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transition-transform duration-500 transform-style-3d ${
+              isFlipped ? 'flipped rotate-y-180' : ''
+            }`}
           >
-            {/* Top Row: Speaker Icon & Word Meta */}
-            <div className="flex items-center justify-between w-full">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
-                Group {currentActiveWord.group}
-              </span>
+            {/* FRONT FACE */}
+            <div className="absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden">
+              {/* Top Row: Speaker Icon & Word Meta */}
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
+                  Group {currentActiveWord.group}
+                </span>
 
-              <div className="flex items-center gap-2">
-                {variableToggles?.audio !== false && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      speakWord();
-                    }}
-                    className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-90"
-                    title="Speak word"
-                  >
-                    <Volume2 className="w-5 h-5" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  {variableToggles?.audio !== false && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speakWord();
+                      }}
+                      className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-90"
+                      title="Speak word"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Center Content: Front Face */}
+              <div className="my-auto text-center space-y-2 py-4">
+                <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} text-slate-900 tracking-tight font-sans`}>
+                  {currentActiveWord.word}
+                </h1>
+                <p className="text-sm font-semibold font-mono text-slate-400">
+                  {getPhoneticSpelling(currentActiveWord.word)}
+                </p>
+                {currentActiveWord.extraWord && (
+                  <p className="text-xs font-bold text-emerald-600 font-bengali pt-1">
+                    {currentActiveWord.extraWord}: {currentActiveWord.extraMeaning}
+                  </p>
                 )}
+                <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
+                  Tap card to reveal definition ↺
+                </p>
+              </div>
+
+              {/* Card Footer Response Controls */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                    activeStatus === 'dont_know'
+                      ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                      : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                  }`}
+                  title="Not Learned / Hard"
+                >
+                  <X className="w-6 h-6 stroke-[3]" />
+                </button>
+
+                <button
+                  onClick={() => setIsFlipped(prev => !prev)}
+                  className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                  title="Flip Card"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => rateAndMaybeConfirm('know', true)}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                    activeStatus === 'know'
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                  }`}
+                  title="Learned / Easy"
+                >
+                  <Check className="w-6 h-6 stroke-[3]" />
+                </button>
               </div>
             </div>
 
-            {/* Center Content: Front vs Back Face */}
-            <div className="my-auto text-center space-y-3 py-4">
-              {!isFlipped ? (
-                /* FRONT FACE */
-                <div className="space-y-2 animate-fadeIn">
-                  <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} text-slate-900 tracking-tight font-sans`}>
-                    {currentActiveWord.word}
-                  </h1>
-                  <p className="text-sm font-semibold font-mono text-slate-400">
-                    {getPhoneticSpelling(currentActiveWord.word)}
-                  </p>
-                  {currentActiveWord.extraWord && (
-                    <p className="text-xs font-bold text-emerald-600 font-bengali pt-1">
-                      {currentActiveWord.extraWord}: {currentActiveWord.extraMeaning}
-                    </p>
-                  )}
-                  <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
-                    Tap card to reveal definition ↺
-                  </p>
-                </div>
-              ) : (
-                /* BACK FACE */
-                <div className="space-y-3 animate-fadeIn">
-                  <h2 className="text-xl font-black text-slate-800">{currentActiveWord.word}</h2>
-                  <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
-                    {currentActiveWord.meaning}
-                  </p>
-                  {currentActiveWord.synonyms && (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
-                      <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">Synonyms</span>
-                      <span>{currentActiveWord.synonyms}</span>
-                    </div>
-                  )}
-                  {noteText && (
-                    <div className="pt-2 border-t border-slate-100 text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali">
-                      "{noteText}"
-                    </div>
+            {/* BACK FACE */}
+            <div className="absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden rotate-y-180">
+              {/* Top Row: Speaker Icon & Word Meta */}
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
+                  Group {currentActiveWord.group}
+                </span>
+
+                <div className="flex items-center gap-2">
+                  {variableToggles?.audio !== false && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        speakWord();
+                      }}
+                      className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-full transition shadow-xs cursor-pointer active:scale-90"
+                      title="Speak word"
+                    >
+                      <Volume2 className="w-5 h-5" />
+                    </button>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Card Footer Response Controls (Inside card as seen in image 1) */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
-              <button
-                onClick={() => rateAndMaybeConfirm('dont_know', true)}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                  activeStatus === 'dont_know'
-                    ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
-                    : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
-                }`}
-                title="Not Learned / Hard"
-              >
-                <X className="w-6 h-6 stroke-[3]" />
-              </button>
+              {/* Center Content: Back Face */}
+              <div className="my-auto text-center space-y-3 py-2 overflow-y-auto max-h-[220px] scrollbar-none">
+                <h2 className="text-xl font-black text-slate-800">{currentActiveWord.word}</h2>
+                <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
+                  {currentActiveWord.meaning}
+                </p>
+                {currentActiveWord.synonyms && (
+                  <div className="pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
+                    <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">Synonyms</span>
+                    <span>{currentActiveWord.synonyms}</span>
+                  </div>
+                )}
+                {noteText && (
+                  <div className="pt-2 border-t border-slate-100 text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali">
+                    "{noteText}"
+                  </div>
+                )}
+              </div>
 
-              <button
-                onClick={() => setIsFlipped(prev => !prev)}
-                className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                title="Flip Card"
-              >
-                <RotateCcw className="w-5 h-5" />
-              </button>
+              {/* Card Footer Response Controls */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-around w-full" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => rateAndMaybeConfirm('dont_know', true)}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                    activeStatus === 'dont_know'
+                      ? 'bg-rose-500 text-white border-rose-600 shadow-md scale-105'
+                      : 'bg-rose-50 text-rose-600 hover:bg-rose-100 border-rose-200'
+                  }`}
+                  title="Not Learned / Hard"
+                >
+                  <X className="w-6 h-6 stroke-[3]" />
+                </button>
 
-              <button
-                onClick={() => rateAndMaybeConfirm('know', true)}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
-                  activeStatus === 'know'
-                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
-                    : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
-                }`}
-                title="Learned / Easy"
-              >
-                <Check className="w-6 h-6 stroke-[3]" />
-              </button>
+                <button
+                  onClick={() => setIsFlipped(prev => !prev)}
+                  className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
+                  title="Flip Card"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => rateAndMaybeConfirm('know', true)}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                    activeStatus === 'know'
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-md scale-105'
+                      : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200'
+                  }`}
+                  title="Learned / Easy"
+                >
+                  <Check className="w-6 h-6 stroke-[3]" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

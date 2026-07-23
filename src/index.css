@@ -26,6 +26,7 @@ html, body, #root {
 
 .transform-style-3d {
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .backface-hidden {
@@ -33,8 +34,9 @@ html, body, #root {
   -webkit-backface-visibility: hidden;
 }
 
-.rotate-y-180 {
+.rotate-y-180, .flipped {
   transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
 }
 
 .rotate-x-180 {
