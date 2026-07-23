@@ -218,8 +218,11 @@ export default function FlashcardViewer({
   });
   const [shuffleKey, setShuffleKey] = useState(0);
 
-  // Card orientation
+  // Card orientation and flip animation styles (5 distinct 3D animation options)
+  type FlipAnimationType = 'horizontal' | 'vertical' | 'zoom' | 'diagonal' | 'slide';
   const [isFlipped, setIsFlipped] = useState(false);
+  const [flipAnimation, setFlipAnimation] = useState<FlipAnimationType>('horizontal');
+  const [isAnimPickerOpen, setIsAnimPickerOpen] = useState(false);
 
   // Random animation state for shuffle option
   const [currentRandomAnim, setCurrentRandomAnim] = useState<'flip-h' | 'flip-v' | 'slide' | 'fade' | 'zoom'>('flip-h');
@@ -585,51 +588,24 @@ export default function FlashcardViewer({
   // =========================================================================
   if (!isSessionActive) {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto" id="flashcard-setup-view">
+      <div className="space-y-4 max-w-5xl mx-auto" id="flashcard-setup-view">
         {/* Header Hero Banner */}
-        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-indigo-300 to-transparent pointer-events-none" />
-          
-          <div className="relative z-10 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-indigo-200 border border-white/10">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Flashcard Focus Mode</span>
+        <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-md relative overflow-hidden flex items-center justify-between">
+          <div className="relative z-10 flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-white/10 text-amber-300 border border-white/10">
+              <Sparkles className="w-4 h-4" />
             </div>
-            
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans">
+            <h1 className="text-base sm:text-lg font-extrabold tracking-tight font-sans">
               Flashcard Study Setup
             </h1>
-            <p className="text-xs sm:text-sm text-indigo-200 max-w-2xl font-sans leading-relaxed">
-              Configure your group filters and study options. Entering flashcards will open an immersive, distraction-free card deck with maximum screen space.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-4 pt-3">
-              <div className="bg-white/10 border border-white/15 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3">
-                <BookOpen className="w-5 h-5 text-emerald-400" />
-                <div>
-                  <p className="text-[10px] text-indigo-300 uppercase font-bold tracking-wider">Ready Words</p>
-                  <p className="text-lg font-black text-white">{filteredWords.length} Words Selected</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsSessionActive(true)}
-                disabled={filteredWords.length === 0}
-                className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-black rounded-2xl transition-all cursor-pointer shadow-lg shadow-emerald-500/20 flex items-center gap-2.5 text-sm font-sans"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>Start Flashcards ({filteredWords.length})</span>
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Filter Configuration Controls */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-              <Filter className="w-5 h-5 text-indigo-600" />
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+              <Filter className="w-4 h-4 text-indigo-600" />
               <span>Study Deck Filters</span>
             </h3>
             <button
@@ -639,20 +615,20 @@ export default function FlashcardViewer({
                 setSelectedFolder('all');
                 setStudyOrder('random');
               }}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer hover:underline"
+              className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer hover:underline"
             >
               Reset All Filters
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Group Selection */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Vocabulary Groups ({selectedGroups.length}/{uniqueGroups.length})
                 </label>
-                <div className="flex gap-2 text-xs">
+                <div className="flex gap-1.5 text-[10px]">
                   <button
                     onClick={() => setSelectedGroups(uniqueGroups)}
                     className="text-indigo-600 font-bold hover:underline"
@@ -669,7 +645,7 @@ export default function FlashcardViewer({
                 </div>
               </div>
 
-              <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5 max-h-40 overflow-y-auto p-1 bg-slate-50 border border-slate-200/60 rounded-2xl">
+              <div className="grid grid-cols-5 sm:grid-cols-6 gap-1 max-h-36 overflow-y-auto p-1 bg-slate-50 border border-slate-200/60 rounded-xl scrollbar-thin">
                 {uniqueGroups.map((gVal) => {
                   const isSelected = selectedGroups.includes(gVal);
                   return (
@@ -681,9 +657,9 @@ export default function FlashcardViewer({
                           prev.includes(gVal) ? prev.filter(x => x !== gVal) : [...prev, gVal]
                         );
                       }}
-                      className={`py-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                      className={`py-1 text-[11px] font-semibold rounded-lg transition cursor-pointer ${
                         isSelected
-                          ? 'bg-indigo-600 text-white shadow-xs'
+                          ? 'bg-indigo-600 text-white shadow-2xs'
                           : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200/60'
                       }`}
                     >
@@ -695,12 +671,12 @@ export default function FlashcardViewer({
             </div>
 
             {/* Status Tags Selection */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Tag Status Filter
                 </label>
-                <div className="flex gap-2 text-xs">
+                <div className="flex gap-1.5 text-[10px]">
                   <button
                     onClick={() => {
                       setSelectedStatuses(['know', 'dont_know', 'confusion', 'unrated']);
@@ -713,7 +689,7 @@ export default function FlashcardViewer({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { key: 'unrated', label: 'Unrated (Gray)', color: 'bg-slate-400' },
                   { key: 'dont_know', label: 'Not Learned (Red)', color: 'bg-rose-500' },
@@ -733,15 +709,15 @@ export default function FlashcardViewer({
                         );
                         setUserHasManuallyChangedStatuses(true);
                       }}
-                      className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between transition cursor-pointer border ${
-                        isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-3xs' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100'
+                      className={`p-2 rounded-xl text-[11px] font-semibold flex items-center justify-between transition cursor-pointer border ${
+                        isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-900' : 'bg-slate-50 border-slate-200/60 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full ${st.color}`} />
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${st.color}`} />
                         <span>{st.label}</span>
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-indigo-600" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
                     </button>
                   );
                 })}
@@ -749,14 +725,14 @@ export default function FlashcardViewer({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             {/* Bookmark Folder */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Bookmark Collection</label>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bookmark Collection</label>
               <select
                 value={selectedFolder}
                 onChange={(e) => setSelectedFolder(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl p-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
               >
                 <option value="all">All Words (No Folder Limit)</option>
                 {folders.map(f => (
@@ -766,46 +742,76 @@ export default function FlashcardViewer({
             </div>
 
             {/* Study Order */}
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sequence / Order</label>
-              <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sequence / Order</label>
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   onClick={() => setStudyOrder('serial')}
-                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    studyOrder === 'serial' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-2 text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'serial' ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
+                  <ArrowUpDown className="w-3 h-3" />
                   <span>Serial</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setStudyOrder('alphabetical')}
-                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    studyOrder === 'alphabetical' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-2 text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'alphabetical' ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="font-mono text-[10px] font-black">A-Z</span>
+                  <span className="font-mono text-[9px] font-black">A-Z</span>
                   <span>Alphabetical</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setStudyOrder('random')}
-                  className={`py-3 text-xs font-bold rounded-2xl border transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    studyOrder === 'random' ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  className={`py-2 text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
+                    studyOrder === 'random' ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <Sparkles className="w-3 h-3 text-amber-300" />
                   <span>Shuffle</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Flip Animation Style Selector */}
+            <div className="space-y-1.5 col-span-1 sm:col-span-2 pt-2 border-t border-slate-100">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Card Flip Animation (কার্ড ফ্লিপের ৫টি এনিমেশন)
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                {[
+                  { id: 'horizontal', label: 'Horizontal', icon: '🔄' },
+                  { id: 'vertical', label: 'Vertical', icon: '↕️' },
+                  { id: 'zoom', label: 'Zoom Flip', icon: '🔍' },
+                  { id: 'diagonal', label: 'Diagonal 3D', icon: '📐' },
+                  { id: 'slide', label: 'Slide Flip', icon: '↔️' },
+                ].map((anim) => (
+                  <button
+                    key={anim.id}
+                    type="button"
+                    onClick={() => setFlipAnimation(anim.id as FlipAnimationType)}
+                    className={`py-2 px-1.5 text-[11px] font-semibold rounded-xl border transition cursor-pointer flex items-center justify-center gap-1 ${
+                      flipAnimation === anim.id
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-xs">{anim.icon}</span>
+                    <span>{anim.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
           {/* Action Footer */}
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-500">
               Matching Words: <span className="text-indigo-600 font-extrabold">{filteredWords.length}</span>
             </span>
 
@@ -813,9 +819,9 @@ export default function FlashcardViewer({
               type="button"
               onClick={() => setIsSessionActive(true)}
               disabled={filteredWords.length === 0}
-              className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold rounded-2xl transition cursor-pointer shadow-md shadow-indigo-500/20 flex items-center gap-2 text-sm"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold rounded-xl transition cursor-pointer shadow-xs flex items-center gap-1.5 text-xs"
             >
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-3.5 h-3.5 fill-current" />
               <span>Enter Focus Mode →</span>
             </button>
           </div>
@@ -841,6 +847,50 @@ export default function FlashcardViewer({
 
         {/* Right Tools */}
         <div className="flex items-center gap-2">
+          {/* Flip Animation Quick Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setIsAnimPickerOpen(prev => !prev)}
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-indigo-200 hover:text-white rounded-full transition cursor-pointer border border-white/10 flex items-center gap-1.5 text-xs font-semibold"
+              title="Change Card Flip Animation"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span className="capitalize text-[11px] hidden sm:inline">{flipAnimation} Flip</span>
+            </button>
+
+            {isAnimPickerOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-white/15 rounded-2xl shadow-xl p-1.5 z-50 text-xs">
+                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Flip Animation (৫টি এনিমেশন)
+                </div>
+                {[
+                  { id: 'horizontal', label: '1. Horizontal (3D)', desc: 'সমান্তরাল ৩ডি ফ্লিপ' },
+                  { id: 'vertical', label: '2. Vertical (3D)', desc: 'উলম্ব ৩ডি ফ্লিপ' },
+                  { id: 'zoom', label: '3. Zoom & Flip', desc: 'জুম ৩ডি ফ্লিপ' },
+                  { id: 'diagonal', label: '4. 3D Diagonal', desc: 'কৌণিক ৩ডি স্পিন' },
+                  { id: 'slide', label: '5. Slide & Flip', desc: 'স্লাইড ৩ডি ফ্লিপ' },
+                ].map(anim => (
+                  <button
+                    key={anim.id}
+                    onClick={() => {
+                      setFlipAnimation(anim.id as FlipAnimationType);
+                      setIsAnimPickerOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 rounded-xl flex items-center justify-between transition cursor-pointer ${
+                      flipAnimation === anim.id ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold text-xs">{anim.label}</div>
+                      <div className="text-[10px] opacity-75">{anim.desc}</div>
+                    </div>
+                    {flipAnimation === anim.id && <Check className="w-3.5 h-3.5 text-white" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => handleOpenReportModal(currentActiveWord)}
             className="p-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 rounded-full transition cursor-pointer"
@@ -879,8 +929,8 @@ export default function FlashcardViewer({
             }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transition-transform duration-500 transform-style-3d ${
-              isFlipped ? 'flipped rotate-y-180' : ''
+            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transform-style-3d anim-${flipAnimation} ${
+              isFlipped ? 'is-flipped' : ''
             }`}
           >
             {/* FRONT FACE */}
@@ -1009,7 +1059,7 @@ export default function FlashcardViewer({
             </div>
 
             {/* BACK FACE */}
-            <div className="absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden rotate-y-180">
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${flipAnimation}`}>
               {/* Top Row: Speaker Icon & Word Meta */}
               <div className="flex items-center justify-between w-full">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">
