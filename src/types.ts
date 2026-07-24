@@ -149,6 +149,15 @@ export interface AccessRequest {
   expiryDate?: string;
 }
 
+export interface VerifiedPayment {
+  id?: string;
+  bkashNumber: string;
+  trxId: string;
+  amount?: number;
+  createdAt?: string;
+  note?: string;
+}
+
 export interface UserWallet {
   email?: string;
   bkashNumber?: string;

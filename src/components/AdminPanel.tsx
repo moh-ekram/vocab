@@ -5,7 +5,7 @@ import {
   doc,
   setDoc
 } from '../lib/firebase';
-import { collection, getDocs, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, updateDoc, getDoc, query, where } from 'firebase/firestore';
 import { VocabularyWord, UserProgress, Course, AccessRequest, BlankQuestion, AppSettings } from '../types';
 import { read, utils } from 'xlsx';
 import { CourseSettings } from './CourseSettings';
@@ -25,6 +25,7 @@ import {
   User as UserIcon, 
   X, 
   CheckCircle, 
+  CheckCircle2,
   AlertTriangle, 
   XCircle, 
   Copy, 
@@ -43,6 +44,9 @@ import {
   Globe,
   Gamepad2,
   DollarSign,
+  Zap,
+  Wallet,
+  CreditCard,
   Megaphone,
   Bell
 } from 'lucide-react';
@@ -120,7 +124,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests' | 'system-settings'>('courses');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests' | 'autoverify' | 'system-settings'>('courses');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
@@ -128,6 +132,17 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
   // Pending Access Requests Expiry Inputs state
   const [requestExpiryDates, setRequestExpiryDates] = useState<Record<string, string>>({});
+
+  // Global bKash Auto-Verification Gateway state
+  const [globalVerifiedPayments, setGlobalVerifiedPayments] = useState<{ bkashNumber: string; trxId: string; amount?: number; createdAt?: string }[]>([]);
+  const [globalVpLoading, setGlobalVpLoading] = useState(false);
+  const [newGlobalVpNumber, setNewGlobalVpNumber] = useState('');
+  const [newGlobalVpTrxId, setNewGlobalVpTrxId] = useState('');
+  const [newGlobalVpAmount, setNewGlobalVpAmount] = useState<number>(75);
+  const [globalVpSearch, setGlobalVpSearch] = useState('');
+  const [globalVpPasteInput, setGlobalVpPasteInput] = useState('');
+  const [isAutoVerifyingAll, setIsAutoVerifyingAll] = useState(false);
+  const [autoVerifyResultMessage, setAutoVerifyResultMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (onCoursesUpdated && hasFetchedCourses) {
@@ -1008,6 +1023,235 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
     }
   };
 
+  const fetchGlobalVerifiedPayments = async () => {
+    setGlobalVpLoading(true);
+    try {
+      const snap = await getDoc(doc(db, 'system_settings', 'global_verified_payments'));
+      if (snap.exists()) {
+        setGlobalVerifiedPayments(snap.data().verifiedPayments || []);
+      } else {
+        setGlobalVerifiedPayments([]);
+      }
+    } catch (err) {
+      console.error("Error fetching global verified payments:", err);
+    } finally {
+      setGlobalVpLoading(false);
+    }
+  };
+
+  const handleAddGlobalVerifiedPayment = async () => {
+    const num = newGlobalVpNumber.trim();
+    const trx = newGlobalVpTrxId.trim();
+    const amt = Number(newGlobalVpAmount) || 30;
+
+    if (!num || !trx) {
+      alert("Please enter both bKash Number and Transaction ID.");
+      return;
+    }
+
+    const newRecord = {
+      bkashNumber: num,
+      trxId: trx,
+      amount: amt,
+      createdAt: new Date().toISOString()
+    };
+
+    const updated = [newRecord, ...globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase()))];
+    setGlobalVerifiedPayments(updated);
+
+    try {
+      await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
+      setNewGlobalVpNumber('');
+      setNewGlobalVpTrxId('');
+      setNewGlobalVpAmount(75);
+      
+      await handleRunCentralAutoVerification(updated);
+    } catch (err) {
+      console.error("Error saving global verified payment:", err);
+      alert("Failed to save verified payment.");
+    }
+  };
+
+  const handleDeleteGlobalVerifiedPayment = async (num: string, trx: string) => {
+    if (!confirm(`Are you sure you want to remove bKash ${num} (${trx}) from global auto-verification?`)) return;
+    const updated = globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase()));
+    setGlobalVerifiedPayments(updated);
+    try {
+      await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
+    } catch (err) {
+      console.error("Error deleting global verified payment:", err);
+    }
+  };
+
+  const handleBulkImportGlobalVp = async (textInput: string) => {
+    if (!textInput.trim()) return;
+    const lines = textInput.split(/\r?\n/);
+    const parsed: { bkashNumber: string; trxId: string; amount?: number; createdAt?: string }[] = [];
+
+    for (const line of lines) {
+      const cleanLine = line.trim();
+      if (!cleanLine) continue;
+      const parts = cleanLine.split(/[,;\t\s]+/).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const num = parts[0];
+        const trx = parts[1];
+        let amt = 75;
+        if (parts[2] && !isNaN(Number(parts[2]))) {
+          amt = Number(parts[2]);
+        }
+        parsed.push({
+          bkashNumber: num,
+          trxId: trx,
+          amount: amt,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    if (parsed.length === 0) {
+      alert("No valid lines found. Format: MobileNumber, TrxID, Amount (e.g. 01712345678, 8N29X1A, 90)");
+      return;
+    }
+
+    const existingKeys = new Set(globalVerifiedPayments.map(v => `${v.bkashNumber}_${v.trxId.toLowerCase()}`));
+    const newItems = parsed.filter(item => !existingKeys.has(`${item.bkashNumber}_${item.trxId.toLowerCase()}`));
+
+    const updated = [...newItems, ...globalVerifiedPayments];
+    setGlobalVerifiedPayments(updated);
+
+    try {
+      await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
+      setGlobalVpPasteInput('');
+      alert(`Successfully added ${newItems.length} new verified payment records! Running central auto-verification now...`);
+      await handleRunCentralAutoVerification(updated);
+    } catch (e) {
+      console.error("Error saving bulk verified payments:", e);
+      alert("Error saving bulk verified payments.");
+    }
+  };
+
+  const handleRunCentralAutoVerification = async (currentVpsList?: typeof globalVerifiedPayments) => {
+    setIsAutoVerifyingAll(true);
+    setAutoVerifyResultMessage(null);
+
+    try {
+      const cleanPhone = (p: string) => p.replace(/\D/g, '').slice(-10);
+
+      let vpsToUse = currentVpsList || globalVerifiedPayments;
+      if (vpsToUse.length === 0) {
+        const snap = await getDoc(doc(db, 'system_settings', 'global_verified_payments'));
+        if (snap.exists()) {
+          vpsToUse = snap.data().verifiedPayments || [];
+        }
+      }
+
+      let combinedVps = [...vpsToUse];
+      for (const c of customCourses) {
+        if (c.verifiedPayments) {
+          for (const vp of c.verifiedPayments) {
+            if (!combinedVps.some(cvp => cvp.bkashNumber === vp.bkashNumber && cvp.trxId.toLowerCase() === vp.trxId.toLowerCase())) {
+              combinedVps.push(vp);
+            }
+          }
+        }
+      }
+
+      const requestsSnap = await getDocs(query(collection(db, 'access_requests'), where('status', '==', 'pending')));
+      const pendingReqs = requestsSnap.docs.map(d => ({ id: d.id, ...(d.data() as Record<string, any>) } as unknown as AccessRequest));
+
+      if (pendingReqs.length === 0) {
+        setAutoVerifyResultMessage("কোনো অপেক্ষমাণ রিকুয়েস্ট পাওয়া যায়নি (No pending requests found).");
+        setIsAutoVerifyingAll(false);
+        return;
+      }
+
+      const coursesSnap = await getDocs(collection(db, 'courses'));
+      const coursesMap: Record<string, Course> = {};
+      coursesSnap.forEach(d => {
+        coursesMap[d.id] = { id: d.id, ...d.data() } as Course;
+      });
+
+      let autoApprovedRequestsCount = 0;
+      let totalCoursesGranted = 0;
+
+      for (const req of pendingReqs) {
+        const reqPhone = cleanPhone(req.bkashNumber);
+        const reqTrx = req.trxId.toLowerCase().trim();
+        const reqEmail = req.email.toLowerCase().trim();
+
+        const matchedVp = combinedVps.find(vp => {
+          const vpPhone = cleanPhone(vp.bkashNumber);
+          const vpTrx = vp.trxId.toLowerCase().trim();
+          return (vpPhone === reqPhone || vp.bkashNumber.trim() === req.bkashNumber.trim()) && vpTrx === reqTrx;
+        });
+
+        let walletRef = doc(db, 'user_wallets', reqEmail);
+        let walletSnap = await getDoc(walletRef);
+        let existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+
+        let totalFundsAvailable = existingWalletBalance + (matchedVp ? (matchedVp.amount || req.totalPrice || req.price || 30) : 0);
+
+        if (matchedVp || existingWalletBalance > 0) {
+          let targetIds: string[] = [];
+          if (req.courseIds && req.courseIds.length > 0) {
+            targetIds = req.courseIds;
+          } else if (req.courseId && req.courseId !== 'multi_cart') {
+            targetIds = [req.courseId];
+          }
+
+          let approvedTargetIds: string[] = [];
+          let remainingBalance = totalFundsAvailable;
+
+          for (const cid of targetIds) {
+            const courseObj = coursesMap[cid];
+            const coursePrice = (courseObj && courseObj.price && courseObj.price > 0) ? courseObj.price : (req.price || 30);
+
+            if (remainingBalance >= coursePrice) {
+              approvedTargetIds.push(cid);
+              remainingBalance -= coursePrice;
+
+              if (courseObj) {
+                const currentAllowed = courseObj.allowedUsers || [];
+                if (!currentAllowed.includes(reqEmail)) {
+                  const updatedAllowed = [...currentAllowed, reqEmail];
+                  courseObj.allowedUsers = updatedAllowed;
+                  await setDoc(doc(db, 'courses', cid), { allowedUsers: updatedAllowed }, { merge: true });
+                }
+              }
+              totalCoursesGranted++;
+            }
+          }
+
+          if (approvedTargetIds.length > 0) {
+            autoApprovedRequestsCount++;
+
+            await setDoc(walletRef, {
+              email: reqEmail,
+              bkashNumber: req.bkashNumber,
+              balance: remainingBalance,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            await setDoc(doc(db, 'access_requests', req.id), {
+              status: 'approved',
+              approvedCoursesCount: approvedTargetIds.length,
+              remainingWalletBalance: remainingBalance,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+          }
+        }
+      }
+
+      fetchAccessRequests();
+      setAutoVerifyResultMessage(`সফলভাবে অটোভেরিফিকেশন প্রসেস সম্পন্ন হয়েছে! ${autoApprovedRequestsCount}টি রিকুয়েস্টের মোট ${totalCoursesGranted}টি কোর্সে স্বয়ংক্রিয়ভাবে অ্যাক্সেস দেওয়া হয়েছে।`);
+    } catch (err) {
+      console.error("Error running central auto-verification:", err);
+      setAutoVerifyResultMessage("অটোভেরিফিকেশন প্রসেস চলাকালে সমস্যা দেখা দিয়েছে।");
+    } finally {
+      setIsAutoVerifyingAll(false);
+    }
+  };
+
   const handleOpenEditModal = (course: Course) => {
     setEditingCourse(course);
   };
@@ -1208,6 +1452,20 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Pending Requests ({accessRequests.filter(r => r.status === 'pending').length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveAdminTab('autoverify');
+            fetchGlobalVerifiedPayments();
+          }}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+            activeAdminTab === 'autoverify'
+              ? 'border-amber-500 text-amber-600 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+          <span>⚡ bKash Gateway (অটোভেরিফিকেশন)</span>
         </button>
         <button
           onClick={() => setActiveAdminTab('system-settings')}
@@ -1901,6 +2159,39 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
       {activeAdminTab === 'access-requests' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
+          {/* Central Gateway Quick Action Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-indigo-800/60 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-full text-[10px] font-extrabold border border-amber-400/30">
+                <Zap className="w-3 h-3 fill-amber-300" />
+                <span>সেন্ট্রাল বিকাশ গ্লোবাল ভেরিফিকেশন ইঞ্জিন</span>
+              </div>
+              <h4 className="font-black text-white text-sm sm:text-base">মাল্টিপল কোর্স ও গ্লোবাল অটোভেরিফিকেশন সিস্টেম</h4>
+              <p className="text-xs text-indigo-200 font-medium">ইনডিভিজুয়াল কোর্সের বাইরে সেন্ট্রাল ট্রানজেকশন তালিকা অনুযায়ী সব অপেক্ষমাণ রিকুয়েস্ট একসাথে ভেরিফাই করুন।</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleRunCentralAutoVerification()}
+                disabled={isAutoVerifyingAll}
+                className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Zap className={`w-3.5 h-3.5 fill-slate-950 ${isAutoVerifyingAll ? 'animate-spin' : ''}`} />
+                <span>{isAutoVerifyingAll ? 'অটোভেরিফাই চলছে...' : '⚡ অটোভেরিফাই চালান'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveAdminTab('autoverify');
+                  fetchGlobalVerifiedPayments();
+                }}
+                className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition flex items-center gap-1 cursor-pointer border border-white/20"
+              >
+                <span>গেটওয়ে ম্যানেজ করুন ➔</span>
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-extrabold text-slate-800 text-base">Course Access Requests</h3>
@@ -2106,6 +2397,253 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {activeAdminTab === 'autoverify' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-indigo-800/60 shadow-md">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-extrabold border border-amber-400/30 mb-2">
+                  <Zap className="w-3.5 h-3.5 fill-amber-300" />
+                  <span>Central bKash Gateway (গ্লোবাল অটোভেরিফিকেশন)</span>
+                </div>
+                <h2 className="text-xl font-black tracking-tight text-white">সেন্ট্রাল বিকাশ পেমেন্ট অটো-ভেরিফিকেশন সেন্টার</h2>
+                <p className="text-xs text-indigo-200 mt-1 max-w-3xl leading-relaxed">
+                  এখানে বিকাশ ট্রানজেকশন যুক্ত করলে সিঙ্গেল কোর্স বা মাল্টিপল-কোর্স (কার্ট) যেকোনো রিকুয়েস্টের সাথে বিকাশ নাম্বার, TrxID ও পেমেন্ট অংক মিলিয়ে অটোমেটিক সব কোর্সে অ্যাক্সেস ও ওয়ালেট ব্যালেন্স ক্রেডিট প্রদান করা হবে।
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleRunCentralAutoVerification()}
+                  disabled={isAutoVerifyingAll}
+                  className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Zap className={`w-4 h-4 fill-slate-950 ${isAutoVerifyingAll ? 'animate-spin' : ''}`} />
+                  <span>{isAutoVerifyingAll ? 'অটোভেরিফাই চলছে...' : '⚡ অটোভেরিফিকেশন চালান (Run Engine)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Execution Result Feedback */}
+            {autoVerifyResultMessage && (
+              <div className="mt-4 p-3.5 bg-emerald-500/20 border border-emerald-400/40 rounded-xl text-emerald-200 text-xs font-semibold flex items-center justify-between gap-3 animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{autoVerifyResultMessage}</span>
+                </div>
+                <button 
+                  onClick={() => setAutoVerifyResultMessage(null)}
+                  className="text-emerald-300 hover:text-white p-1"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Top Quick Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center font-black text-lg shrink-0">
+                ৳
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">মোট ভেরিফাইড ট্রানজেকশন</span>
+                <span className="text-xl font-black text-slate-800 font-mono">{globalVerifiedPayments.length} Recs</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">মাল্টিপল কোর্স (কার্ট) সাপোর্ট</span>
+                <span className="text-xl font-black text-indigo-600 font-mono">100% Active</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/70 shadow-2xs flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">অটো ওয়ালেট ক্রেডিট সিস্টেম</span>
+                <span className="text-xl font-black text-emerald-600 font-mono">Enabled</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid: Add Single Payment vs Bulk Import */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Form 1: Single Payment */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <PlusCircle className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-extrabold text-slate-800 text-sm">সিঙ্গেল বিকাশ পেমেন্ট যুক্ত করুন</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">বিকাশ মোবাইল নম্বর (bKash Sender Number)</label>
+                  <input
+                    type="text"
+                    value={newGlobalVpNumber}
+                    onChange={(e) => setNewGlobalVpNumber(e.target.value)}
+                    placeholder="e.g. 01712345678"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none text-xs font-mono font-bold transition text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">ট্রানজেকশন আইডি (bKash TrxID)</label>
+                  <input
+                    type="text"
+                    value={newGlobalVpTrxId}
+                    onChange={(e) => setNewGlobalVpTrxId(e.target.value)}
+                    placeholder="e.g. 8N29X1A"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none text-xs font-mono font-bold transition text-slate-800 uppercase"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">টাকার পরিমাণ (Payment Amount ৳ BDT)</label>
+                  <input
+                    type="number"
+                    value={newGlobalVpAmount}
+                    onChange={(e) => setNewGlobalVpAmount(Number(e.target.value))}
+                    placeholder="e.g. 75"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none text-xs font-mono font-bold transition text-slate-800"
+                  />
+                  <p className="text-[10px] text-slate-400 font-medium">এই টাকার পরিমাণের উপর ভিত্তি করে ১টি বা একাধিক (কার্ট) কোর্সের জন্য সার্ভিসটি অটোমেটিক অ্যাক্সেস মঞ্জুর করবে।</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddGlobalVerifiedPayment}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>সেভ ও অটোভেরিফাই চালান</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Form 2: Bulk Import / Paste */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <h3 className="font-extrabold text-slate-800 text-sm">একসাথে একাধিক পেমেন্ট পেস্ট / ইম্পোর্ট</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">পেস্ট ফরম্যাট: নাম্বার, TrxID, টাকা (প্রতি লাইনে ১টি)</label>
+                  <textarea
+                    rows={4}
+                    value={globalVpPasteInput}
+                    onChange={(e) => setGlobalVpPasteInput(e.target.value)}
+                    placeholder={`01712345678, 8N29X1A, 90\n01811223344, 9K12M8P, 150`}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none text-xs font-mono font-medium transition text-slate-800"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleBulkImportGlobalVp(globalVpPasteInput)}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <UploadCloud className="w-4 h-4" />
+                  <span>বাল্ক ইম্পোর্ট ও অটোভেরিফাই চালান</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Table of Verified Payments */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-extrabold text-slate-800 text-sm">ভেরিফাইড ট্রানজেকশন তালিকা</h3>
+                <p className="text-xs text-slate-400 font-medium">সেন্ট্রাল ডাটাবেজে সংরক্ষিত সকল অনুমোদিত বিকাশ ট্রানজেকশন রেকর্ড।</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={globalVpSearch}
+                    onChange={(e) => setGlobalVpSearch(e.target.value)}
+                    placeholder="Search phone or TrxID..."
+                    className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-indigo-500 w-48 transition"
+                  />
+                </div>
+                <button
+                  onClick={fetchGlobalVerifiedPayments}
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition cursor-pointer"
+                  title="Refresh List"
+                >
+                  <RefreshCw className={`w-4 h-4 ${globalVpLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {globalVerifiedPayments.length === 0 ? (
+              <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-semibold">
+                কোনো সেন্ট্রাল ট্রানজেকশন রেকর্ড পাওয়া যায়নি। উপরে নতুন পেমেন্ট যুক্ত করুন।
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 font-mono uppercase h-9">
+                      <th className="px-4 py-2">bKash Mobile</th>
+                      <th className="px-4 py-2">TrxID</th>
+                      <th className="px-4 py-2">Paid Amount</th>
+                      <th className="px-4 py-2">Added Date</th>
+                      <th className="px-4 py-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-150 font-mono">
+                    {globalVerifiedPayments
+                      .filter(vp => {
+                        if (!globalVpSearch) return true;
+                        const q = globalVpSearch.toLowerCase();
+                        return vp.bkashNumber.includes(q) || vp.trxId.toLowerCase().includes(q);
+                      })
+                      .map((vp, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50 transition">
+                          <td className="px-4 py-2.5 font-bold text-slate-800">{vp.bkashNumber}</td>
+                          <td className="px-4 py-2.5 font-bold text-indigo-600 uppercase">{vp.trxId}</td>
+                          <td className="px-4 py-2.5">
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-black rounded-full text-[10px] border border-emerald-200">
+                              ৳{vp.amount || 30} BDT
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-[10px] text-slate-400">
+                            {vp.createdAt ? new Date(vp.createdAt).toLocaleDateString() : 'Active'}
+                          </td>
+                          <td className="px-4 py-2.5 text-right">
+                            <button
+                              onClick={() => handleDeleteGlobalVerifiedPayment(vp.bkashNumber, vp.trxId)}
+                              className="p-1 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                              title="Delete Record"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

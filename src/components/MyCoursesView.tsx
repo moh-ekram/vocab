@@ -164,18 +164,41 @@ export default function MyCoursesView({
       let walletSnap = await getDoc(walletRef);
       let existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
 
-      // Find matching verified payment entry across all courses
+      // 1. Fetch global verified payments from central system_settings
+      let globalVps: { bkashNumber: string; trxId: string; amount?: number }[] = [];
+      try {
+        const globalVpSnap = await getDoc(doc(db, 'system_settings', 'global_verified_payments'));
+        if (globalVpSnap.exists()) {
+          globalVps = globalVpSnap.data().verifiedPayments || [];
+        }
+      } catch (err) {
+        console.error("Error fetching global verified payments:", err);
+      }
+
+      // Find matching verified payment entry
       let matchedVp: { bkashNumber: string; trxId: string; amount?: number } | null = null;
-      for (const course of allCourses) {
-        if (course.verifiedPayments && course.verifiedPayments.length > 0) {
-          const found = course.verifiedPayments.find(vp => {
-            const vpPhone = cleanPhone(vp.bkashNumber);
-            const vpTrx = vp.trxId.toLowerCase().trim();
-            return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
-          });
-          if (found) {
-            matchedVp = found;
-            break;
+      
+      const foundGlobal = globalVps.find(vp => {
+        const vpPhone = cleanPhone(vp.bkashNumber);
+        const vpTrx = vp.trxId.toLowerCase().trim();
+        return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
+      });
+
+      if (foundGlobal) {
+        matchedVp = foundGlobal;
+      } else {
+        // Fallback to course-level legacy verified payments
+        for (const course of allCourses) {
+          if (course.verifiedPayments && course.verifiedPayments.length > 0) {
+            const found = course.verifiedPayments.find(vp => {
+              const vpPhone = cleanPhone(vp.bkashNumber);
+              const vpTrx = vp.trxId.toLowerCase().trim();
+              return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
+            });
+            if (found) {
+              matchedVp = found;
+              break;
+            }
           }
         }
       }
