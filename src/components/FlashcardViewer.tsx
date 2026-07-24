@@ -1159,10 +1159,12 @@ export default function FlashcardViewer({
                   letterSpacing: '-0.25px',
                 };
 
+                const seenValues = new Set<string>();
                 const blocks: React.ReactNode[] = [];
 
                 // Block 1: Place 2 (Meaning)
-                if (hasPlace2) {
+                if (hasPlace2 && place2Val) {
+                  seenValues.add(place2Val.toLowerCase());
                   blocks.push(
                     <div key="place2" className="text-center w-full">
                       {place2Label && (
@@ -1178,7 +1180,8 @@ export default function FlashcardViewer({
                 }
 
                 // Block 2: Place 3 (Example Sentence / Secondary)
-                if (hasPlace3) {
+                if (hasPlace3 && place3Val && !seenValues.has(place3Val.toLowerCase())) {
+                  seenValues.add(place3Val.toLowerCase());
                   blocks.push(
                     <div key="place3" className="w-full text-center space-y-0.5">
                       {place3Label && (
@@ -1194,7 +1197,8 @@ export default function FlashcardViewer({
                 }
 
                 // Block 3: Place 4 (Extra Word / Derivatives)
-                if (hasPlace4) {
+                if (hasPlace4 && place4Val && !seenValues.has(place4Val.toLowerCase())) {
+                  seenValues.add(place4Val.toLowerCase());
                   blocks.push(
                     <div key="place4" className="w-full text-center space-y-0.5">
                       {place4Label && (
@@ -1210,7 +1214,8 @@ export default function FlashcardViewer({
                 }
 
                 // Block 4: Place 5 (Synonyms / Extra Section 1)
-                if (hasPlace5) {
+                if (hasPlace5 && place5Val && !seenValues.has(place5Val.toLowerCase())) {
+                  seenValues.add(place5Val.toLowerCase());
                   blocks.push(
                     <div key="place5" className="w-full text-center space-y-0.5">
                       {place5Label && (

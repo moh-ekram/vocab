@@ -1404,19 +1404,29 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
         for (const row of rawRows) {
           const rowKeys = Object.keys(row);
+          const usedKeys = new Set<string>();
           
           const findKey = (candidates: string[], placePrefix?: string) => {
             if (placePrefix) {
-              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':'));
-              if (placeKey) return placeKey;
+              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':') && !usedKeys.has(k));
+              if (placeKey) {
+                usedKeys.add(placeKey);
+                return placeKey;
+              }
             }
-            return rowKeys.find(k => {
+            const key = rowKeys.find(k => {
+              if (usedKeys.has(k)) return false;
               const cleanK = k.toLowerCase().trim();
+              if (cleanK.startsWith('place1:') || cleanK.startsWith('place2:') || cleanK.startsWith('place3:') || cleanK.startsWith('place4:') || cleanK.startsWith('place5:') || cleanK.startsWith('place6:')) {
+                return false;
+              }
               if (candidates.some(c => cleanK === c)) return true;
               const normK = cleanK.replace(/[^a-z0-9\u0980-\u09FF]/g, '');
               if (candidates.some(c => normK === c.replace(/[^a-z0-9\u0980-\u09FF]/g, ''))) return true;
               return candidates.some(c => c.length >= 3 && (cleanK.includes(c) || c.includes(cleanK)));
             });
+            if (key) usedKeys.add(key);
+            return key;
           };
 
           const idKey = findKey(['id', 'unique id', 'word id', 'uid', 'sl', 'serial']);
