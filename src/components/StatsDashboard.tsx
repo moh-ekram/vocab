@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course } from '../types';
+import { VocabularyWord, WordStatus, UserProgress, StudyGoal, Course, AppSettings } from '../types';
 import { isCourseEnrolled } from '../lib/courseAccess';
 import { Award, BookOpen, Flame, CheckCircle, AlertTriangle, XCircle, HelpCircle, Trophy, TrendingUp, Search, Plus, Sparkles, Check, ChevronRight, X, Crown, RefreshCw, KeyRound, Copy, CreditCard, Trash2, Lock, CheckCircle2, Circle, CheckSquare, Square, Filter, Layers } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, AreaChart, Area, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Legend } from 'recharts';
@@ -23,6 +23,7 @@ interface StatsDashboardProps {
   setEnrolledCourseIds: React.Dispatch<React.SetStateAction<string[]>>;
   onImportCourse: (course: Course) => void;
   onSelectTab?: (tab: any) => void;
+  settings?: AppSettings;
 }
 
 export default function StatsDashboard({ 
@@ -40,7 +41,8 @@ export default function StatsDashboard({
   setActiveCourseId,
   setEnrolledCourseIds,
   onImportCourse,
-  onSelectTab
+  onSelectTab,
+  settings
 }: StatsDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -65,14 +67,23 @@ export default function StatsDashboard({
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Max 2 times a day with at least 12 hours interval Flashcard Practice cover animation for dashboard banner
+  // Flashcard Practice cover animation for dashboard banner controlled via Settings
   const [showFlashcardCoverAnim, setShowFlashcardCoverAnim] = useState(false);
 
   useEffect(() => {
     try {
+      const animSetting = settings?.flashcardBannerAnim || 'twice_daily';
+      const maxFrequency = settings?.flashcardBannerCountPerDay !== undefined
+        ? settings.flashcardBannerCountPerDay
+        : (animSetting === 'once_daily' ? 1 : animSetting === 'disabled' ? 0 : 2);
+      
+      if (maxFrequency <= 0 || animSetting === 'disabled') {
+        setShowFlashcardCoverAnim(false);
+        return;
+      }
+
       const now = Date.now();
       const todayStr = new Date().toISOString().split('T')[0];
-      const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000;
 
       const rawData = localStorage.getItem('flashcard_banner_anim_data');
       let animRecord: { count: number; lastTimestamp: number; date: string } | null = null;
@@ -92,8 +103,8 @@ export default function StatsDashboard({
           'flashcard_banner_anim_data',
           JSON.stringify({ count: 1, lastTimestamp: now, date: todayStr })
         );
-      } else if (animRecord.count < 2 && (now - animRecord.lastTimestamp >= TWELVE_HOURS_MS)) {
-        // Second trigger of the day (at least 12 hours later)
+      } else if (animRecord.count < maxFrequency) {
+        // Subsequent trigger of the day
         setShowFlashcardCoverAnim(true);
         localStorage.setItem(
           'flashcard_banner_anim_data',
@@ -103,7 +114,7 @@ export default function StatsDashboard({
     } catch (e) {
       console.error('Error handling flashcard animation tracking:', e);
     }
-  }, []);
+  }, [settings?.flashcardBannerAnim, settings?.flashcardBannerCountPerDay]);
 
   // Sync accessEmail when user changes
   useEffect(() => {
@@ -542,7 +553,7 @@ export default function StatsDashboard({
                 y: ['0%', '0%', '15%']
               }}
               transition={{ 
-                duration: 3.0, 
+                duration: settings?.flashcardBannerDurationSec ?? 3.0, 
                 times: [0, 0.65, 1],
                 ease: [0.22, 1, 0.36, 1] 
               }}

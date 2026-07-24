@@ -110,9 +110,6 @@ export default function PracticeCenter({
                 Practice Hub
               </span>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Practice & Games</h2>
-              <p className="text-xs sm:text-sm text-indigo-200 leading-relaxed font-medium">
-                Review your vocabulary words in fun, interactive ways. Select one of the practice modes below to test your recall and accuracy.
-              </p>
             </div>
           </div>
 
@@ -136,9 +133,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">MCQ Quiz</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Test your memory recall using multiple choice questions (MCQ) and spelling checks.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -165,9 +159,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">Word Match</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Boost your reflexes and memory retention through this fast-paced card matching game.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -194,9 +185,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">Synonym Check</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Deepen your vocabulary knowledge by matching synonyms and word meanings.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -223,9 +211,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">Blank Filling</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Practice grammar, syntax, and sentence memory recall by filling in correct blanks.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -252,9 +237,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">Odd One Out</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Identify the word that does not belong among a group of synonyms.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">
@@ -281,9 +263,6 @@ export default function PracticeCenter({
                   </div>
                   <div className="space-y-1">
                     <h3 className="font-extrabold text-slate-800 text-lg">Word Analogy</h3>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Solve logic relationships between word pairs.
-                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100">

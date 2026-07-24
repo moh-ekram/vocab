@@ -50,6 +50,24 @@ export interface AppSettings {
 
   // Option to colorize main words on flashcards based on their status (Green for Learned/know, Red for Unlearned/dont_know, Amber for Confused/confusion)
   colorizeMainWord?: boolean;
+
+  // Option to control daily dashboard full banner flashcard animation overlay
+  flashcardBannerAnim?: 'twice_daily' | 'once_daily' | 'disabled';
+  flashcardBannerCountPerDay?: number;
+  flashcardBannerDurationSec?: number;
+
+  // Practice & Quiz Modules Toggles
+  enableBlankFillingGame?: boolean;
+  enableWordAnalogyGame?: boolean;
+  enableOddOneOutGame?: boolean;
+  enableSynonymCheck?: boolean;
+  enableWordMatchGame?: boolean;
+
+  // System & Access Controls
+  enableGlobalLeaderboard?: boolean;
+  soundEffectsEnabled?: boolean;
+  showBengaliTranslations?: boolean;
+  dailyGoalWordCount?: number;
 }
 
 export interface SyncLogEntry {

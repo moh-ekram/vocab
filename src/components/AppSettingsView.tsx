@@ -34,7 +34,10 @@ import {
   CornerDownLeft,
   RectangleHorizontal,
   Hash,
-  Type
+  Type,
+  Gamepad2,
+  Globe,
+  Bell
 } from 'lucide-react';
 
 interface AppSettingsViewProps {
@@ -57,7 +60,7 @@ export default function AppSettingsView({
   syncLogs = []
 }: AppSettingsViewProps) {
 
-  const [activeTab, setActiveTab] = useState<'flashcards' | 'quiz' | 'synonyms' | 'shortcuts' | 'account'>('flashcards');
+  const [activeTab, setActiveTab] = useState<'flashcards' | 'quiz' | 'modules' | 'synonyms' | 'shortcuts' | 'account'>('flashcards');
 
   const formatLogTime = (isoString: string) => {
     try {
@@ -209,6 +212,31 @@ export default function AppSettingsView({
     });
   };
 
+  const handleBannerAnimChange = (anim: 'twice_daily' | 'once_daily' | 'disabled') => {
+    const count = anim === 'once_daily' ? 1 : anim === 'disabled' ? 0 : 2;
+    onUpdateSettings({
+      ...settings,
+      flashcardBannerAnim: anim,
+      flashcardBannerCountPerDay: count
+    });
+  };
+
+  const handleBannerCountChange = (count: number) => {
+    const animMode = count === 0 ? 'disabled' : count === 1 ? 'once_daily' : 'twice_daily';
+    onUpdateSettings({
+      ...settings,
+      flashcardBannerAnim: animMode,
+      flashcardBannerCountPerDay: Math.max(0, count)
+    });
+  };
+
+  const handleBannerDurationChange = (durSec: number) => {
+    onUpdateSettings({
+      ...settings,
+      flashcardBannerDurationSec: Math.max(0.5, durSec)
+    });
+  };
+
   const triggerResetSettings = () => {
     if (confirm('Are you sure you want to reset all settings to defaults?')) {
       onUpdateSettings({
@@ -229,7 +257,8 @@ export default function AppSettingsView({
           'Enter': 'audio'
         },
         flashcardAnimation: 'shuffle',
-        colorizeMainWord: true
+        colorizeMainWord: true,
+        flashcardBannerAnim: 'twice_daily'
       });
     }
   };
@@ -256,6 +285,7 @@ export default function AppSettingsView({
         {[
           { key: 'flashcards' as const, label: 'Flashcards', icon: Layers },
           { key: 'quiz' as const, label: 'Quizzes', icon: Sliders },
+          { key: 'modules' as const, label: 'App Modules', icon: Gamepad2 },
           { key: 'synonyms' as const, label: 'Synonyms', icon: Sparkles },
           { key: 'shortcuts' as const, label: 'Shortcuts', icon: Keyboard },
           { key: 'account' as const, label: 'Account & Sync', icon: Settings }
@@ -412,6 +442,61 @@ export default function AppSettingsView({
                 </button>
               </div>
 
+              {/* Full Banner Flashcard Overlay Setting */}
+              <div className="space-y-4 pt-3.5 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">
+                    Daily Banner Flashcard Overlay
+                  </label>
+                  <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-extrabold uppercase">
+                    Popup Control
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Input Box: Times Per Day */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Times Per Day
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        value={settings.flashcardBannerCountPerDay !== undefined ? settings.flashcardBannerCountPerDay : (settings.flashcardBannerAnim === 'once_daily' ? 1 : settings.flashcardBannerAnim === 'disabled' ? 0 : 2)}
+                        onChange={(e) => handleBannerCountChange(parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                      />
+                      <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+                        times/day
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Input Box: Stay Duration in Seconds */}
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Stay Duration (Seconds)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0.5"
+                        max="30"
+                        step="0.5"
+                        value={settings.flashcardBannerDurationSec ?? 3.0}
+                        onChange={(e) => handleBannerDurationChange(parseFloat(e.target.value) || 3.0)}
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
+                      />
+                      <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+                        seconds
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         )}
@@ -523,6 +608,125 @@ export default function AppSettingsView({
                 </button>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* App Modules & Features Tab */}
+        {activeTab === 'modules' && (
+          <div className="space-y-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-4">
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Practice Games & Modules Control</h3>
+                <p className="text-[11px] text-slate-400">Enable or disable specific learning games and features across the app.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                {[
+                  { key: 'enableBlankFillingGame' as const, label: 'Fill-in-the-Blanks Game', desc: 'Spelling & missing letters test' },
+                  { key: 'enableWordAnalogyGame' as const, label: 'Word Analogy Practice', desc: 'Relationship & logical pairing' },
+                  { key: 'enableOddOneOutGame' as const, label: 'Odd One Out Game', desc: 'Vocabulary distinction challenge' },
+                  { key: 'enableSynonymCheck' as const, label: 'Synonym Practice Tool', desc: 'Synonym-antonym matching tool' },
+                  { key: 'enableWordMatchGame' as const, label: 'Word Match Pair Game', desc: 'Interactive tile matching game' },
+                ].map(mod => {
+                  const isEnabled = settings[mod.key] !== false;
+                  return (
+                    <div key={mod.key} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
+                      <div>
+                        <span className="block text-xs font-bold text-slate-800">{mod.label}</span>
+                        <span className="block text-[10px] text-slate-400">{mod.desc}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onUpdateSettings({
+                            ...settings,
+                            [mod.key]: !isEnabled
+                          });
+                        }}
+                        className={`relative inline-flex h-4.5 w-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                          isEnabled ? 'bg-slate-900' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                            isEnabled ? 'translate-x-3.5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-3 pt-3.5 border-t border-slate-100">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">System Preferences</h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
+                    <div>
+                      <span className="block text-xs font-bold text-slate-800">Global Leaderboard</span>
+                      <span className="block text-[10px] text-slate-400">Display student rankings</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSettings({ ...settings, enableGlobalLeaderboard: settings.enableGlobalLeaderboard === false ? true : false })}
+                      className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        settings.enableGlobalLeaderboard !== false ? 'bg-indigo-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${settings.enableGlobalLeaderboard !== false ? 'translate-x-3.5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
+                    <div>
+                      <span className="block text-xs font-bold text-slate-800">Sound Effects</span>
+                      <span className="block text-[10px] text-slate-400">Interactive audio cues</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSettings({ ...settings, soundEffectsEnabled: settings.soundEffectsEnabled === false ? true : false })}
+                      className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        settings.soundEffectsEnabled !== false ? 'bg-emerald-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${settings.soundEffectsEnabled !== false ? 'translate-x-3.5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
+                    <div>
+                      <span className="block text-xs font-bold text-slate-800">Bengali Translations</span>
+                      <span className="block text-[10px] text-slate-400">Show Bengali meanings</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateSettings({ ...settings, showBengaliTranslations: settings.showBengaliTranslations === false ? true : false })}
+                      className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                        settings.showBengaliTranslations !== false ? 'bg-amber-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${settings.showBengaliTranslations !== false ? 'translate-x-3.5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/60 space-y-1">
+                    <span className="block text-xs font-bold text-slate-800">Daily Target Words</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="5"
+                        max="100"
+                        value={settings.dailyGoalWordCount || 20}
+                        onChange={(e) => onUpdateSettings({ ...settings, dailyGoalWordCount: parseInt(e.target.value, 10) || 20 })}
+                        className="w-full bg-white border border-slate-300 rounded px-2 py-0.5 text-xs font-bold text-slate-800 focus:outline-hidden"
+                      />
+                      <span className="text-[10px] font-semibold text-slate-500 whitespace-nowrap">words/day</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}

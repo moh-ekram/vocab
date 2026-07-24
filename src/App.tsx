@@ -313,7 +313,25 @@ export default function App() {
       flashcardAnimation: (parsed.flashcardAnimation && parsed.flashcardAnimation !== 'flip-h') ? parsed.flashcardAnimation : 'shuffle',
 
       // Default colorize main word setting
-      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true
+      colorizeMainWord: parsed.colorizeMainWord !== undefined ? !!parsed.colorizeMainWord : true,
+
+      // Default flashcard banner overlay animation setting
+      flashcardBannerAnim: parsed.flashcardBannerAnim || 'twice_daily',
+      flashcardBannerCountPerDay: parsed.flashcardBannerCountPerDay !== undefined ? parsed.flashcardBannerCountPerDay : (parsed.flashcardBannerAnim === 'once_daily' ? 1 : parsed.flashcardBannerAnim === 'disabled' ? 0 : 2),
+      flashcardBannerDurationSec: parsed.flashcardBannerDurationSec !== undefined ? parsed.flashcardBannerDurationSec : 3,
+
+      // Practice & Quiz Modules Toggles
+      enableBlankFillingGame: parsed.enableBlankFillingGame !== undefined ? !!parsed.enableBlankFillingGame : true,
+      enableWordAnalogyGame: parsed.enableWordAnalogyGame !== undefined ? !!parsed.enableWordAnalogyGame : true,
+      enableOddOneOutGame: parsed.enableOddOneOutGame !== undefined ? !!parsed.enableOddOneOutGame : true,
+      enableSynonymCheck: parsed.enableSynonymCheck !== undefined ? !!parsed.enableSynonymCheck : true,
+      enableWordMatchGame: parsed.enableWordMatchGame !== undefined ? !!parsed.enableWordMatchGame : true,
+
+      // System & Access Controls
+      enableGlobalLeaderboard: parsed.enableGlobalLeaderboard !== undefined ? !!parsed.enableGlobalLeaderboard : true,
+      soundEffectsEnabled: parsed.soundEffectsEnabled !== undefined ? !!parsed.soundEffectsEnabled : true,
+      showBengaliTranslations: parsed.showBengaliTranslations !== undefined ? !!parsed.showBengaliTranslations : true,
+      dailyGoalWordCount: parsed.dailyGoalWordCount || 20
     };
   });
 
@@ -1657,6 +1675,7 @@ export default function App() {
                 setActiveTab('flashcard');
               }}
               onSelectTab={setActiveTab}
+              settings={settings}
             />
           )}
 
@@ -1761,6 +1780,8 @@ export default function App() {
           {activeTab === 'admin' && user && user.email === 'mohammad.001ekram@gmail.com' && (
             <AdminPanel 
               words={activeWords} 
+              settings={settings}
+              onUpdateSettings={setSettings}
               onCoursesUpdated={(updatedCourses) => {
                 setCustomCourses(updatedCourses);
                 localStorage.setItem('vocab_memorizer_cached_custom_courses', JSON.stringify(updatedCourses));

@@ -2133,13 +2133,59 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Default Expiry Date (Optional)</label>
-                        <input
-                          type="date"
-                          value={bulkExpiryDate}
-                          onChange={(e) => setBulkExpiryDate(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition cursor-pointer"
-                        />
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Default Expiry (Date or Month)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            value={bulkExpiryDate}
+                            onChange={(e) => setBulkExpiryDate(e.target.value)}
+                            className="w-1/2 px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition cursor-pointer"
+                            title="Exact Expiry Date"
+                          />
+                          <input
+                            type="month"
+                            onChange={(e) => {
+                              if (!e.target.value) return;
+                              const [yStr, mStr] = e.target.value.split('-');
+                              const y = parseInt(yStr, 10);
+                              const m = parseInt(mStr, 10);
+                              const lastDay = new Date(y, m, 0).getDate();
+                              setBulkExpiryDate(`${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
+                            }}
+                            className="w-1/2 px-3 py-2 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition cursor-pointer"
+                            title="Select Month (Expiry set to end of month)"
+                          />
+                        </div>
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <span className="text-[9px] font-bold text-slate-400">Quick:</span>
+                          {[
+                            { label: '+1 Mo', months: 1 },
+                            { label: '+3 Mo', months: 3 },
+                            { label: '+6 Mo', months: 6 },
+                            { label: '+1 Yr', months: 12 },
+                          ].map(preset => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() + preset.months);
+                                setBulkExpiryDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                              }}
+                              className="px-2 py-0.5 bg-slate-200 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 rounded text-[10px] font-bold transition"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setBulkExpiryDate('')}
+                            className="px-2 py-0.5 bg-slate-200 hover:bg-rose-100 text-slate-700 hover:text-rose-700 rounded text-[10px] font-bold transition"
+                          >
+                            Clear
+                          </button>
+                        </div>
                       </div>
                       <div className="text-xs text-slate-500 flex items-center font-semibold leading-relaxed">
                         If specified, this expiration date will be applied to all students in the bulk import list. If left empty, their access will be permanent.
@@ -2182,13 +2228,59 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Access Expiration Date (Optional)</label>
-                        <input
-                          type="date"
-                          value={newStudentExpiry}
-                          onChange={(e) => setNewStudentExpiry(e.target.value)}
-                          className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition cursor-pointer"
-                        />
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Access Expiration (Date or Month)</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            value={newStudentExpiry}
+                            onChange={(e) => setNewStudentExpiry(e.target.value)}
+                            className="w-1/2 px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition cursor-pointer"
+                            title="Exact Date"
+                          />
+                          <input
+                            type="month"
+                            onChange={(e) => {
+                              if (!e.target.value) return;
+                              const [yStr, mStr] = e.target.value.split('-');
+                              const y = parseInt(yStr, 10);
+                              const m = parseInt(mStr, 10);
+                              const lastDay = new Date(y, m, 0).getDate();
+                              setNewStudentExpiry(`${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
+                            }}
+                            className="w-1/2 px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold text-slate-700 transition cursor-pointer"
+                            title="Select Month (Expiry set to end of month)"
+                          />
+                        </div>
+                        {/* Quick Presets */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <span className="text-[9px] font-bold text-slate-400">Quick:</span>
+                          {[
+                            { label: '+1 Mo', months: 1 },
+                            { label: '+3 Mo', months: 3 },
+                            { label: '+6 Mo', months: 6 },
+                            { label: '+1 Yr', months: 12 },
+                          ].map(preset => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() + preset.months);
+                                setNewStudentExpiry(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                              }}
+                              className="px-2 py-0.5 bg-slate-200 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 rounded text-[10px] font-bold transition"
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setNewStudentExpiry('')}
+                            className="px-2 py-0.5 bg-slate-200 hover:bg-rose-100 text-slate-700 hover:text-rose-700 rounded text-[10px] font-bold transition"
+                          >
+                            Clear
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -2260,7 +2352,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               <div className="col-span-5 font-mono font-bold truncate" title={user}>
                                 {user}
                               </div>
-                              <div className="col-span-4 pr-2">
+                              <div className="col-span-4 pr-2 flex items-center gap-1">
                                 <input
                                   type="date"
                                   value={expiry}
@@ -2271,8 +2363,25 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                       [user]: val
                                     }));
                                   }}
-                                  className="px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 transition w-full cursor-pointer"
-                                  title="Change expiration date anytime"
+                                  className="px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 transition w-1/2 cursor-pointer"
+                                  title="Change expiration date"
+                                />
+                                <input
+                                  type="month"
+                                  onChange={(e) => {
+                                    if (!e.target.value) return;
+                                    const [yStr, mStr] = e.target.value.split('-');
+                                    const y = parseInt(yStr, 10);
+                                    const m = parseInt(mStr, 10);
+                                    const lastDay = new Date(y, m, 0).getDate();
+                                    const lastDayStr = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+                                    setAllowedUsersExpiry(prev => ({
+                                      ...prev,
+                                      [user]: lastDayStr
+                                    }));
+                                  }}
+                                  className="px-1.5 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 transition w-1/2 cursor-pointer"
+                                  title="Pick Month (Sets expiry to end of month)"
                                 />
                               </div>
                               <div className="col-span-2 text-center">
