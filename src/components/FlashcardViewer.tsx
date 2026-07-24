@@ -638,9 +638,16 @@ export default function FlashcardViewer({
         {/* Filter Configuration Controls */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h3 className="font-bold text-slate-800 text-xs sm:text-sm flex items-center gap-1.5">
+            <h3 className="flex items-center gap-1.5">
               <Filter className="w-4 h-4 text-indigo-600" />
-              <span>Study Deck Filters</span>
+              <span style={{
+                fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                fontSize: '10px',
+                color: 'oklch(0.704 0.04 256.788)',
+                fontWeight: 500,
+                lineHeight: '10px',
+                letterSpacing: '-0.25px',
+              }}>Study Deck Filters</span>
             </h3>
             <button
               onClick={() => {
@@ -659,7 +666,14 @@ export default function FlashcardViewer({
             {/* Group Selection */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <label style={{
+                  fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '10px',
+                  color: 'oklch(0.704 0.04 256.788)',
+                  fontWeight: 500,
+                  lineHeight: '10px',
+                  letterSpacing: '-0.25px',
+                }} className="uppercase">
                   Vocabulary Groups ({selectedGroups.length}/{uniqueGroups.length})
                 </label>
                 <div className="flex gap-1.5 text-[10px]">
@@ -707,7 +721,14 @@ export default function FlashcardViewer({
             {/* Status Tags Selection */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <label style={{
+                  fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '10px',
+                  color: 'oklch(0.704 0.04 256.788)',
+                  fontWeight: 500,
+                  lineHeight: '10px',
+                  letterSpacing: '-0.25px',
+                }} className="uppercase">
                   Tag Status Filter
                 </label>
                 <div className="flex gap-1.5 text-[10px]">
@@ -762,7 +783,14 @@ export default function FlashcardViewer({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             {/* Bookmark Folder */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bookmark Collection</label>
+              <label style={{
+                fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                fontSize: '10px',
+                color: 'oklch(0.704 0.04 256.788)',
+                fontWeight: 500,
+                lineHeight: '10px',
+                letterSpacing: '-0.25px',
+              }} className="uppercase block">Bookmark Collection</label>
               <select
                 value={selectedFolder}
                 onChange={(e) => setSelectedFolder(e.target.value)}
@@ -777,7 +805,14 @@ export default function FlashcardViewer({
 
             {/* Study Order */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sequence / Order</label>
+              <label style={{
+                fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                fontSize: '10px',
+                color: 'oklch(0.704 0.04 256.788)',
+                fontWeight: 500,
+                lineHeight: '10px',
+                letterSpacing: '-0.25px',
+              }} className="uppercase block">Sequence / Order</label>
               <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
@@ -965,12 +1000,12 @@ export default function FlashcardViewer({
             }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className={`relative w-full h-[450px] sm:h-[470px] z-10 cursor-pointer transform-style-3d anim-${activeAnimKey} ${
+            className={`relative w-full h-[455px] sm:h-[475px] z-10 cursor-pointer transform-style-3d anim-${activeAnimKey} ${
               isFlipped ? 'is-flipped' : ''
             }`}
           >
             {/* FRONT FACE */}
-            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden transition-opacity duration-300 ${
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden transition-opacity duration-300 ${
               isFlipped ? 'opacity-0 pointer-events-none invisible' : 'opacity-100 pointer-events-auto visible'
             }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
@@ -1074,7 +1109,7 @@ export default function FlashcardViewer({
             </div>
 
             {/* BACK FACE */}
-            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${activeAnimKey} transition-opacity duration-300 ${
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${activeAnimKey} transition-opacity duration-300 ${
               isFlipped ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
             }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
@@ -1101,7 +1136,13 @@ export default function FlashcardViewer({
 
               {/* Center Content: Back Face */}
               {(() => {
-                const hasPlace2 = Boolean(currentActiveWord.meaning?.trim());
+                const place2Label = placeLabels?.place2?.trim();
+                const place3Label = placeLabels?.place3?.trim();
+                const place4Label = placeLabels?.place4?.trim();
+                const place5Label = placeLabels?.place5?.trim();
+
+                const place2Val = currentActiveWord.meaning?.trim();
+                const hasPlace2 = Boolean(place2Val);
                 const place3Val = currentActiveWord.example?.trim();
                 const hasPlace3 = Boolean(place3Val);
                 const place4Val = currentActiveWord.extraWord?.trim();
@@ -1124,13 +1165,13 @@ export default function FlashcardViewer({
                 if (hasPlace2) {
                   blocks.push(
                     <div key="place2" className="text-center w-full">
-                      {placeLabels?.place2 && (
+                      {place2Label && (
                         <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
-                          {placeLabels.place2}
+                          {place2Label}
                         </span>
                       )}
-                      <p className="text-2xl sm:text-3xl font-black text-emerald-600 font-bengali leading-relaxed">
-                        {currentActiveWord.meaning}
+                      <p className="text-xl sm:text-2xl font-black text-emerald-600 font-bengali leading-snug">
+                        {place2Val}
                       </p>
                     </div>
                   );
@@ -1139,10 +1180,10 @@ export default function FlashcardViewer({
                 // Block 2: Place 3 (Example Sentence / Secondary)
                 if (hasPlace3) {
                   blocks.push(
-                    <div key="place3" className="w-full text-center space-y-0.5 my-1">
-                      {placeLabels?.place3 && (
+                    <div key="place3" className="w-full text-center space-y-0.5">
+                      {place3Label && (
                         <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
-                          {placeLabels.place3}
+                          {place3Label}
                         </span>
                       )}
                       <p className="text-xs sm:text-sm font-semibold text-slate-700 text-center">
@@ -1155,10 +1196,10 @@ export default function FlashcardViewer({
                 // Block 3: Place 4 (Extra Word / Derivatives)
                 if (hasPlace4) {
                   blocks.push(
-                    <div key="place4" className="w-full text-center space-y-0.5 my-1">
-                      {placeLabels?.place4 && (
+                    <div key="place4" className="w-full text-center space-y-0.5">
+                      {place4Label && (
                         <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
-                          {placeLabels.place4}
+                          {place4Label}
                         </span>
                       )}
                       <p className="text-xs sm:text-sm font-semibold text-slate-800 text-center">
@@ -1171,10 +1212,10 @@ export default function FlashcardViewer({
                 // Block 4: Place 5 (Synonyms / Extra Section 1)
                 if (hasPlace5) {
                   blocks.push(
-                    <div key="place5" className="w-full text-center space-y-0.5 my-1">
-                      {placeLabels?.place5 && (
+                    <div key="place5" className="w-full text-center space-y-0.5">
+                      {place5Label && (
                         <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
-                          {placeLabels.place5}
+                          {place5Label}
                         </span>
                       )}
                       <p className="text-xs font-bold text-emerald-700 text-center">
@@ -1193,12 +1234,12 @@ export default function FlashcardViewer({
                 }
 
                 return (
-                  <div className="my-auto text-center py-2 overflow-y-auto max-h-[220px] scrollbar-none w-full flex flex-col items-center justify-center">
+                  <div className="flex-1 my-auto text-center py-1 w-full flex flex-col items-center justify-around gap-1 overflow-hidden">
                     {blocks.map((block, index) => (
                       <div
                         key={index}
                         className={`w-full flex flex-col items-center justify-center ${
-                          index > 0 ? 'pt-2.5 mt-2.5 border-t border-slate-100' : ''
+                          index > 0 ? 'pt-1.5 border-t border-slate-100/80' : ''
                         }`}
                       >
                         {block}
