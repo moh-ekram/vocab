@@ -380,6 +380,24 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
       // 2. Add email to the course(s) allowed users list with expiry
       const userEmail = req.email.toLowerCase().trim();
+
+      if (req.courseId === 'wallet_recharge') {
+        const rechargeAmt = req.totalPrice || req.price || (req as any).amount || 50;
+        const walletRef = doc(db, 'user_wallets', userEmail);
+        const walletSnap = await getDoc(walletRef);
+        const curBal = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+        const newBal = curBal + rechargeAmt;
+        await setDoc(walletRef, {
+          email: userEmail,
+          balance: newBal,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        setAccessRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
+        alert(`Wallet recharge request approved! ৳${rechargeAmt} BDT added to ${userEmail}'s wallet (New Balance: ৳${newBal} BDT).`);
+        return;
+      }
+
       const targetCourseIds = (req.courseIds && req.courseIds.length > 0) 
         ? req.courseIds 
         : [req.courseId];
@@ -1205,6 +1223,27 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
         let walletRef = doc(db, 'user_wallets', reqEmail);
         let walletSnap = await getDoc(walletRef);
         let existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+
+        if (req.courseId === 'wallet_recharge') {
+          if (matchedVp) {
+            const rechargeAmt = matchedVp.amount || req.totalPrice || req.price || 50;
+            const newBal = existingWalletBalance + rechargeAmt;
+            await setDoc(walletRef, {
+              email: reqEmail,
+              bkashNumber: req.bkashNumber,
+              balance: newBal,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            await setDoc(doc(db, 'access_requests', req.id), {
+              status: 'approved',
+              remainingWalletBalance: newBal,
+              updatedAt: new Date().toISOString()
+            }, { merge: true });
+            autoApprovedRequestsCount++;
+          }
+          continue;
+        }
 
         let totalFundsAvailable = existingWalletBalance + (matchedVp ? (matchedVp.amount || req.totalPrice || req.price || 30) : 0);
 
