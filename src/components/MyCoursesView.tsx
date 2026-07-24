@@ -81,20 +81,26 @@ export default function MyCoursesView({
   useEffect(() => {
     if (user?.email) {
       setAccessEmail(user.email);
-      // Fetch user's wallet credit balance
-      const fetchWallet = async () => {
-        try {
-          const walletSnap = await getDoc(doc(db, 'user_wallets', user.email.toLowerCase()));
-          if (walletSnap.exists()) {
-            setUserWalletBalance(walletSnap.data().balance || 0);
-          }
-        } catch (e) {
-          console.error("Error fetching wallet balance:", e);
-        }
-      };
-      fetchWallet();
     }
   }, [user]);
+
+  // Fetch wallet balance whenever accessEmail changes or modal opens
+  useEffect(() => {
+    if (!accessEmail || !accessEmail.includes('@')) return;
+    const fetchWallet = async () => {
+      try {
+        const walletSnap = await getDoc(doc(db, 'user_wallets', accessEmail.toLowerCase().trim()));
+        if (walletSnap.exists()) {
+          setUserWalletBalance(walletSnap.data().balance || 0);
+        } else {
+          setUserWalletBalance(0);
+        }
+      } catch (e) {
+        console.warn("Wallet fetch notice:", e);
+      }
+    };
+    fetchWallet();
+  }, [accessEmail, selectedBuyCourse, isCartCheckoutMode]);
 
   const toggleCartCourse = (course: Course, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -112,6 +118,100 @@ export default function MyCoursesView({
   };
 
   const cartTotalPrice = cart.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
+
+  // Direct Claim with Wallet Balance (no bKash Sender or TrxID required)
+  const handleDirectWalletClaim = async () => {
+    const cleanEmail = accessEmail.trim().toLowerCase();
+    if (!cleanEmail) {
+      setCheckoutMessage({ type: 'error', text: 'অনুগ্রহ করে ইমেইল ঠিকানা প্রদান করুন।' });
+      return;
+    }
+
+    const isCartPurchase = isCartCheckoutMode && cart.length > 0;
+    const targetCourses = isCartPurchase ? cart : (selectedBuyCourse ? [selectedBuyCourse] : []);
+    if (targetCourses.length === 0) return;
+
+    const totalPrice = targetCourses.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
+
+    if (userWalletBalance < totalPrice) {
+      setCheckoutMessage({ 
+        type: 'error', 
+        text: `ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই। প্রয়োজনীয়: ৳${totalPrice}, আপনার ব্যালেন্স: ৳${userWalletBalance}` 
+      });
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    setCheckoutMessage(null);
+
+    try {
+      const remainingBalance = userWalletBalance - totalPrice;
+
+      // 1. Update wallet balance
+      const walletRef = doc(db, 'user_wallets', cleanEmail);
+      await setDoc(walletRef, {
+        email: cleanEmail,
+        balance: remainingBalance,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      setUserWalletBalance(remainingBalance);
+
+      // 2. Unlock all target courses directly
+      for (const appCourse of targetCourses) {
+        try {
+          const courseRef = doc(db, 'courses', appCourse.id);
+          const courseSnap = await getDoc(courseRef);
+          if (courseSnap.exists()) {
+            const currentAllowed = courseSnap.data().allowedUsers || [];
+            if (!currentAllowed.includes(cleanEmail)) {
+              await setDoc(courseRef, {
+                allowedUsers: [...currentAllowed, cleanEmail]
+              }, { merge: true });
+            }
+          }
+        } catch (cWriteErr) {
+          console.warn("Course update notice:", cWriteErr);
+        }
+        onImportCourse(appCourse);
+      }
+
+      // 3. Save approved access request record for history
+      const requestId = `req_wallet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      await setDoc(doc(db, 'access_requests', requestId), {
+        id: requestId,
+        courseId: isCartPurchase ? 'multi_cart' : targetCourses[0].id,
+        courseTitle: isCartPurchase ? `Cart Purchase (${targetCourses.length} Courses)` : targetCourses[0].title,
+        courseCode: targetCourses.map(c => c.code || c.id).join(', '),
+        courseIds: targetCourses.map(c => c.id),
+        courseTitles: targetCourses.map(c => c.title),
+        bkashNumber: 'WALLET_BALANCE',
+        email: cleanEmail,
+        trxId: `WALLET_PAY_${Date.now()}`,
+        status: 'approved',
+        price: targetCourses[0].price || 30,
+        totalPrice,
+        createdAt: new Date().toISOString(),
+        requestedBy: user?.email || cleanEmail
+      });
+
+      setCheckoutMessage({
+        type: 'success',
+        text: `ওয়ালেট ব্যালেন্স থেকে ৳${totalPrice} দিয়ে কোর্স সফলভাবে আনলক করা হয়েছে! আপনার অবশিষ্ট ওয়ালেট ব্যালেন্স: ৳${remainingBalance} BDT।`
+      });
+
+      if (isCartPurchase) setCart([]);
+
+    } catch (err: any) {
+      console.error("Error claiming with wallet:", err);
+      setCheckoutMessage({
+        type: 'error',
+        text: err?.message ? `ত্রুটি: ${err.message}` : "Error processing wallet claim."
+      });
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
 
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1083,6 +1183,42 @@ export default function MyCoursesView({
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Direct Wallet Balance Claim Option */}
+                {userWalletBalance > 0 && (
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200/70 rounded-xl space-y-2 text-xs font-light">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-800 text-[11px]">
+                        ওয়ালেট ব্যালেন্স: <strong className="font-mono font-normal text-emerald-700">৳{userWalletBalance} BDT</strong>
+                      </span>
+                      {userWalletBalance >= (isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)) ? (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-light">
+                          পর্যাপ্ত ব্যালেন্স
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-light">
+                          আংশিক ব্যালেন্স
+                        </span>
+                      )}
+                    </div>
+
+                    {userWalletBalance >= (isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)) ? (
+                      <button
+                        type="button"
+                        onClick={handleDirectWalletClaim}
+                        disabled={isSubmittingRequest}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-light text-xs rounded-lg transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>ওয়ালেট দিয়ে ডিরেক্ট ক্লেইম করুন (৳{isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)})</span>
+                      </button>
+                    ) : (
+                      <p className="text-[10px] text-slate-500 font-light leading-tight">
+                        আপনার ওয়ালেটে ৳{userWalletBalance} ব্যালেন্স রয়েছে। নিচে bKash দিয়ে বাকি টাকা পাঠালে রিকুয়েস্ট অটো-ভেরিফাই হবে।
+                      </p>
+                    )}
                   </div>
                 )}
 
