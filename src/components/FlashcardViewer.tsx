@@ -850,7 +850,7 @@ export default function FlashcardViewer({
             {/* Flip Animation Style Selector */}
             <div className="space-y-1.5 col-span-1 sm:col-span-2 pt-2 border-t border-slate-100">
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Card Flip Animation (কার্ড ফ্লিপের এনিমেশন)
+                Card Flip Animation
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                 {[
@@ -934,12 +934,12 @@ export default function FlashcardViewer({
                   Flip Animation
                 </div>
                 {[
-                  { id: 'flip-h', label: '1. Horizontal (3D)', desc: 'সমান্তরাল ৩ডি ফ্লিপ' },
-                  { id: 'flip-v', label: '2. Vertical (3D)', desc: 'উলম্ব ৩ডি ফ্লিপ' },
-                  { id: 'slide', label: '3. Slide & Flip', desc: 'স্লাইড ৩ডি ফ্লিপ' },
-                  { id: 'fade', label: '4. Fade & Flip', desc: 'ফেড ও ফ্লিপ' },
-                  { id: 'zoom', label: '5. Zoom & Flip', desc: 'জুম ৩ডি ফ্লিপ' },
-                  { id: 'shuffle', label: '6. Random Shuffle', desc: 'প্রতি কার্ডে নতুন এনিমেশন' },
+                  { id: 'flip-h', label: '1. Horizontal (3D)', desc: 'Horizontal 3D Flip' },
+                  { id: 'flip-v', label: '2. Vertical (3D)', desc: 'Vertical 3D Flip' },
+                  { id: 'slide', label: '3. Slide & Flip', desc: 'Slide 3D Flip' },
+                  { id: 'fade', label: '4. Fade & Flip', desc: 'Fade & Flip' },
+                  { id: 'zoom', label: '5. Zoom & Flip', desc: 'Zoom 3D Flip' },
+                  { id: 'shuffle', label: '6. Random Shuffle', desc: 'Random per card' },
                 ].map(anim => (
                   <button
                     key={anim.id}
@@ -983,11 +983,8 @@ export default function FlashcardViewer({
       {/* 2. Main Flashcard Canvas Area */}
       <main className="flex-1 overflow-y-auto px-4 py-4 sm:py-6 flex flex-col items-center justify-between max-w-xl mx-auto w-full gap-4">
         
-        {/* Flashcard Stack Stage */}
+        {/* Flashcard Stage */}
         <div className="w-full relative my-auto perspective">
-          {/* Stacked Cards visual depth effect underneath */}
-          <div className="absolute inset-x-6 sm:inset-x-8 bottom-[-14px] h-full bg-indigo-900/40 border border-indigo-500/20 rounded-3xl rotate-2 pointer-events-none z-0"></div>
-          <div className="absolute inset-x-3 sm:inset-x-4 bottom-[-7px] h-full bg-indigo-800/60 border border-indigo-400/30 rounded-3xl -rotate-1 pointer-events-none z-0"></div>
 
           {/* Active Card Container - 3D Inner Wrapper */}
           <div
@@ -1140,6 +1137,7 @@ export default function FlashcardViewer({
                 const place3Label = placeLabels?.place3?.trim();
                 const place4Label = placeLabels?.place4?.trim();
                 const place5Label = placeLabels?.place5?.trim();
+                const place6Label = placeLabels?.place6?.trim();
 
                 const place2Val = currentActiveWord.meaning?.trim();
                 const hasPlace2 = Boolean(place2Val);
@@ -1147,8 +1145,10 @@ export default function FlashcardViewer({
                 const hasPlace3 = Boolean(place3Val);
                 const place4Val = currentActiveWord.extraWord?.trim();
                 const hasPlace4 = Boolean(place4Val);
-                const place5Val = currentActiveWord.synonyms?.trim();
+                const place5Val = (currentActiveWord.synonyms || currentActiveWord.extraMeaning)?.trim();
                 const hasPlace5 = Boolean(place5Val);
+                const place6Val = (currentActiveWord.mnemonic || progress[currentActiveWord.id]?.notes)?.trim();
+                const hasPlace6 = Boolean(place6Val);
 
                 const placeLabelStyle: React.CSSProperties = {
                   fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
@@ -1159,12 +1159,10 @@ export default function FlashcardViewer({
                   letterSpacing: '-0.25px',
                 };
 
-                const seenValues = new Set<string>();
                 const blocks: React.ReactNode[] = [];
 
                 // Block 1: Place 2 (Meaning)
                 if (hasPlace2 && place2Val) {
-                  seenValues.add(place2Val.toLowerCase());
                   blocks.push(
                     <div key="place2" className="text-center w-full">
                       {place2Label && (
@@ -1180,8 +1178,7 @@ export default function FlashcardViewer({
                 }
 
                 // Block 2: Place 3 (Example Sentence / Secondary)
-                if (hasPlace3 && place3Val && !seenValues.has(place3Val.toLowerCase())) {
-                  seenValues.add(place3Val.toLowerCase());
+                if (hasPlace3 && place3Val && place3Val !== place2Val) {
                   blocks.push(
                     <div key="place3" className="w-full text-center space-y-0.5">
                       {place3Label && (
@@ -1197,8 +1194,7 @@ export default function FlashcardViewer({
                 }
 
                 // Block 3: Place 4 (Extra Word / Derivatives)
-                if (hasPlace4 && place4Val && !seenValues.has(place4Val.toLowerCase())) {
-                  seenValues.add(place4Val.toLowerCase());
+                if (hasPlace4 && place4Val && place4Val !== place2Val && place4Val !== place3Val) {
                   blocks.push(
                     <div key="place4" className="w-full text-center space-y-0.5">
                       {place4Label && (
@@ -1214,8 +1210,7 @@ export default function FlashcardViewer({
                 }
 
                 // Block 4: Place 5 (Synonyms / Extra Section 1)
-                if (hasPlace5 && place5Val && !seenValues.has(place5Val.toLowerCase())) {
-                  seenValues.add(place5Val.toLowerCase());
+                if (hasPlace5 && place5Val && place5Val !== place2Val && place5Val !== place3Val && place5Val !== place4Val) {
                   blocks.push(
                     <div key="place5" className="w-full text-center space-y-0.5">
                       {place5Label && (
@@ -1225,6 +1220,22 @@ export default function FlashcardViewer({
                       )}
                       <p className="text-xs font-bold text-emerald-700 text-center">
                         {place5Val}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Block 5: Place 6 (Mnemonic / Notes / Extra Section 2)
+                if (hasPlace6 && place6Val && place6Val !== place2Val && place6Val !== place3Val && place6Val !== place4Val && place6Val !== place5Val) {
+                  blocks.push(
+                    <div key="place6" className="w-full text-center space-y-0.5">
+                      {place6Label && (
+                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                          {place6Label}
+                        </span>
+                      )}
+                      <p className="text-xs font-medium italic text-indigo-600 text-center">
+                        {place6Val}
                       </p>
                     </div>
                   );

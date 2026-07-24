@@ -70,7 +70,7 @@ export default function AnnouncementBanner({ settings }: AnnouncementBannerProps
               rel="noopener noreferrer"
               className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap active:scale-95 ${currentStyle.button}`}
             >
-              <span>{settings.announcementLinkText || 'বিস্তারিত দেখুন'}</span>
+              <span>{settings.announcementLinkText || 'View Details'}</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}

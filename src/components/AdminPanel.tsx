@@ -618,7 +618,11 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           
           const findKey = (candidates: string[], placePrefix?: string) => {
             if (placePrefix) {
-              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':') && !usedKeys.has(k));
+              const placeKey = rowKeys.find(k => {
+                if (usedKeys.has(k)) return false;
+                const cleanK = k.toLowerCase().trim();
+                return new RegExp(`^${placePrefix.toLowerCase()}(\\s*[:_\\-]|\\s*$)`, 'i').test(cleanK);
+              });
               if (placeKey) {
                 usedKeys.add(placeKey);
                 return placeKey;
@@ -627,7 +631,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
             const key = rowKeys.find(k => {
               if (usedKeys.has(k)) return false;
               const cleanK = k.toLowerCase().trim();
-              if (cleanK.startsWith('place1:') || cleanK.startsWith('place2:') || cleanK.startsWith('place3:') || cleanK.startsWith('place4:') || cleanK.startsWith('place5:') || cleanK.startsWith('place6:')) {
+              if (/^place[1-6](\s*[:_\-]|\s*$)/i.test(cleanK)) {
                 return false;
               }
               if (candidates.some(c => cleanK === c)) return true;
@@ -702,7 +706,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
             group,
             word: baseWord,
             meaning: banglaMeaning,
-            synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
+            synonyms,
             extraWord: extraWord,
             extraMeaning: extraMeaning,
             example,
@@ -874,7 +878,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           group,
           word: baseWord,
           meaning: banglaMeaning,
-          synonyms: synonyms || extraWord, // populate both for maximum compatibility with games/cards
+          synonyms,
           extraWord,
           extraMeaning,
           example
@@ -1597,14 +1601,14 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
               {/* Requirement guidelines column checker */}
               <div className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-3 text-xs text-slate-600">
                 <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
-                <div className="flex flex-col space-y-1 text-[11px] font-bold">
-                  <span className="text-rose-600 flex items-center gap-1.5">* <strong className="text-rose-600 font-black">id</strong> (Unique ID)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place1:###</strong> — কার্ডের সামনে প্রধান ডাটা (Front Main Display)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place2:###</strong> — কার্ডের পেছনে প্রধান ডাটা (Back Main Display)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</span>
-                  <span className="text-slate-600 flex items-center gap-1.5">* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</span>
+                <div className="flex flex-col space-y-1">
+                  <span className="text-rose-600 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-rose-600 font-black">id</strong> (Unique ID)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-indigo-600 font-black">place1:###</strong> — Main Front Display</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-indigo-600 font-black">place2:###</strong> — Main Back Display</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-indigo-600 font-black">place3:###</strong> — Back Secondary Display</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-indigo-600 font-black">place4:###</strong> — Front Sub-Header</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-indigo-600 font-black">place5:###</strong> — Back Extra Section 1</span>
+                  <span className="text-slate-600 flex items-center gap-1.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</span>
                 </div>
               </div>
 
@@ -2058,11 +2062,11 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 <div className="flex items-center gap-2">
                   <Megaphone className="w-5 h-5 text-indigo-600" />
                   <h4 className="font-extrabold text-slate-900 text-base">
-                    User Announcement / Ad / Notification Banner (ঘোষণা ও ব্যানার সিস্টেম)
+                    User Announcement & Notification Banner System
                   </h4>
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  ইউজারদের সামনে অ্যাপের উপরে বিশেষ নোটিশ, বিজ্ঞাপন বা ঘোষণার ব্যানার প্রদর্শন করার কন্ট্রোল।
+                <p className="mt-0.5" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>
+                  Control for displaying special notices, announcements, or banner alerts at the top of the application.
                 </p>
               </div>
 
@@ -2085,7 +2089,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   }`}
                 >
                   <Bell className="w-3.5 h-3.5" />
-                  <span>{settings?.announcementEnabled ? 'Active (পাবলিশড)' : 'Disabled (বন্ধ)'}</span>
+                  <span>{settings?.announcementEnabled ? 'Active (Published)' : 'Disabled'}</span>
                 </button>
               </div>
             </div>
@@ -2095,11 +2099,11 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
               {/* Announcement Message */}
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-xs font-extrabold text-slate-700 block">
-                  Announcement / Notice Text (ঘোষণার বিবরণ):
+                  Announcement / Notice Text:
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. 🎉 নতুন কোর্স এবং নতুন ফিচার যুক্ত করা হয়েছে! ৫০% ছাড় পেতে এখনই চেক করুন।"
+                  placeholder="e.g. 🎉 New course updates and features added! Check them out now."
                   value={settings?.announcementText || ''}
                   onChange={(e) => {
                     if (settings && onUpdateSettings) {
@@ -2170,7 +2174,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                         : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}
                   >
-                    {settings?.announcementClosable !== false ? 'Yes (ইউজার ক্লোজ করতে পারবে)' : 'No (স্থায়ী ব্যানার)'}
+                    {settings?.announcementClosable !== false ? 'Yes (User can dismiss)' : 'No (Persistent banner)'}
                   </button>
                 </div>
               </div>
@@ -2178,7 +2182,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
               {/* Action Link & Text */}
               <div className="space-y-1.5">
                 <label className="text-xs font-extrabold text-slate-700 block">
-                  Optional Button Link URL (বাটন লিঙ্ক):
+                  Optional Button Link URL:
                 </label>
                 <input
                   type="text"
@@ -2198,11 +2202,11 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
               <div className="space-y-1.5">
                 <label className="text-xs font-extrabold text-slate-700 block">
-                  Optional Button Label (বাটনের নাম):
+                  Optional Button Label:
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. বিস্তারিত দেখুন"
+                  placeholder="e.g. View Details"
                   value={settings?.announcementLinkText || ''}
                   onChange={(e) => {
                     if (settings && onUpdateSettings) {
@@ -2219,7 +2223,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
             {/* Live Banner Preview */}
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Live Banner Preview (ইউজার যা দেখবে):</span>
+              <span className="block" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>Live Banner Preview:</span>
               {settings?.announcementEnabled ? (
                 <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 flex-wrap ${
                   settings.announcementType === 'warning' ? 'bg-amber-50 text-amber-900 border-amber-200' :
@@ -2229,7 +2233,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 }`}>
                   <div className="flex items-center gap-2.5 text-xs font-bold">
                     <Megaphone className="w-4 h-4 shrink-0" />
-                    <span>{settings.announcementText || 'আপনার ঘোষণা এখানে প্রদর্শিত হবে।'}</span>
+                    <span>{settings.announcementText || 'Your announcement text will appear here.'}</span>
                   </div>
                   {settings.announcementLink && (
                     <a
@@ -2238,13 +2242,13 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                       rel="noopener noreferrer"
                       className="px-3 py-1 bg-white shadow-2xs rounded-lg text-xs font-extrabold border border-black/10 hover:bg-slate-50 transition"
                     >
-                      {settings.announcementLinkText || 'বিস্তারিত দেখুন'}
+                      {settings.announcementLinkText || 'View Details'}
                     </a>
                   )}
                 </div>
               ) : (
-                <div className="p-3 bg-white rounded-lg border border-slate-200 text-slate-400 text-xs font-semibold text-center italic">
-                  ঘোষণা ব্যানার বর্তমানে বন্ধ রয়েছে।
+                <div className="p-3 bg-white rounded-lg border border-slate-200 text-slate-400 text-xs font-semibold text-center italic" style={{ fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif', fontSize: '10px', color: 'oklch(0.704 0.04 256.788)', fontWeight: 500, lineHeight: '10px', letterSpacing: '-0.25px' }}>
+                  Announcement banner is currently disabled.
                 </div>
               )}
             </div>

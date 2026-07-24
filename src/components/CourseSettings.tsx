@@ -51,8 +51,33 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   initialTab,
   initialEditWordName,
 }) => {
+  // Instruction font style as requested by user
+  const settingInstructionStyle: React.CSSProperties = {
+    fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+    fontSize: '10px',
+    color: 'oklch(0.704 0.04 256.788)',
+    fontWeight: 500,
+    lineHeight: '10px',
+    letterSpacing: '-0.25px',
+  };
+
+  const getNormalizedActiveTab = (tab?: string) => {
+    if (tab === 'students' || tab === 'verification') return 'access';
+    if (tab === 'addwords') return 'wordlist';
+    return tab || 'general';
+  };
+
   // Navigation Section (Settings Sidebar style)
-  const [activeTab, setActiveTab] = useState<'general' | 'variables' | 'access' | 'students' | 'wordlist' | 'addwords' | 'verification' | 'blank-questions' | 'ooo-questions' | 'analogy-questions' | 'practice-games'>(initialTab || 'general');
+  const [activeTab, setActiveTab] = useState<string>(() => getNormalizedActiveTab(initialTab));
+  const [accessSubTab, setAccessSubTab] = useState<'access' | 'students' | 'verification'>(() => {
+    if (initialTab === 'students') return 'students';
+    if (initialTab === 'verification') return 'verification';
+    return 'access';
+  });
+  const [wordlistSubTab, setWordlistSubTab] = useState<'wordlist' | 'addwords'>(() => {
+    if (initialTab === 'addwords') return 'addwords';
+    return 'wordlist';
+  });
 
   // --- BLANK QUESTIONS STATES ---
   const [courseBlankQuestions, setCourseBlankQuestions] = useState<BlankQuestion[]>([]);
@@ -223,10 +248,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   };
 
   useEffect(() => {
-    if (activeTab === 'verification') {
+    if (activeTab === 'access' && accessSubTab === 'verification') {
       fetchRequests();
     }
-  }, [activeTab]);
+  }, [activeTab, accessSubTab]);
 
   useEffect(() => {
     if (courseRequests.length > 0 && verifiedPayments.length > 0) {
@@ -906,7 +931,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       ...(course.variableToggles || {})
     });
     setSelectedWordIds(new Set());
-    setActiveTab(initialTab || 'general');
+    const normalized = getNormalizedActiveTab(initialTab);
+    setActiveTab(normalized);
+    if (initialTab === 'students') setAccessSubTab('students');
+    else if (initialTab === 'verification') setAccessSubTab('verification');
+    else if (initialTab === 'access') setAccessSubTab('access');
+
+    if (initialTab === 'addwords') setWordlistSubTab('addwords');
+    else if (initialTab === 'wordlist') setWordlistSubTab('wordlist');
     setHasAutoOpened(false);
   }, [course, initialTab]);
 
@@ -1408,7 +1440,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
           
           const findKey = (candidates: string[], placePrefix?: string) => {
             if (placePrefix) {
-              const placeKey = rowKeys.find(k => k.toLowerCase().trim().startsWith(placePrefix.toLowerCase() + ':') && !usedKeys.has(k));
+              const placeKey = rowKeys.find(k => {
+                if (usedKeys.has(k)) return false;
+                const cleanK = k.toLowerCase().trim();
+                return new RegExp(`^${placePrefix.toLowerCase()}(\\s*[:_\\-]|\\s*$)`, 'i').test(cleanK);
+              });
               if (placeKey) {
                 usedKeys.add(placeKey);
                 return placeKey;
@@ -1417,7 +1453,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
             const key = rowKeys.find(k => {
               if (usedKeys.has(k)) return false;
               const cleanK = k.toLowerCase().trim();
-              if (cleanK.startsWith('place1:') || cleanK.startsWith('place2:') || cleanK.startsWith('place3:') || cleanK.startsWith('place4:') || cleanK.startsWith('place5:') || cleanK.startsWith('place6:')) {
+              if (/^place[1-6](\s*[:_\-]|\s*$)/i.test(cleanK)) {
                 return false;
               }
               if (candidates.some(c => cleanK === c)) return true;
@@ -1544,7 +1580,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               group,
               word: baseWord,
               meaning: banglaMeaning,
-              synonyms: synonyms || extraWord,
+              synonyms,
               extraWord,
               extraMeaning,
               example,
@@ -1745,11 +1781,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     { id: 'general' as const, label: 'Course Identity', icon: Sliders },
     { id: 'variables' as const, label: 'Features & Variables', icon: Settings },
     { id: 'practice-games' as const, label: 'Practice & Games', icon: Gamepad2 },
-    { id: 'access' as const, label: 'Student Access', icon: Users },
-    { id: 'students' as const, label: 'Allowed Students', icon: UserCheck, badge: allowedUsers.length },
-    { id: 'verification' as const, label: 'Auto-Verification', icon: ShieldCheck, badge: verifiedPayments.length },
-    { id: 'wordlist' as const, label: 'Word List & Editing', icon: BookOpen, badge: localWords.length },
-    { id: 'addwords' as const, label: 'Add & Upload Words', icon: PlusCircle },
+    { id: 'access' as const, label: 'Student Access & Verification', icon: Users, badge: (allowedUsers.length + verifiedPayments.length) || undefined },
+    { id: 'wordlist' as const, label: 'Word List & Upload', icon: BookOpen, badge: localWords.length },
     { id: 'blank-questions' as const, label: 'Blank Questions', icon: FileSpreadsheet, badge: courseBlankQuestions.length },
     { id: 'ooo-questions' as const, label: 'Odd One Out', icon: HelpCircle, badge: courseOooQuestions.length },
     { id: 'analogy-questions' as const, label: 'Word Analogy', icon: Shuffle, badge: courseAnalogyQuestions.length },
@@ -1920,7 +1953,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-extrabold text-slate-700 block flex items-center justify-between">
-                    <span>Google Search Auto-Query Format (গুগল সার্চ টেমপ্লেট)</span>
+                    <span>Google Search Auto-Query Format</span>
                     <span className="text-[10px] text-slate-400 font-normal">Default: word meaning</span>
                   </label>
                   <input
@@ -1930,8 +1963,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
                     placeholder="e.g. {word} meaning in Bengali or definition"
                   />
-                  <p className="text-[11px] text-slate-500 font-medium leading-normal pt-0.5">
-                    কোর্সের শব্দের পাশে গুগল বাটনে ক্লিক করলে সার্চবারে অটোমেটিক কী লেখা থাকবে তা সংজ্ঞায়িত করুন। <code className="bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-bold">{'{word}'}</code> ট্যাগ ব্যাবহার করলে সেটি মূল শব্দ দ্বারা রিপ্লেস হবে (যেমন: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">{'{word} meaning in Bengali'}</code>) অথবা শুধু বাড়তি সাফিক্স লিখতে পারেন (যেমন: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">definition and examples</code>)।
+                  <p className="pt-0.5 leading-normal" style={settingInstructionStyle}>
+                    Define what will be automatically typed in the Google search bar when clicking the Google search button beside a word in this course. Using the <code className="bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-bold">{'{word}'}</code> tag replaces it with the target word (e.g. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">{'{word} meaning in Bengali'}</code>) or you can enter suffix keywords (e.g. <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">definition and examples</code>).
                   </p>
                 </div>
 
@@ -2100,68 +2133,113 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               </div>
             )}
 
-            {/* --- SECTION 3: STUDENT ACCESS & PRIVACY SETTINGS --- */}
+            {/* --- SECTION 3: STUDENT ACCESS & VERIFICATION --- */}
             {activeTab === 'access' && (
               <div className="space-y-5 animate-fadeIn">
-                <div className="border-b border-slate-100 pb-3 mb-2">
-                  <h4 className="font-extrabold text-slate-900 text-sm">Student Access & Enroll Security</h4>
+                {/* Sub-tabs bar */}
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-2 overflow-x-auto scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setAccessSubTab('access')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      accessSubTab === 'access' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Student Access Mode</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccessSubTab('students')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      accessSubTab === 'students' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>Allowed Students</span>
+                    {allowedUsers.length > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${accessSubTab === 'students' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {allowedUsers.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccessSubTab('verification')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      accessSubTab === 'verification' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Auto-Verification</span>
+                    {verifiedPayments.length > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${accessSubTab === 'verification' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                        {verifiedPayments.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
-                {/* Switch list */}
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-4">
-                  {/* Default Course */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="text-xs font-extrabold text-slate-800 block">Set as Default Course for All Users</span>
-                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, all registered users will see this course automatically on their dashboard.</span>
+                {accessSubTab === 'access' && (
+                  <div className="space-y-5 animate-fadeIn">
+                    <div className="border-b border-slate-100 pb-3 mb-2">
+                      <h4 className="font-extrabold text-slate-900 text-sm">Student Access & Enroll Security</h4>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsDefault(!isDefault)}
-                      className="text-indigo-600 hover:text-indigo-700 transition cursor-pointer active:scale-95"
-                    >
-                      {isDefault ? (
-                        <ToggleRight className="w-10 h-10 text-indigo-600" />
-                      ) : (
-                        <ToggleLeft className="w-10 h-10 text-slate-300" />
-                      )}
-                    </button>
-                  </div>
 
-                  {/* Restricted access */}
-                  <div className="border-t border-slate-200/50 pt-3.5 flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="text-xs font-extrabold text-slate-800 block">Restricted Access (Restricted Course)</span>
-                      <span className="text-[10px] text-slate-450 font-medium block leading-normal">If enabled, only registered students in the allowed list can access and enroll in this course.</span>
+                    {/* Switch list */}
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-4">
+                      {/* Default Course */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <span className="text-xs font-extrabold text-slate-800 block">Set as Default Course for All Users</span>
+                          <span className="block mt-1 leading-relaxed" style={settingInstructionStyle}>If enabled, all registered users will see this course automatically on their dashboard.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsDefault(!isDefault)}
+                          className="text-indigo-600 hover:text-indigo-700 transition cursor-pointer active:scale-95"
+                        >
+                          {isDefault ? (
+                            <ToggleRight className="w-10 h-10 text-indigo-600" />
+                          ) : (
+                            <ToggleLeft className="w-10 h-10 text-slate-300" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Restricted access */}
+                      <div className="border-t border-slate-200/50 pt-3.5 flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <span className="text-xs font-extrabold text-slate-800 block">Restricted Access (Restricted Course)</span>
+                          <span className="block mt-1 leading-relaxed" style={settingInstructionStyle}>If enabled, only registered students in the allowed list can access and enroll in this course.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsRestricted(!isRestricted)}
+                          className="text-indigo-600 hover:text-indigo-700 transition cursor-pointer active:scale-95"
+                        >
+                          {isRestricted ? (
+                            <ToggleRight className="w-10 h-10 text-indigo-600" />
+                          ) : (
+                            <ToggleLeft className="w-10 h-10 text-slate-300" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsRestricted(!isRestricted)}
-                      className="text-indigo-600 hover:text-indigo-700 transition cursor-pointer active:scale-95"
-                    >
-                      {isRestricted ? (
-                        <ToggleRight className="w-10 h-10 text-indigo-600" />
-                      ) : (
-                        <ToggleLeft className="w-10 h-10 text-slate-300" />
-                      )}
-                    </button>
-                  </div>
-                </div>
 
-                <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs text-indigo-950 flex items-start gap-2.5 leading-relaxed font-semibold">
-                  <AlertCircle className="w-4.5 h-4.5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span>Access Configuration Guideline</span>
-                    <p className="font-normal text-[11px] text-indigo-900 mt-0.5">
-                      To manage allowed students or configure their individual access expiration dates, please switch to the <strong className="font-extrabold text-indigo-950">Allowed Students</strong> menu tab in the sidebar on the left. The student roster remains fully preserved regardless of whether this course is currently public or restricted.
-                    </p>
+                    <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-xs text-indigo-950 flex items-start gap-2.5 leading-relaxed font-semibold">
+                      <AlertCircle className="w-4.5 h-4.5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span>Access Configuration Guideline</span>
+                        <p className="mt-0.5" style={settingInstructionStyle}>
+                          To manage allowed students or configure their individual access expiration dates, please switch to the <strong className="font-extrabold text-indigo-950">Allowed Students</strong> tab above. The student roster remains fully preserved regardless of whether this course is currently public or restricted.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* --- SECTION 3.5: ALLOWED STUDENTS LIST & EXPIRY (NEW) --- */}
-            {activeTab === 'students' && (
+                {accessSubTab === 'students' && (
               <div className="space-y-5 animate-fadeIn">
                 <div className="border-b border-slate-100 pb-3 mb-2 flex items-center justify-between">
                   <h4 className="font-extrabold text-slate-900 text-sm">Allowed Students Access & Expiry Management</h4>
@@ -2469,15 +2547,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               </div>
             )}
 
-            {/* --- SECTION: AUTO-VERIFICATION PAYMENTS --- */}
-            {activeTab === 'verification' && (
-              <div className="space-y-6 animate-fadeIn text-slate-700 flex-1 flex flex-col min-h-0">
-                <div className="border-b border-slate-100 pb-3 mb-2">
-                  <h4 className="font-extrabold text-slate-900 text-sm">bKash Auto-Verification Gateway</h4>
-                  <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
-                    Store mobile numbers and transaction IDs (TrxID) of students who have completed payments. Students' access requests with matching details will be automatically approved.
-                  </p>
-                </div>
+                {accessSubTab === 'verification' && (
+                  <div className="space-y-6 animate-fadeIn text-slate-700 flex-1 flex flex-col min-h-0">
+                    <div className="border-b border-slate-100 pb-3 mb-2">
+                      <h4 className="font-extrabold text-slate-900 text-sm">bKash Auto-Verification Gateway</h4>
+                      <p className="mt-1 leading-relaxed" style={settingInstructionStyle}>
+                        Store mobile numbers and transaction IDs (TrxID) of students who have completed payments. Students' access requests with matching details will be automatically approved.
+                      </p>
+                    </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 overflow-y-auto pb-4">
                   {/* Left Column: Form & Import */}
@@ -2767,14 +2844,45 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
 
-            {/* --- SECTION 4: WORD DIRECTORY & INDIVIDUAL EDIT --- */}
+            {/* --- SECTION 4: WORD LIST & UPLOAD WORDS --- */}
             {activeTab === 'wordlist' && (
-              <div className="space-y-4 animate-fadeIn">
-                <div className="border-b border-slate-100 pb-3 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">Word Directory & Individual Editing</h4>
-                  </div>
+              <div className="space-y-5 animate-fadeIn">
+                {/* Sub-tabs header */}
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-2 overflow-x-auto scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setWordlistSubTab('wordlist')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      wordlistSubTab === 'wordlist' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Word Directory & Editing</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${wordlistSubTab === 'wordlist' ? 'bg-indigo-800 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                      {localWords.length}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWordlistSubTab('addwords')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                      wordlistSubTab === 'addwords' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Add & Upload Words</span>
+                  </button>
+                </div>
+
+                {wordlistSubTab === 'wordlist' && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="border-b border-slate-100 pb-3 mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-extrabold text-slate-900 text-sm">Word Directory & Individual Editing</h4>
+                      </div>
 
                   <div className="flex items-center gap-2">
                     <button
@@ -2876,10 +2984,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                 <td className="px-4 py-2 text-slate-600 font-bold">{w.meaning}</td>
                                 <td className="px-4 py-2 text-center"><span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black text-[10px]">{w.group}</span></td>
                                 <td className="px-4 py-2 text-slate-500 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
-                                  {w.synonyms && <span className="block truncate"><strong className="text-slate-700 font-bold">{localPlaceLabels.place3 || 'place3'}:</strong> {w.synonyms}</span>}
+                                  {w.example && <span className="block truncate"><strong className="text-slate-700 font-bold">{localPlaceLabels.place3 || 'place3'}:</strong> {w.example}</span>}
                                   {w.extraWord && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place4 || 'place4'}:</strong> {w.extraWord}</span>}
-                                  {w.extraMeaning && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place5 || 'place5'}:</strong> {w.extraMeaning}</span>}
-                                  {(w.mnemonic || w.example) && <span className="block truncate mt-0.5 text-indigo-600 font-semibold"><strong className="text-indigo-500 font-bold">{localPlaceLabels.place6 || 'place6'}:</strong> {w.mnemonic || w.example}</span>}
+                                  {(w.synonyms || w.extraMeaning) && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place5 || 'place5'}:</strong> {w.synonyms || w.extraMeaning}</span>}
+                                  {w.mnemonic && <span className="block truncate mt-0.5 text-indigo-600 font-semibold"><strong className="text-indigo-500 font-bold">{localPlaceLabels.place6 || 'place6'}:</strong> {w.mnemonic}</span>}
                                 </td>
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
@@ -2938,15 +3046,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </button>
                   </div>
                 )}
-              </div>
-            )}
+                  </div>
+                )}
 
-            {/* --- SECTION 5: ADD NEW WORDS (SINGLE OR EXCEL) --- */}
-            {activeTab === 'addwords' && (
-              <div className="space-y-6 animate-fadeIn">
-                <div className="border-b border-slate-100 pb-3 mb-2">
-                  <h4 className="font-extrabold text-slate-900 text-sm">Add Words & Upload Excel Spreadsheets</h4>
-                </div>
+                {wordlistSubTab === 'addwords' && (
+                  <div className="space-y-6 animate-fadeIn">
+                    <div className="border-b border-slate-100 pb-3 mb-2">
+                      <h4 className="font-extrabold text-slate-900 text-sm">Add Words & Upload Excel Spreadsheets</h4>
+                    </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   
@@ -3096,15 +3203,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         <span className="text-xs font-black text-slate-800">2. Bulk Import Excel</span>
                       </div>
 
-                      <div className="text-[11px] text-slate-500 leading-relaxed mt-2 font-medium space-y-1">
-                        <p className="font-extrabold text-slate-700">Excel Column Guidelines:</p>
-                        <p>* <strong className="text-rose-600 font-extrabold">id</strong> (Unique ID)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place1:###</strong> — কার্ডের সামনে প্রধান ডাটা (Front Main Display)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place2:###</strong> — কার্ডের পেছনে প্রধান ডাটা (Back Main Display)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</p>
-                        <p>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</p>
+                      <div className="leading-relaxed mt-2 space-y-1">
+                        <p className="font-extrabold text-slate-700 text-xs">Excel Column Guidelines:</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-rose-600 font-extrabold">id</strong> (Unique ID)</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-indigo-600 font-extrabold">place1:###</strong> — Front Main Display</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-indigo-600 font-extrabold">place2:###</strong> — Back Main Display</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — Back Secondary Display</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — Front Sub-Header</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — Back Extra Section 1</p>
+                        <p style={settingInstructionStyle}>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</p>
                       </div>
 
                       {excelError && (
@@ -3151,6 +3258,8 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        )}
 
             {activeTab === 'blank-questions' && (
               <div className="space-y-6 animate-fadeIn">
