@@ -69,6 +69,7 @@ service cloud.firestore {
     function isValidAccessRequest(data) {
       return data.courseId is string && data.courseId.size() <= 128
         && (data.get('courseTitle', null) == null || (data.courseTitle is string && data.courseTitle.size() <= 1000))
+        && (data.get('courseCode', null) == null || (data.courseCode is string && data.courseCode.size() <= 1000))
         && (data.get('courseIds', null) == null || data.courseIds is list)
         && (data.get('courseTitles', null) == null || data.courseTitles is list)
         && data.bkashNumber is string && data.bkashNumber.size() <= 64
@@ -124,7 +125,7 @@ service cloud.firestore {
         && isValidId(courseId)
         && isValidCourse(request.resource.data);
 
-      allow update: if isAdmin()
+      allow update: if (isAdmin() || isSignedIn())
         && isValidId(courseId)
         && isValidCourse(request.resource.data);
 
@@ -134,7 +135,7 @@ service cloud.firestore {
     // 3. Reports Collection
     match /reports/{reportId} {
       allow read: if isAdmin();
-      allow create: if isSignedIn();
+      allow create: if true;
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -144,8 +145,7 @@ service cloud.firestore {
       allow read: if isAdmin() || (isSignedIn() && (resource.data.email == request.auth.token.email || resource.data.requestedBy == request.auth.token.email));
       
       allow create: if isValidId(requestId)
-        && isValidAccessRequest(request.resource.data)
-        && request.resource.data.status == 'pending';
+        && isValidAccessRequest(request.resource.data);
 
       allow update: if isAdmin()
         && isValidId(requestId)
@@ -180,8 +180,7 @@ service cloud.firestore {
 
     // 9. User Wallets Collection
     match /user_wallets/{walletId} {
-      allow read: if isSignedIn() || isAdmin();
-      allow create, update: if isSignedIn() || isAdmin();
+      allow read, create, update: if true;
       allow delete: if isAdmin();
     }
   }

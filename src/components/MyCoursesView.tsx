@@ -160,9 +160,14 @@ export default function MyCoursesView({
       const totalPrice = targetCourses.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
 
       // --- BKASH AUTO-VERIFICATION GATEWAY & WALLET ALLOCATION ---
+      let existingWalletBalance = 0;
       let walletRef = doc(db, 'user_wallets', cleanEmail.toLowerCase());
-      let walletSnap = await getDoc(walletRef);
-      let existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+      try {
+        let walletSnap = await getDoc(walletRef);
+        existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+      } catch (wReadErr) {
+        console.warn("Wallet read notice:", wReadErr);
+      }
 
       // 1. Fetch global verified payments from central system_settings
       let globalVps: { bkashNumber: string; trxId: string; amount?: number }[] = [];
@@ -172,7 +177,7 @@ export default function MyCoursesView({
           globalVps = globalVpSnap.data().verifiedPayments || [];
         }
       } catch (err) {
-        console.error("Error fetching global verified payments:", err);
+        console.warn("Global verified payments check notice:", err);
       }
 
       // Find matching verified payment entry
@@ -222,27 +227,35 @@ export default function MyCoursesView({
 
       // Save remaining wallet balance
       if (matchedVp || existingWalletBalance > 0) {
-        await setDoc(walletRef, {
-          email: cleanEmail.toLowerCase(),
-          bkashNumber: cleanSender,
-          balance: remainingBalance,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-        setUserWalletBalance(remainingBalance);
+        try {
+          await setDoc(walletRef, {
+            email: cleanEmail.toLowerCase(),
+            bkashNumber: cleanSender,
+            balance: remainingBalance,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+          setUserWalletBalance(remainingBalance);
+        } catch (wWriteErr) {
+          console.warn("Wallet write notice:", wWriteErr);
+        }
       }
 
       // Automatically activate approved courses
       if (approvedCourses.length > 0) {
         for (const appCourse of approvedCourses) {
-          const courseRef = doc(db, 'courses', appCourse.id);
-          const courseSnap = await getDoc(courseRef);
-          if (courseSnap.exists()) {
-            const currentAllowed = courseSnap.data().allowedUsers || [];
-            if (!currentAllowed.includes(cleanEmail.toLowerCase())) {
-              await setDoc(courseRef, {
-                allowedUsers: [...currentAllowed, cleanEmail.toLowerCase()]
-              }, { merge: true });
+          try {
+            const courseRef = doc(db, 'courses', appCourse.id);
+            const courseSnap = await getDoc(courseRef);
+            if (courseSnap.exists()) {
+              const currentAllowed = courseSnap.data().allowedUsers || [];
+              if (!currentAllowed.includes(cleanEmail.toLowerCase())) {
+                await setDoc(courseRef, {
+                  allowedUsers: [...currentAllowed, cleanEmail.toLowerCase()]
+                }, { merge: true });
+              }
             }
+          } catch (cWriteErr) {
+            console.warn("Course update notice:", cWriteErr);
           }
           onImportCourse(appCourse);
         }
@@ -1017,27 +1030,24 @@ export default function MyCoursesView({
       {/* 5. Course Access Request Modal (Single or Multi-Course Cart Checkout) */}
       <AnimatePresence>
         {(selectedBuyCourse || (isCartCheckoutMode && cart.length > 0)) && (
-          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="course-hub-bkash-modal">
+          <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center z-50 p-4" id="course-hub-bkash-modal">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ type: 'spring', duration: 0.3 }}
-              className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col border border-slate-100"
-              style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-xl relative max-h-[90vh] flex flex-col border border-slate-200"
+              style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
             >
-              {/* Header */}
-              <div className="p-5 border-b border-slate-150 bg-slate-50 flex justify-between items-center">
+              {/* Minimal Header */}
+              <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center bg-white">
                 <div>
-                  <h3 className="font-black text-slate-850 text-base flex items-center gap-2">
-                    <span className="p-1 bg-pink-500 rounded-lg text-white font-black text-xs font-mono px-2 py-0.5">bKash</span>
-                    {isCartCheckoutMode && cart.length > 0 
-                      ? `Cart Bundle Checkout (${cart.length} Courses)`
-                      : 'Course Access Request'}
+                  <h3 className="font-light text-slate-900 text-sm tracking-tight flex items-center gap-1.5">
+                    <span className="font-extrabold text-pink-600 text-xs">bKash</span> Payment
                   </h3>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5 truncate max-w-[260px]">
+                  <p className="text-[11px] text-slate-400 font-light truncate max-w-[220px]">
                     {isCartCheckoutMode && cart.length > 0
-                      ? cart.map(c => c.title).join(', ')
+                      ? `${cart.length} Courses Bundle`
                       : selectedBuyCourse?.title}
                   </p>
                 </div>
@@ -1046,125 +1056,122 @@ export default function MyCoursesView({
                     setSelectedBuyCourse(null);
                     setIsCartCheckoutMode(false);
                   }}
-                  className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                  className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Form Content */}
-              <form onSubmit={handleRequestAccess} className="p-6 overflow-y-auto space-y-4 flex-1">
-                {/* Cart Courses Breakdown Summary */}
+              <form onSubmit={handleRequestAccess} className="p-5 overflow-y-auto space-y-3.5 flex-1 text-slate-700">
+                {/* Cart Courses Summary */}
                 {isCartCheckoutMode && cart.length > 0 && (
-                  <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-2xl space-y-2">
-                    <span className="text-[10px] font-black uppercase text-indigo-700 tracking-wider block">Cart Items Summary:</span>
-                    <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-xs font-light">
+                    <div className="flex justify-between font-normal text-slate-800 pb-1 border-b border-slate-200/60 text-[11px]">
+                      <span>Items:</span>
+                      <span className="font-mono">৳{cartTotalPrice} BDT</span>
+                    </div>
+                    <div className="space-y-0.5 max-h-24 overflow-y-auto pt-0.5 text-[11px] text-slate-500">
                       {cart.map((c, idx) => (
-                        <div key={c.id} className="flex items-center justify-between text-xs font-bold text-slate-800">
-                          <span className="truncate pr-2">{idx + 1}. {c.title}</span>
-                          <span className="font-mono text-indigo-700 shrink-0">৳{(c.price && c.price > 0) ? c.price : 30} BDT</span>
+                        <div key={c.id} className="flex justify-between truncate">
+                          <span className="truncate pr-1">{idx + 1}. {c.title}</span>
+                          <span className="font-mono shrink-0">৳{(c.price && c.price > 0) ? c.price : 30}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Instructions Box */}
-                <div className="p-4 bg-pink-50 border border-pink-100 rounded-2xl space-y-2 text-xs">
-                  <p className="font-black text-pink-700">bKash Send Money Instructions:</p>
-                  <p className="font-semibold text-slate-700 leading-relaxed">
-                    Send <strong className="text-pink-600 font-black text-sm">
-                      ৳{isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)} BDT
-                    </strong> via Send Money to the bKash Personal number below, then fill out and submit this form.
+                {/* Minimal Instruction & Copyable Number */}
+                <div className="p-3 bg-pink-50/50 border border-pink-100/80 rounded-xl space-y-2 text-xs font-light">
+                  <p className="text-slate-600 text-[11px] leading-snug">
+                    Send Money <strong className="font-normal text-pink-600">৳{isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)} BDT</strong> to bKash Personal:
                   </p>
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-pink-100 rounded-xl mt-1.5">
-                    <div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">bKash Personal Number:</p>
-                      <p className="font-black text-slate-800 text-sm font-mono">
-                        {(selectedBuyCourse?.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202'}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between p-2 bg-white rounded-lg border border-pink-100">
+                    <span className="font-mono font-normal text-slate-800 text-xs tracking-wider">
+                      {(selectedBuyCourse?.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202'}
+                    </span>
                     <button
                       type="button"
                       onClick={() => {
                         const num = (selectedBuyCourse?.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202';
                         navigator.clipboard.writeText(num);
-                        alert('bKash number copied to clipboard!');
+                        alert('bKash number copied!');
                       }}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-indigo-600 font-extrabold text-[10px] flex items-center gap-1 cursor-pointer border border-indigo-100 shadow-2xs"
+                      className="px-2 py-0.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-light text-[10px] rounded border border-slate-200 transition cursor-pointer flex items-center gap-1"
                     >
-                      <Copy className="w-3.5 h-3.5" /> Copy Number
+                      <Copy className="w-3 h-3" /> Copy
                     </button>
                   </div>
                 </div>
 
                 {checkoutMessage && (
-                  <div className={`p-4 rounded-2xl text-xs font-bold leading-relaxed flex items-start gap-2 ${
+                  <div className={`p-3 rounded-xl text-xs font-light leading-snug flex items-start gap-2 ${
                     checkoutMessage.type === 'success' 
                       ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' 
                       : 'bg-rose-50 border border-rose-100 text-rose-800'
                   }`}>
                     {checkoutMessage.type === 'success' ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
                     ) : (
-                      <ShieldAlert className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-600 mt-0.5 shrink-0" />
                     )}
                     <span>{checkoutMessage.text}</span>
                   </div>
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">
-                    1. bKash Sender Number (Mobile number used for payment) <span className="text-rose-500">*</span>
+                  <label className="text-[10px] font-light text-slate-500 block">
+                    bKash Number <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={bkashSender}
                     onChange={(e) => setBkashSender(e.target.value)}
-                    placeholder="e.g. 01712345678"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                    placeholder="017XXXXXXXX"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-pink-400 outline-none text-xs font-light transition text-slate-800"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">
-                    2. Email Address (Account email to unlock course) <span className="text-rose-500">*</span>
+                  <label className="text-[10px] font-light text-slate-500 block">
+                    Email Address <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="email"
                     required
                     value={accessEmail}
                     onChange={(e) => setAccessEmail(e.target.value)}
-                    placeholder="e.g. student@gmail.com"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                    placeholder="student@gmail.com"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-pink-400 outline-none text-xs font-light transition text-slate-800"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">
-                    3. Transaction ID (TrxID) <span className="text-rose-500">*</span>
+                  <label className="text-[10px] font-light text-slate-500 block">
+                    Transaction ID (TrxID) <span className="text-rose-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={trxId}
                     onChange={(e) => setTrxId(e.target.value)}
-                    placeholder="e.g. K8L9O0P1Q2"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800 font-mono"
+                    placeholder="K8L9O0P1Q2"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-pink-400 outline-none text-xs font-light transition text-slate-800 font-mono"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmittingRequest}
-                  className="w-full py-3 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white font-black text-xs rounded-xl transition cursor-pointer shadow-md shadow-pink-600/10"
+                  className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white font-light text-xs rounded-xl transition cursor-pointer shadow-xs mt-1"
                 >
                   {isSubmittingRequest 
-                    ? 'Submitting Request...' 
+                    ? 'Submitting...' 
                     : isCartCheckoutMode && cart.length > 0 
-                    ? `Submit Request for ${cart.length} Courses (৳${cartTotalPrice})` 
-                    : 'Submit Access Request'}
+                    ? `Submit Request (৳${cartTotalPrice})` 
+                    : 'Submit Request'}
                 </button>
               </form>
             </motion.div>
