@@ -1650,157 +1650,156 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       )}
 
       {activeAdminTab === 'courses' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Course Management Left Panel */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-5 lg:col-span-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
-            <div className="flex items-center justify-between">
+        <div className="space-y-6">
+          {/* Course Management Table - Full Width Excel Sheet Layout */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/60 shadow-sm space-y-4 w-full" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-extrabold text-slate-900 text-base">Course Management List</h3>
-                <p className="text-xs text-slate-400 font-medium">Minimal course list overview</p>
+                <h3 className="font-extrabold text-slate-900 text-base">Course Management Table</h3>
+                <p className="text-xs text-slate-400 font-medium">Spreadsheet view of all created & default courses</p>
               </div>
-              <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-mono">
+              <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-full font-mono">
                 {1 + filteredCustomCoursesList.length} Courses
               </span>
             </div>
 
-            <div className="space-y-3">
-              {/* Combine Default GRE + Custom Courses into a clean minimal list */}
-              {[defaultGreCourse, ...filteredCustomCoursesList].map((c) => {
-                const isDefault = c.id.trim().toLowerCase() === 'gre';
-                const wordCount = c.words?.length || (isDefault ? 1110 : 0);
-                const userCount = getCourseUserCount(c.id);
+            {/* Excel Table Grid Container */}
+            <div className="overflow-x-auto border border-slate-300 rounded-xl shadow-2xs">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-300 text-[11px] uppercase tracking-wider font-mono">
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-16">ID</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300">Title & Description</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-20">Words</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-20">Users</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-20">Price</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-16">Access</th>
+                    <th className="py-2.5 px-3 border-r border-slate-300 text-center w-24">Order</th>
+                    <th className="py-2.5 px-3 text-center w-36">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {[defaultGreCourse, ...filteredCustomCoursesList].map((c) => {
+                    const isDefault = c.id.trim().toLowerCase() === 'gre';
+                    const wordCount = c.words?.length || (isDefault ? 1110 : 0);
+                    const userCount = getCourseUserCount(c.id);
+                    const price = (c.price && c.price > 0) ? c.price : 30;
 
-                return (
-                  <div 
-                    key={c.id} 
-                    onClick={() => handleOpenEditModal(c)}
-                    className="p-4 border border-slate-200/80 hover:border-indigo-400 rounded-xl bg-white hover:bg-indigo-50/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition shadow-2xs hover:shadow-xs cursor-pointer group"
-                    title="Click to view & edit course settings"
-                  >
-                    {/* Course Name & Id */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition truncate">
-                          {c.title}
-                        </h4>
-                        <span className="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono font-bold uppercase">
+                    return (
+                      <tr key={c.id} className="hover:bg-slate-50 transition border-b border-slate-200">
+                        {/* Column 1: ID */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 font-mono font-extrabold text-indigo-700 text-center uppercase">
                           {c.id}
-                        </span>
-                        {isDefault && (
-                          <span className="text-[9px] text-indigo-600 bg-indigo-100/70 px-1.5 py-0.5 rounded font-black uppercase">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 line-clamp-1 font-normal">
-                        {c.description || 'No description provided'}
-                      </p>
-                    </div>
+                        </td>
 
-                    {/* Stats & Badges: Words, Users, Restricted */}
-                    <div className="flex items-center gap-3 sm:gap-4 shrink-0 flex-wrap text-xs">
-                      {/* Word Count */}
-                      <div className="flex items-center gap-1 text-slate-700 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-150">
-                        <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                        <span className="font-semibold">{wordCount}</span>
-                        <span className="text-slate-400 text-[10px]">words</span>
-                      </div>
+                        {/* Column 2: Title & Description */}
+                        <td className="py-2.5 px-3 border-r border-slate-200">
+                          <div className="font-bold text-slate-900 leading-tight">
+                            {c.title} {isDefault && <span className="text-[10px] font-mono font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded ml-1 border border-indigo-200">Default</span>}
+                          </div>
+                          {c.description && (
+                            <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5 font-normal">
+                              {c.description}
+                            </div>
+                          )}
+                        </td>
 
-                      {/* Enrolled User Count */}
-                      <div className="flex items-center gap-1 text-slate-700 font-medium bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-150">
-                        <Users className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="font-semibold">{userCount}</span>
-                        <span className="text-slate-400 text-[10px]">users</span>
-                      </div>
+                        {/* Column 3: Words */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
+                          {wordCount}
+                        </td>
 
-                      {/* Restricted Status */}
-                      <div>
-                        {c.isRestricted ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-[11px] font-bold">
-                            <Lock className="w-3 h-3 text-amber-600" />
-                            <span>Restricted</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-bold">
-                            <CheckCircle className="w-3 h-3 text-emerald-600" />
-                            <span>Public</span>
-                          </span>
-                        )}
-                      </div>
+                        {/* Column 4: Users */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-800">
+                          {userCount}
+                        </td>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        {/* Course Sorting Order Buttons */}
-                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200" title="Sort/Reorder Course for all users">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMoveCourseOrder(c.id, -1, [defaultGreCourse, ...filteredCustomCoursesList]);
-                            }}
-                            className="p-1 hover:bg-white text-slate-600 hover:text-indigo-600 rounded transition cursor-pointer"
-                            title="Move Course Up"
-                          >
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="text-[10px] font-mono font-black text-indigo-700 px-1">
-                            #{c.order !== undefined ? c.order : '0'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleMoveCourseOrder(c.id, 1, [defaultGreCourse, ...filteredCustomCoursesList]);
-                            }}
-                            className="p-1 hover:bg-white text-slate-600 hover:text-indigo-600 rounded transition cursor-pointer"
-                            title="Move Course Down"
-                          >
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        {/* Column 5: Price */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-slate-900">
+                          ৳{price} BDT
+                        </td>
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigator.clipboard.writeText(c.id);
-                            alert(`Course share code "${c.id}" copied to clipboard!`);
-                          }}
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition cursor-pointer"
-                          title="Copy Course Code"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                        {!isDefault && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCourse(c.id);
-                            }}
-                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition"
-                            title="Delete Course"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                        {/* Column 6: Access Status (Minimal Black Icon) */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                          {c.isRestricted ? (
+                            <Lock className="w-4 h-4 text-slate-900 mx-auto" title="Restricted" />
+                          ) : (
+                            <Globe className="w-4 h-4 text-slate-900 mx-auto" title="Public" />
+                          )}
+                        </td>
+
+                        {/* Column 7: Minimal Order Controls */}
+                        <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                          <div className="inline-flex items-center justify-center gap-0.5 font-mono text-xs">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveCourseOrder(c.id, -1, [defaultGreCourse, ...filteredCustomCoursesList])}
+                              className="p-1 hover:bg-slate-100 text-slate-700 hover:text-slate-950 rounded transition cursor-pointer"
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="font-mono font-bold text-slate-900 px-0.5 text-xs">
+                              #{c.order !== undefined ? c.order : '0'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveCourseOrder(c.id, 1, [defaultGreCourse, ...filteredCustomCoursesList])}
+                              className="p-1 hover:bg-slate-100 text-slate-700 hover:text-slate-950 rounded transition cursor-pointer"
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Column 8: Actions */}
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1 font-sans">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(c)}
+                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-bold transition cursor-pointer border border-indigo-200/80"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(c.id);
+                                alert(`Course Code "${c.id}" copied to clipboard!`);
+                              }}
+                              className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold transition cursor-pointer border border-slate-200"
+                            >
+                              Copy
+                            </button>
+                            {!isDefault && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCourse(c.id)}
+                                className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded text-[11px] font-bold transition cursor-pointer border border-rose-200/80"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Right Column: Upload Form */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-5">
-              <div>
-                <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                  <PlusCircle className="w-5 h-5 text-indigo-600" />
-                  <span>Upload & Build Course</span>
-                </h3>
-              </div>
+          {/* Bottom Section: Upload Form (Full Width) */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-5 w-full">
+            <div>
+              <h3 className="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-indigo-600" />
+                <span>Upload & Build Course</span>
+              </h3>
+            </div>
 
               {/* Course Info Form Inputs */}
               <div className="space-y-4">
@@ -2072,7 +2071,6 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
               )}
             </div>
           </div>
-        </div>
       )}
 
       {activeAdminTab === 'reports' && (

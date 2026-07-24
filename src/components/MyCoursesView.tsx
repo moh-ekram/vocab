@@ -314,20 +314,188 @@ export default function MyCoursesView({
   };
 
   // Filter courses based on selections
-  const filteredCourses = allCourses.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const isEnrolled = isCourseEnrolled(c.id, enrolledCourseIds);
-    const isUserAllowed = isCourseAccessible(c, enrolledCourseIds, user?.email);
-
-    if (filter === 'enrolled') {
-      return matchesSearch && (isEnrolled || isUserAllowed);
-    } else if (filter === 'locked') {
-      return matchesSearch && !isUserAllowed;
-    }
-    return matchesSearch;
+  const matchingSearchCourses = allCourses.filter(c => {
+    return c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           c.description.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  const enrolledCoursesList = matchingSearchCourses.filter(c => isCourseAccessible(c, enrolledCourseIds, user?.email));
+  const lockedCoursesList = matchingSearchCourses.filter(c => !isCourseAccessible(c, enrolledCourseIds, user?.email));
+
+  // Sort enrolled courses so active course is ALWAYS FIRST at the top left position
+  const activeCourseObj = enrolledCoursesList.find(c => c.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase());
+  const otherEnrolledCourses = enrolledCoursesList.filter(c => c.id.trim().toLowerCase() !== activeCourseId?.trim().toLowerCase());
+  const sortedEnrolledCourses = activeCourseObj ? [activeCourseObj, ...otherEnrolledCourses] : enrolledCoursesList;
+
+  const renderCourseCard = (course: Course) => {
+    const isActive = course.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase();
+    const isUserAllowed = isCourseAccessible(course, enrolledCourseIds, user?.email);
+    const wordsCount = course.words?.length || 0;
+
+    return (
+      <motion.div
+        key={course.id}
+        layout
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -4 }}
+        onClick={() => setSelectedDetailCourse(course)}
+        className={`group relative rounded-3xl transition-all duration-300 cursor-pointer flex flex-col justify-between ${
+          isActive 
+            ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 p-[3px] shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/25' 
+            : isUserAllowed
+            ? 'bg-emerald-200/80 hover:bg-emerald-300 p-[2px] shadow-2xs hover:shadow-md'
+            : 'bg-gradient-to-r from-orange-300 via-amber-300 to-orange-400 p-[2px] shadow-2xs hover:shadow-lg'
+        }`}
+      >
+        {/* Inner Card Container */}
+        <div className={`w-full h-full rounded-[22px] p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${
+          isActive 
+            ? 'bg-gradient-to-br from-emerald-700 via-teal-800 to-emerald-900 text-white' 
+            : isUserAllowed
+            ? 'bg-emerald-50/90 hover:bg-emerald-100/90 text-slate-900 border border-emerald-200/80'
+            : 'bg-orange-50/80 hover:bg-orange-100/90 text-slate-900 border border-orange-200/90'
+        }`}>
+          {/* Header Row */}
+          <div>
+            <div className="flex justify-between items-center gap-2 mb-3">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {isActive ? (
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-md text-white font-black text-[9px] rounded-full uppercase tracking-wider border border-white/30 flex items-center gap-1 shadow-2xs">
+                    <Check className="w-3 h-3 text-emerald-200" /> Active Course
+                  </span>
+                ) : !isUserAllowed ? (
+                  <span className="px-2.5 py-0.5 bg-orange-100 text-orange-800 border border-orange-200/80 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5 text-orange-600" /> Locked
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 bg-emerald-200/80 text-emerald-900 border border-emerald-300/80 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
+                    ✓ Enrolled
+                  </span>
+                )}
+
+                {course.isDefault && (
+                  <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-full uppercase tracking-wider ${
+                    isActive ? 'bg-white/20 text-white' : isUserAllowed ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'
+                  }`}>
+                    Default
+                  </span>
+                )}
+              </div>
+
+              <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                isActive 
+                  ? 'bg-white/10 text-emerald-100' 
+                  : isUserAllowed 
+                  ? 'bg-emerald-100/80 text-emerald-800' 
+                  : 'bg-orange-100 text-orange-800'
+              }`}>
+                #{course.id}
+              </span>
+            </div>
+
+            {/* Course Title */}
+            <h3 
+              style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
+              className={`text-base sm:text-lg tracking-tight leading-snug line-clamp-2 my-1.5 ${
+                isActive 
+                  ? 'text-white' 
+                  : isUserAllowed 
+                  ? 'text-slate-900 group-hover:text-emerald-700 transition-colors' 
+                  : 'text-slate-900 group-hover:text-orange-600 transition-colors'
+              }`}
+            >
+              {course.title}
+            </h3>
+
+            {/* Price Tag */}
+            <div className="mt-2.5 flex items-baseline gap-1.5">
+              <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+                isActive 
+                  ? 'text-white' 
+                  : isUserAllowed 
+                  ? 'text-emerald-950' 
+                  : 'text-orange-950'
+              }`}>
+                ৳{(course.price && course.price > 0) ? course.price : 30}
+              </span>
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                isActive 
+                  ? 'text-emerald-100' 
+                  : isUserAllowed 
+                  ? 'text-emerald-700' 
+                  : 'text-orange-700'
+              }`}>
+                BDT
+              </span>
+            </div>
+          </div>
+
+          {/* Word Count & Feature Indicator */}
+          <div 
+            style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
+            className={`mt-3 pt-3 border-t space-y-1 text-xs ${
+              isActive 
+                ? 'border-white/20 text-emerald-100' 
+                : isUserAllowed 
+                ? 'border-emerald-200/60 text-emerald-800' 
+                : 'border-orange-200/60 text-orange-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : isUserAllowed ? 'bg-emerald-600' : 'bg-orange-500'}`} />
+              <span>Vocabulary Words: <strong className={isActive ? 'text-white' : isUserAllowed ? 'text-emerald-950' : 'text-slate-900'} style={{ fontWeight: 400 }}>{wordsCount}</strong></span>
+            </div>
+          </div>
+
+          {/* Footer Action Buttons */}
+          <div className="mt-4 pt-1 flex items-center gap-2">
+            {!isUserAllowed && (
+              <button
+                type="button"
+                onClick={(e) => toggleCartCourse(course, e)}
+                title={cart.some(c => c.id === course.id) ? "Remove from Cart" : "Add to Cart"}
+                className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                  cart.some(c => c.id === course.id)
+                    ? 'bg-emerald-500 text-white border-emerald-600 font-black shadow-2xs'
+                    : 'bg-orange-100 hover:bg-orange-200 text-orange-950 border-orange-300/80 font-extrabold'
+                }`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>{cart.some(c => c.id === course.id) ? 'In Cart ✓' : '+ Cart'}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isUserAllowed) {
+                  setIsCartCheckoutMode(false);
+                  setSelectedBuyCourse(course);
+                  return;
+                }
+                setActiveCourseId(course.id);
+                if (onSelectTab) {
+                  onSelectTab('flashcard');
+                }
+              }}
+              className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
+                isActive
+                  ? 'bg-white text-emerald-900 hover:bg-emerald-50 font-black shadow-md'
+                  : isUserAllowed
+                  ? 'bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold'
+                  : 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold'
+              }`}
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>{isUserAllowed ? 'Start Flashcard' : 'Buy Now'}</span>
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="space-y-6" id="my-courses-view-root" style={{ fontFamily: "'Poppins', 'Kalpurush', 'SutonnyMJ', sans-serif" }}>
@@ -414,160 +582,82 @@ export default function MyCoursesView({
         </div>
       </div>
 
-      {/* 3. Modern Course Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5" id="courses-grid-container">
-        {filteredCourses.map(course => {
-          const isActive = course.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase();
-          const isEnrolled = isCourseEnrolled(course.id, enrolledCourseIds);
-          const isUserAllowed = isCourseAccessible(course, enrolledCourseIds, user?.email);
-          const wordsCount = course.words?.length || 0;
+      {/* 3. Multi-Layer Course Cards Layout */}
+      <div className="space-y-8" id="courses-grid-container">
+        {/* Layer 1: Enrolled / Active Courses */}
+        {(filter === 'all' || filter === 'enrolled') && (
+          <div className="space-y-3" id="enrolled-courses-section">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-wider text-emerald-900 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>My Active & Enrolled Courses ({sortedEnrolledCourses.length})</span>
+              </h3>
+            </div>
 
-          return (
-            <motion.div
-              key={course.id}
-              layout
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              whileHover={{ y: -4 }}
-              onClick={() => setSelectedDetailCourse(course)}
-              className={`group relative rounded-3xl p-[2.5px] transition-all duration-300 cursor-pointer flex flex-col justify-between ${
-                isActive 
-                  ? 'bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-500 shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/15' 
-                  : isUserAllowed
-                  ? 'bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-md hover:shadow-2xl'
-                  : 'bg-gradient-to-r from-purple-400/30 via-pink-400/30 to-amber-400/30 hover:from-purple-500 hover:via-pink-500 hover:to-amber-500 shadow-sm hover:shadow-xl'
-              }`}
-            >
-              {/* Inner Card Container */}
-              <div className={`w-full h-full rounded-[22px] p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${
-                isActive 
-                  ? 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 text-white' 
-                  : 'bg-white text-slate-900'
-              }`}>
-                {/* Header Row */}
-                <div>
-                  <div className="flex justify-between items-center gap-2 mb-3">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {isActive ? (
-                        <span className="px-3 py-1 bg-white/20 backdrop-blur-md text-white font-black text-[9px] rounded-full uppercase tracking-wider border border-white/30 flex items-center gap-1 shadow-2xs">
-                          <Check className="w-3 h-3 text-emerald-200" /> Active Course
-                        </span>
-                      ) : !isUserAllowed ? (
-                        <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
-                          <Lock className="w-2.5 h-2.5" /> Locked
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
-                          ✓ Enrolled
-                        </span>
-                      )}
-
-                      {course.isDefault && (
-                        <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-full uppercase tracking-wider ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          Default
-                        </span>
-                      )}
-                    </div>
-
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
-                      isActive ? 'bg-white/10 text-emerald-100' : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      #{course.id}
-                    </span>
-                  </div>
-
-                  {/* Course Title */}
-                  <h3 
-                    style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
-                    className={`text-base sm:text-lg tracking-tight leading-snug line-clamp-2 my-1.5 ${
-                      isActive ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600 transition-colors'
-                    }`}
-                  >
-                    {course.title}
-                  </h3>
-
-                  {/* Price Tag */}
-                  <div className="mt-2.5 flex items-baseline gap-1.5">
-                    <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
-                      isActive ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      ৳{(course.price && course.price > 0) ? course.price : 30}
-                    </span>
-                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
-                      isActive ? 'text-emerald-100' : 'text-slate-400'
-                    }`}>
-                      BDT
-                    </span>
-                  </div>
-                </div>
-
-                {/* Word Count & Feature Indicator */}
-                <div 
-                  style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
-                  className={`mt-3 pt-3 border-t space-y-1 text-xs ${
-                    isActive ? 'border-white/20 text-emerald-100' : 'border-slate-100 text-slate-500'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-500'}`} />
-                    <span>Vocabulary Words: <strong className={isActive ? 'text-white' : 'text-slate-900'} style={{ fontWeight: 400 }}>{wordsCount}</strong></span>
-                  </div>
-                </div>
-
-                {/* Footer Action Buttons */}
-                <div className="mt-4 pt-1 flex items-center gap-2">
-                  {!isUserAllowed && (
-                    <button
-                      type="button"
-                      onClick={(e) => toggleCartCourse(course, e)}
-                      title={cart.some(c => c.id === course.id) ? "Remove from Cart" : "Add to Cart"}
-                      className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer border ${
-                        cart.some(c => c.id === course.id)
-                          ? 'bg-emerald-500 text-white border-emerald-600 font-black shadow-2xs'
-                          : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200/80 font-extrabold'
-                      }`}
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>{cart.some(c => c.id === course.id) ? 'In Cart ✓' : '+ Cart'}</span>
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isUserAllowed) {
-                        setIsCartCheckoutMode(false);
-                        setSelectedBuyCourse(course);
-                        return;
-                      }
-                      setActiveCourseId(course.id);
-                      if (onSelectTab) {
-                        onSelectTab('flashcard');
-                      }
-                    }}
-                    className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
-                      isActive
-                        ? 'bg-white text-emerald-800 hover:bg-emerald-50 font-black'
-                        : isUserAllowed
-                        ? 'bg-slate-900 hover:bg-indigo-600 text-white font-extrabold'
-                        : 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
-                    }`}
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>{isUserAllowed ? 'Start Flashcard' : 'Buy Now'}</span>
-                  </button>
-                </div>
+            {sortedEnrolledCourses.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                {sortedEnrolledCourses.map(course => renderCourseCard(course))}
               </div>
-            </motion.div>
-          );
-        })}
+            ) : (
+              <div className="p-6 bg-emerald-50/50 rounded-2xl border border-dashed border-emerald-200 text-center text-xs text-emerald-800 font-medium">
+                No active/enrolled courses found.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Divider with "Buy New Course" Button */}
+        {filter === 'all' && (
+          <div className="relative my-8 py-2 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t-2 border-slate-300/80" />
+            </div>
+            <div className="relative bg-slate-50 px-4 rounded-full">
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('locked-courses-section');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    setIsCartOpen(true);
+                  }
+                }}
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs sm:text-sm rounded-full shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer border-2 border-white uppercase tracking-wider"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Buy New Course</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Layer 2: Locked Courses (Orange Theme) */}
+        {(filter === 'all' || filter === 'locked') && (
+          <div className="space-y-3" id="locked-courses-section">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black uppercase tracking-wider text-orange-950 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-orange-600" />
+                <span>Locked / Available Courses ({lockedCoursesList.length})</span>
+              </h3>
+            </div>
+
+            {lockedCoursesList.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+                {lockedCoursesList.map(course => renderCourseCard(course))}
+              </div>
+            ) : (
+              <div className="p-6 bg-orange-50/50 rounded-2xl border border-dashed border-orange-200 text-center text-xs text-orange-800 font-medium">
+                No locked courses found.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Empty State */}
-      {filteredCourses.length === 0 && (
+      {/* Global Empty State */}
+      {sortedEnrolledCourses.length === 0 && lockedCoursesList.length === 0 && (
         <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-lg mx-auto space-y-4 shadow-xs">
           <div className="p-4 bg-indigo-50 text-indigo-500 rounded-full w-fit mx-auto">
             <BookOpen className="w-8 h-8" />
