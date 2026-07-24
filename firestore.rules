@@ -69,11 +69,14 @@ service cloud.firestore {
     function isValidAccessRequest(data) {
       return data.courseId is string && data.courseId.size() <= 128
         && (data.get('courseTitle', null) == null || (data.courseTitle is string && data.courseTitle.size() <= 1000))
+        && (data.get('courseIds', null) == null || data.courseIds is list)
+        && (data.get('courseTitles', null) == null || data.courseTitles is list)
         && data.bkashNumber is string && data.bkashNumber.size() <= 64
         && data.email is string && data.email.size() <= 256
         && data.trxId is string && data.trxId.size() <= 128
         && data.status is string && (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected')
         && (data.get('price', null) == null || data.price is int || data.price is float)
+        && (data.get('totalPrice', null) == null || data.totalPrice is int || data.totalPrice is float)
         && (data.createdAt is string && data.createdAt.size() <= 128)
         && (data.get('requestedBy', null) == null || (data.requestedBy is string && data.requestedBy.size() <= 256));
     }
@@ -140,8 +143,7 @@ service cloud.firestore {
     match /access_requests/{requestId} {
       allow read: if isAdmin() || (isSignedIn() && (resource.data.email == request.auth.token.email || resource.data.requestedBy == request.auth.token.email));
       
-      allow create: if isSignedIn()
-        && isValidId(requestId)
+      allow create: if isValidId(requestId)
         && isValidAccessRequest(request.resource.data)
         && request.resource.data.status == 'pending';
 

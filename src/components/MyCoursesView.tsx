@@ -271,8 +271,8 @@ export default function MyCoursesView({
         </div>
       </div>
 
-      {/* 3. Compact Course Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4" id="courses-grid-container">
+      {/* 3. Modern Course Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5" id="courses-grid-container">
         {filteredCourses.map(course => {
           const isActive = course.id.trim().toLowerCase() === activeCourseId?.trim().toLowerCase();
           const isEnrolled = isCourseEnrolled(course.id, enrolledCourseIds);
@@ -283,78 +283,106 @@ export default function MyCoursesView({
             <motion.div
               key={course.id}
               layout
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ y: -4 }}
               onClick={() => setSelectedDetailCourse(course)}
-              className={`p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer flex flex-col justify-between relative overflow-hidden group min-h-[120px] ${
+              className={`group relative rounded-3xl p-[2.5px] transition-all duration-300 cursor-pointer flex flex-col justify-between ${
                 isActive 
-                  ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/25 ring-4 ring-emerald-500/20 hover:bg-emerald-600' 
-                  : 'bg-white border-slate-200/90 text-slate-900 hover:border-indigo-400 hover:shadow-md hover:-translate-y-0.5'
+                  ? 'bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-500 shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/15' 
+                  : isUserAllowed
+                  ? 'bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-pink-500/20 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-md hover:shadow-2xl'
+                  : 'bg-gradient-to-r from-purple-400/30 via-pink-400/30 to-amber-400/30 hover:from-purple-500 hover:via-pink-500 hover:to-amber-500 shadow-sm hover:shadow-xl'
               }`}
             >
-              {/* Header Row Badge */}
-              <div className="flex justify-between items-center gap-1.5 mb-2.5">
-                <div className="flex items-center gap-1 flex-wrap">
-                  {isActive ? (
-                    <span className="px-2.5 py-0.5 bg-emerald-700/80 text-emerald-100 font-black text-[9px] rounded-full uppercase tracking-wider border border-emerald-300/40 flex items-center gap-1 shadow-2xs">
-                      <Check className="w-3 h-3 text-emerald-200" /> Active Course
-                    </span>
-                  ) : !isUserAllowed ? (
-                    <span className="px-2 py-0.5 bg-rose-500/10 text-rose-600 border border-rose-200 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" /> Locked (৳{(course.price && course.price > 0) ? course.price : 30})
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
-                      Enrolled
-                    </span>
-                  )}
+              {/* Inner Card Container */}
+              <div className={`w-full h-full rounded-[22px] p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${
+                isActive 
+                  ? 'bg-gradient-to-br from-emerald-600 via-teal-700 to-emerald-800 text-white' 
+                  : 'bg-white text-slate-900'
+              }`}>
+                {/* Header Row */}
+                <div>
+                  <div className="flex justify-between items-center gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {isActive ? (
+                        <span className="px-3 py-1 bg-white/20 backdrop-blur-md text-white font-black text-[9px] rounded-full uppercase tracking-wider border border-white/30 flex items-center gap-1 shadow-2xs">
+                          <Check className="w-3 h-3 text-emerald-200" /> Active Course
+                        </span>
+                      ) : !isUserAllowed ? (
+                        <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 font-extrabold text-[9px] rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> Locked
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
+                          ✓ Enrolled
+                        </span>
+                      )}
 
-                  {course.isDefault && (
-                    <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-full uppercase tracking-wider ${
-                      isActive ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-100 text-slate-600'
+                      {course.isDefault && (
+                        <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-full uppercase tracking-wider ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          Default
+                        </span>
+                      )}
+                    </div>
+
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/10 text-emerald-100' : 'bg-slate-100 text-slate-400'
                     }`}>
-                      Default
+                      #{course.id}
                     </span>
-                  )}
+                  </div>
+
+                  {/* Course Title */}
+                  <h3 
+                    className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 my-1.5 ${
+                      isActive ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600 transition-colors'
+                    }`}
+                  >
+                    {course.title}
+                  </h3>
+
+                  {/* Price Tag */}
+                  <div className="mt-2.5 flex items-baseline gap-1.5">
+                    <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
+                      isActive ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      ৳{(course.price && course.price > 0) ? course.price : 30}
+                    </span>
+                    <span className={`text-[10px] font-extrabold uppercase tracking-wider ${
+                      isActive ? 'text-emerald-100' : 'text-slate-400'
+                    }`}>
+                      BDT
+                    </span>
+                  </div>
                 </div>
 
-                <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-emerald-100' : 'text-slate-400'}`}>
-                  #{course.id}
-                </span>
-              </div>
+                {/* Word Count & Feature Indicator */}
+                <div className={`mt-3 pt-3 border-t space-y-1 text-xs font-semibold ${
+                  isActive ? 'border-white/20 text-emerald-100' : 'border-slate-100 text-slate-500'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-500'}`} />
+                    <span>Vocabulary Words: <strong className={isActive ? 'text-white' : 'text-slate-900'}>{wordsCount}</strong></span>
+                  </div>
+                </div>
 
-              {/* Course Title */}
-              <div className="my-1.5">
-                <h3 
-                  className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 ${
-                    isActive ? 'text-white drop-shadow-xs' : 'text-slate-900'
-                  }`}
-                >
-                  {course.title}
-                </h3>
-              </div>
-
-              {/* Word Count & Actions Row */}
-              <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-1.5 flex-wrap ${
-                isActive ? 'border-emerald-400/50 text-emerald-100' : 'border-slate-100 text-slate-500'
-              }`}>
-                <span className={`text-xs sm:text-sm font-black ${isActive ? 'text-white' : 'text-indigo-600'}`}>
-                  {wordsCount} Words
-                </span>
-
-                <div className="flex items-center gap-1.5">
+                {/* Footer Action Buttons */}
+                <div className="mt-4 pt-1 flex items-center gap-2">
                   {!isUserAllowed && (
                     <button
                       type="button"
                       onClick={(e) => toggleCartCourse(course, e)}
                       title={cart.some(c => c.id === course.id) ? "Remove from Cart" : "Add to Cart"}
-                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 transition cursor-pointer border ${
+                      className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition cursor-pointer border ${
                         cart.some(c => c.id === course.id)
                           ? 'bg-emerald-500 text-white border-emerald-600 font-black shadow-2xs'
                           : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200/80 font-extrabold'
                       }`}
                     >
-                      <ShoppingBag className="w-3 h-3" />
+                      <ShoppingBag className="w-3.5 h-3.5" />
                       <span>{cart.some(c => c.id === course.id) ? 'In Cart ✓' : '+ Cart'}</span>
                     </button>
                   )}
@@ -373,15 +401,15 @@ export default function MyCoursesView({
                         onSelectTab('flashcard');
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
+                    className={`flex-1 py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${
                       isActive
                         ? 'bg-white text-emerald-800 hover:bg-emerald-50 font-black'
                         : isUserAllowed
-                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold'
+                        ? 'bg-slate-900 hover:bg-indigo-600 text-white font-extrabold'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
                     }`}
                   >
-                    <Play className="w-3 h-3 fill-current" />
+                    <Play className="w-3.5 h-3.5 fill-current" />
                     <span>{isUserAllowed ? 'Start Flashcard' : 'Buy Now'}</span>
                   </button>
                 </div>
