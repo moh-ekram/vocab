@@ -7,7 +7,7 @@ import {
   Copy, ArrowRight, Star, Heart, Calendar, ShieldAlert, Layers, Play
 } from 'lucide-react';
 import { db } from '../lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { Course, UserProgress, ActiveTab } from '../types';
 import { isCourseEnrolled, isCourseAccessible } from '../lib/courseAccess';
 
@@ -76,10 +76,23 @@ export default function MyCoursesView({
   const [trxId, setTrxId] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [userWalletBalance, setUserWalletBalance] = useState<number>(0);
 
   useEffect(() => {
     if (user?.email) {
       setAccessEmail(user.email);
+      // Fetch user's wallet credit balance
+      const fetchWallet = async () => {
+        try {
+          const walletSnap = await getDoc(doc(db, 'user_wallets', user.email.toLowerCase()));
+          if (walletSnap.exists()) {
+            setUserWalletBalance(walletSnap.data().balance || 0);
+          }
+        } catch (e) {
+          console.error("Error fetching wallet balance:", e);
+        }
+      };
+      fetchWallet();
     }
   }, [user]);
 
@@ -125,30 +138,108 @@ export default function MyCoursesView({
       const matchTrx = cleanTrx.toLowerCase().trim();
       const matchPhone = cleanPhone(cleanSender);
 
+      // --- TRANSACTION ID UNIQUENESS CHECK ---
+      const requestsSnap = await getDocs(query(collection(db, 'access_requests')));
+      const existingWithTrx = requestsSnap.docs.find(d => {
+        const reqData = d.data();
+        return reqData.trxId && reqData.trxId.toLowerCase().trim() === matchTrx;
+      });
+
+      if (existingWithTrx) {
+        setIsSubmittingRequest(false);
+        setCheckoutMessage({
+          type: 'error',
+          text: `এই ট্রাঞ্জেকশন আইডিটি (${cleanTrx}) ইতোমধ্যে একবার একটি কোর্স রিকুয়েস্টে ব্যবহৃত হয়েছে। একই ট্রাঞ্জেকশন আইডি দিয়ে একাধিকবার রিকুয়েস্ট করা সম্ভব নয়।`
+        });
+        return;
+      }
+
       const courseIds = targetCourses.map(c => c.id);
       const courseTitles = targetCourses.map(c => c.title);
+      const courseCodes = targetCourses.map(c => c.code || c.id);
       const totalPrice = targetCourses.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
 
-      let isAutoApproved = false;
-      if (!isCartPurchase && selectedBuyCourse?.verifiedPayments) {
-        isAutoApproved = selectedBuyCourse.verifiedPayments.some(vp => {
-          const vpPhone = cleanPhone(vp.bkashNumber);
-          const vpTrx = vp.trxId.toLowerCase().trim();
-          return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
-        });
+      // --- BKASH AUTO-VERIFICATION GATEWAY & WALLET ALLOCATION ---
+      let walletRef = doc(db, 'user_wallets', cleanEmail.toLowerCase());
+      let walletSnap = await getDoc(walletRef);
+      let existingWalletBalance = walletSnap.exists() ? (walletSnap.data().balance || 0) : 0;
+
+      // Find matching verified payment entry across all courses
+      let matchedVp: { bkashNumber: string; trxId: string; amount?: number } | null = null;
+      for (const course of allCourses) {
+        if (course.verifiedPayments && course.verifiedPayments.length > 0) {
+          const found = course.verifiedPayments.find(vp => {
+            const vpPhone = cleanPhone(vp.bkashNumber);
+            const vpTrx = vp.trxId.toLowerCase().trim();
+            return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
+          });
+          if (found) {
+            matchedVp = found;
+            break;
+          }
+        }
       }
+
+      let totalFundsAvailable = existingWalletBalance + (matchedVp ? (matchedVp.amount || 30) : 0);
+      let approvedCourses: Course[] = [];
+      let pendingCourses: Course[] = [];
+      let remainingBalance = totalFundsAvailable;
+
+      if (matchedVp || existingWalletBalance > 0) {
+        for (const c of targetCourses) {
+          const cPrice = (c.price && c.price > 0) ? c.price : 30;
+          if (remainingBalance >= cPrice) {
+            approvedCourses.push(c);
+            remainingBalance -= cPrice;
+          } else {
+            pendingCourses.push(c);
+          }
+        }
+      }
+
+      // Save remaining wallet balance
+      if (matchedVp || existingWalletBalance > 0) {
+        await setDoc(walletRef, {
+          email: cleanEmail.toLowerCase(),
+          bkashNumber: cleanSender,
+          balance: remainingBalance,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        setUserWalletBalance(remainingBalance);
+      }
+
+      // Automatically activate approved courses
+      if (approvedCourses.length > 0) {
+        for (const appCourse of approvedCourses) {
+          const courseRef = doc(db, 'courses', appCourse.id);
+          const courseSnap = await getDoc(courseRef);
+          if (courseSnap.exists()) {
+            const currentAllowed = courseSnap.data().allowedUsers || [];
+            if (!currentAllowed.includes(cleanEmail.toLowerCase())) {
+              await setDoc(courseRef, {
+                allowedUsers: [...currentAllowed, cleanEmail.toLowerCase()]
+              }, { merge: true });
+            }
+          }
+          onImportCourse(appCourse);
+        }
+      }
+
+      const isFullyApproved = approvedCourses.length === targetCourses.length;
+      const isPartiallyApproved = approvedCourses.length > 0 && !isFullyApproved;
 
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const requestPayload = {
         id: requestId,
         courseId: isCartPurchase ? 'multi_cart' : targetCourses[0].id,
         courseTitle: isCartPurchase ? `Cart Purchase (${targetCourses.length} Courses)` : targetCourses[0].title,
+        courseCode: courseCodes.join(', '),
         courseIds,
         courseTitles,
         bkashNumber: cleanSender,
         email: cleanEmail.toLowerCase(),
         trxId: cleanTrx,
-        status: 'pending',
+        status: isFullyApproved ? 'approved' : (isPartiallyApproved ? 'approved' : 'pending'),
         price: targetCourses[0].price || 30,
         totalPrice,
         createdAt: new Date().toISOString(),
@@ -157,22 +248,26 @@ export default function MyCoursesView({
 
       await setDoc(doc(db, 'access_requests', requestId), requestPayload);
 
-      if (isAutoApproved && selectedBuyCourse) {
-        onImportCourse(selectedBuyCourse);
+      if (isFullyApproved) {
         setCheckoutMessage({
           type: 'success',
-          text: 'Payment automatically verified! You have been granted instant access to this course.'
+          text: `পেমেন্ট সফলভাবে ভেরিফাই করা হয়েছে! আপনার ${targetCourses.length}টি কোর্সে অ্যাক্সেস দেওয়া হয়েছে। ${remainingBalance > 0 ? `অবশিষ্ট ৳${remainingBalance} টাকা আপনার ওয়ালেটে জমা রাখা হয়েছে।` : ''}`
         });
+        if (isCartPurchase) setCart([]);
+      } else if (isPartiallyApproved) {
+        setCheckoutMessage({
+          type: 'success',
+          text: `প্রাপ্ত টাকার হিসাব অনুযায়ী ${approvedCourses.length}টি কোর্স বরাদ্দ দেওয়া হয়েছে (${approvedCourses.map(c => c.title).join(', ')})। অবশিষ্ট ৳${remainingBalance} টাকা ওয়ালেটে জমা রাখা রয়েছে।`
+        });
+        if (isCartPurchase) setCart([]);
       } else {
         setCheckoutMessage({
           type: 'success',
           text: isCartPurchase 
-            ? `Access request for ${targetCourses.length} courses (Total ৳${totalPrice} BDT) submitted! Admin will verify and activate all courses shortly.`
-            : 'Access request submitted successfully! Admin will verify and activate your course access shortly.'
+            ? `Access request for ${targetCourses.length} courses (Total ৳${totalPrice} BDT) submitted with Course Code(s): ${courseCodes.join(', ')}! Admin will verify and activate all courses shortly.`
+            : `Access request submitted successfully for Course Code: ${courseCodes.join(', ')}! Admin will verify and activate your course access shortly.`
         });
-        if (isCartPurchase) {
-          setCart([]);
-        }
+        if (isCartPurchase) setCart([]);
       }
     } catch (err) {
       console.error("Error submitting access request:", err);
@@ -227,6 +322,31 @@ export default function MyCoursesView({
           </h2>
         </div>
       </div>
+
+      {/* 1.5 Wallet Credit Balance Banner */}
+      {userWalletBalance > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-200/80 rounded-2xl p-4 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-xs shrink-0">
+              ৳
+            </div>
+            <div>
+              <h4 className="font-extrabold text-xs text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                <span>আপনার ওয়ালেট ব্যালেন্স (Wallet Credit)</span>
+                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] rounded-full font-black">Active</span>
+              </h4>
+              <p className="text-xs text-emerald-800 font-normal mt-0.5" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}>
+                পূর্বে জমা দেওয়া অবশিষ্ট অর্থ থেকে আপনার অ্যাকাউন্টে <strong>৳{userWalletBalance} BDT</strong> ওয়ালেট ব্যালেন্স জমা রয়েছে। এটি আপনার পরবর্তী কোর্স ক্রয়ে স্বয়ংক্রিয়ভাবে ব্যবহৃত হবে।
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="font-mono text-xl sm:text-2xl font-black text-emerald-700 px-3.5 py-1.5 bg-white rounded-xl border border-emerald-200 shadow-2xs block">
+              ৳{userWalletBalance}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 2. Advanced Search & Tabs Control */}
       <div className="flex flex-col sm:flex-row gap-2.5 justify-between items-center bg-white p-2.5 sm:p-3 rounded-2xl border border-slate-200/70 shadow-xs max-w-full overflow-hidden">
@@ -337,7 +457,8 @@ export default function MyCoursesView({
 
                   {/* Course Title */}
                   <h3 
-                    className={`text-base sm:text-lg font-black tracking-tight leading-snug line-clamp-2 my-1.5 ${
+                    style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
+                    className={`text-base sm:text-lg tracking-tight leading-snug line-clamp-2 my-1.5 ${
                       isActive ? 'text-white' : 'text-slate-900 group-hover:text-indigo-600 transition-colors'
                     }`}
                   >
@@ -360,12 +481,15 @@ export default function MyCoursesView({
                 </div>
 
                 {/* Word Count & Feature Indicator */}
-                <div className={`mt-3 pt-3 border-t space-y-1 text-xs font-semibold ${
-                  isActive ? 'border-white/20 text-emerald-100' : 'border-slate-100 text-slate-500'
-                }`}>
+                <div 
+                  style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 300 }}
+                  className={`mt-3 pt-3 border-t space-y-1 text-xs ${
+                    isActive ? 'border-white/20 text-emerald-100' : 'border-slate-100 text-slate-500'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-500'}`} />
-                    <span>Vocabulary Words: <strong className={isActive ? 'text-white' : 'text-slate-900'}>{wordsCount}</strong></span>
+                    <span>Vocabulary Words: <strong className={isActive ? 'text-white' : 'text-slate-900'} style={{ fontWeight: 400 }}>{wordsCount}</strong></span>
                   </div>
                 </div>
 

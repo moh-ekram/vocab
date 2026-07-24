@@ -31,6 +31,7 @@ import {
   Clock, 
   Sliders,
   ChevronDown,
+  ChevronUp,
   UploadCloud,
   FileSpreadsheet,
   Trash2,
@@ -985,6 +986,28 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
     }
   };
 
+  const handleMoveCourseOrder = async (courseId: string, delta: number, currentList: Course[]) => {
+    const sorted = [...currentList].sort((a, b) => (a.order !== undefined ? a.order : 999) - (b.order !== undefined ? b.order : 999));
+    const idx = sorted.findIndex(c => c.id === courseId);
+    if (idx === -1) return;
+    const newIdx = idx + delta;
+    if (newIdx < 0 || newIdx >= sorted.length) return;
+
+    const itemA = sorted[idx];
+    const itemB = sorted[newIdx];
+
+    const orderA = itemB.order !== undefined ? itemB.order : newIdx;
+    const orderB = itemA.order !== undefined ? itemA.order : idx;
+
+    try {
+      await setDoc(doc(db, 'courses', itemA.id), { order: orderA }, { merge: true });
+      await setDoc(doc(db, 'courses', itemB.id), { order: orderB }, { merge: true });
+      fetchCustomCourses();
+    } catch (e) {
+      console.error("Error updating course order:", e);
+    }
+  };
+
   const handleOpenEditModal = (course: Course) => {
     setEditingCourse(course);
   };
@@ -1423,7 +1446,36 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        {/* Course Sorting Order Buttons */}
+                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg border border-slate-200" title="Sort/Reorder Course for all users">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveCourseOrder(c.id, -1, [defaultGreCourse, ...filteredCustomCoursesList]);
+                            }}
+                            className="p-1 hover:bg-white text-slate-600 hover:text-indigo-600 rounded transition cursor-pointer"
+                            title="Move Course Up"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <span className="text-[10px] font-mono font-black text-indigo-700 px-1">
+                            #{c.order !== undefined ? c.order : '0'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveCourseOrder(c.id, 1, [defaultGreCourse, ...filteredCustomCoursesList]);
+                            }}
+                            className="p-1 hover:bg-white text-slate-600 hover:text-indigo-600 rounded transition cursor-pointer"
+                            title="Move Course Down"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1431,7 +1483,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                             navigator.clipboard.writeText(c.id);
                             alert(`Course share code "${c.id}" copied to clipboard!`);
                           }}
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition"
+                          className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition cursor-pointer"
                           title="Copy Course Code"
                         >
                           <Copy className="w-3.5 h-3.5" />
@@ -1882,6 +1934,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-400 font-mono uppercase h-10">
                     <th className="px-4 py-2">Course Details</th>
+                    <th className="px-4 py-2">Course Code</th>
                     <th className="px-4 py-2">Student Email</th>
                     <th className="px-4 py-2">bKash Number</th>
                     <th className="px-4 py-2">Transaction ID</th>
@@ -1918,10 +1971,15 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                           <div>
                             <div className="font-extrabold text-slate-800 text-sm">{req.courseTitle}</div>
                             <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
-                              Course ID: {req.courseId} | Price: ৳{req.totalPrice || req.price || 30} BDT
+                              Price: ৳{req.totalPrice || req.price || 30} BDT
                             </div>
                           </div>
                         )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-xs font-mono tracking-wide border border-indigo-200/60 uppercase">
+                          {req.courseCode || (req.courseIds && req.courseIds.join(', ')) || req.courseId}
+                        </span>
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-700">
                         {req.email}

@@ -1074,6 +1074,8 @@ export default function App() {
       });
     }
   }
+  // Sort courses according to custom order set by admin
+  allCourses.sort((a, b) => (a.order !== undefined ? a.order : 999) - (b.order !== undefined ? b.order : 999));
   const allAvailableCourses: Course[] = allCourses;
 
   const handleImportCourse = (course: Course) => {

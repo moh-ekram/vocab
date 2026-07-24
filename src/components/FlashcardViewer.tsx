@@ -1030,7 +1030,17 @@ export default function FlashcardViewer({
               {/* Center Content: Front Face */}
               <div className="my-auto text-center space-y-2 py-4">
                 {placeLabels?.place1?.trim() && (
-                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 block font-sans">
+                  <span 
+                    className="block font-sans uppercase" 
+                    style={{
+                      fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                      fontSize: '10px',
+                      color: 'oklch(0.704 0.04 256.788)',
+                      fontWeight: 500,
+                      lineHeight: '10px',
+                      letterSpacing: '-0.25px',
+                    }}
+                  >
                     {placeLabels.place1.trim()}
                   </span>
                 )}
@@ -1156,7 +1166,14 @@ export default function FlashcardViewer({
                 const place6Val = (currentActiveWord.mnemonic || progress[currentActiveWord.id]?.notes)?.trim();
                 const hasPlace6 = Boolean(place6Val);
 
-                const labelClass = "text-[11px] font-extrabold uppercase tracking-widest text-slate-400 block pb-0.5 font-sans";
+                const placeLabelStyle: React.CSSProperties = {
+                  fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '10px',
+                  color: 'oklch(0.704 0.04 256.788)',
+                  fontWeight: 500,
+                  lineHeight: '10px',
+                  letterSpacing: '-0.25px',
+                };
 
                 const blocks: React.ReactNode[] = [];
 
@@ -1165,7 +1182,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place2" className="text-center w-full">
                       {place2Label && (
-                        <span className={labelClass}>
+                        <span className="block uppercase pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {place2Label}
                         </span>
                       )}
@@ -1181,7 +1198,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place3" className="w-full text-center space-y-0.5">
                       {place3Label && (
-                        <span className={labelClass}>
+                        <span className="block uppercase pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {place3Label}
                         </span>
                       )}
@@ -1197,7 +1214,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place4" className="w-full text-center space-y-0.5">
                       {place4Label && (
-                        <span className={labelClass}>
+                        <span className="block uppercase pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {place4Label}
                         </span>
                       )}
@@ -1213,7 +1230,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place5" className="w-full text-center space-y-0.5">
                       {place5Label && (
-                        <span className={labelClass}>
+                        <span className="block uppercase pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {place5Label}
                         </span>
                       )}
@@ -1229,7 +1246,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place6" className="w-full text-center space-y-0.5">
                       {place6Label && (
-                        <span className={labelClass}>
+                        <span className="block uppercase pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {place6Label}
                         </span>
                       )}

@@ -117,7 +117,9 @@ export interface Course {
   createdBy: string;
   price?: number;
   bkashNumber?: string;
-  verifiedPayments?: { bkashNumber: string; trxId: string }[];
+  order?: number;
+  code?: string;
+  verifiedPayments?: { bkashNumber: string; trxId: string; amount?: number }[];
   placeLabels?: {
     place1?: string;
     place2?: string;
@@ -133,6 +135,7 @@ export interface AccessRequest {
   id: string;
   courseId: string;
   courseTitle: string;
+  courseCode?: string;
   courseIds?: string[];
   courseTitles?: string[];
   bkashNumber: string;
@@ -144,6 +147,13 @@ export interface AccessRequest {
   createdAt: string;
   requestedBy?: string;
   expiryDate?: string;
+}
+
+export interface UserWallet {
+  email?: string;
+  bkashNumber?: string;
+  balance: number;
+  updatedAt: string;
 }
 
 export interface BlankQuestion {

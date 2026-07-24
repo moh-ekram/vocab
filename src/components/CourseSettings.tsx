@@ -130,11 +130,13 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
   const [bulkInput, setBulkInput] = useState('');
   const [bulkExpiryDate, setBulkExpiryDate] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
+  const [courseOrder, setCourseOrder] = useState<number>(course.order !== undefined ? course.order : 0);
 
   // --- AUTO-VERIFICATION PAYMENT STATES ---
-  const [verifiedPayments, setVerifiedPayments] = useState<{ bkashNumber: string; trxId: string }[]>(course.verifiedPayments || []);
+  const [verifiedPayments, setVerifiedPayments] = useState<{ bkashNumber: string; trxId: string; amount?: number }[]>(course.verifiedPayments || []);
   const [newVpNumber, setNewVpNumber] = useState('');
   const [newVpTrxId, setNewVpTrxId] = useState('');
+  const [newVpAmount, setNewVpAmount] = useState<number>(75);
   const [vpBulkInput, setVpBulkInput] = useState('');
   const [dragActiveVp, setDragActiveVp] = useState(false);
   const [vpExcelError, setVpExcelError] = useState<string | null>(null);
@@ -1049,9 +1051,10 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
       return;
     }
 
-    setVerifiedPayments(prev => [...prev, { bkashNumber: num, trxId: trx }]);
+    setVerifiedPayments(prev => [...prev, { bkashNumber: num, trxId: trx, amount: newVpAmount || 30 }]);
     setNewVpNumber('');
     setNewVpTrxId('');
+    setNewVpAmount(75);
     setError(null);
   };
 
@@ -1755,6 +1758,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         enabledGames: enabledGames, // Save practice and games toggles!
         totalGroups: uniqueGroupsSize || 1,
         price: Number(price) || 0,
+        order: Number(courseOrder) || 0,
         bkashNumber: bkashNumber.trim(),
         googleSearchQuery: googleSearchQuery.trim(),
         verifiedPayments: verifiedPayments,
@@ -1927,7 +1931,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-extrabold text-slate-600 block">Course Price (TK)</label>
                     <input
@@ -1936,6 +1940,17 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       onChange={(e) => setPrice(Number(e.target.value))}
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
                       placeholder="e.g. 500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-slate-600 block">Sort Position (Order Index)</label>
+                    <input
+                      type="number"
+                      value={courseOrder}
+                      onChange={(e) => setCourseOrder(Number(e.target.value))}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs font-bold transition text-slate-800"
+                      placeholder="e.g. 1"
                     />
                   </div>
 
@@ -2589,6 +2604,18 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                           />
                         </div>
 
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">টাকার পরিমাণ (Amount BDT ৳)</label>
+                          <input
+                            type="number"
+                            value={newVpAmount}
+                            onChange={(e) => setNewVpAmount(Number(e.target.value))}
+                            placeholder="e.g. 75"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold transition text-slate-800"
+                          />
+                          <p className="text-[9px] text-slate-400 font-semibold">এই অংকের উপর ভিত্তি করে ইউজারকে অটোভেরিফিকেশনে কোর্স বরাদ্দ দেওয়া হবে।</p>
+                        </div>
+
                         <button
                           type="button"
                           onClick={handleAddVerifiedPayment}
@@ -2720,7 +2747,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             .map((vp, index) => (
                               <div key={index} className="px-4 py-3 hover:bg-slate-50/50 transition flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                  <p className="text-xs font-black text-slate-800 font-mono">{vp.bkashNumber}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs font-black text-slate-800 font-mono">{vp.bkashNumber}</p>
+                                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-black text-[10px] rounded-full border border-emerald-200">
+                                      ৳{vp.amount || 30} BDT
+                                    </span>
+                                  </div>
                                   <p className="text-[10px] text-indigo-600 font-bold font-mono">TrxID: <span className="uppercase">{vp.trxId}</span></p>
                                 </div>
                                 <button
@@ -2779,6 +2811,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-100 text-slate-450 text-[10px] font-bold uppercase tracking-wider">
                               <th className="py-2.5 px-4">Student Email</th>
+                              <th className="py-2.5 px-4">Course Code</th>
                               <th className="py-2.5 px-4">bKash Number</th>
                               <th className="py-2.5 px-4">Transaction ID</th>
                               <th className="py-2.5 px-4">Date</th>
@@ -2793,6 +2826,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                               return (
                                 <tr key={req.id} className="hover:bg-slate-50/50 transition">
                                   <td className="py-2.5 px-4 font-semibold text-slate-800">{req.email}</td>
+                                  <td className="py-2.5 px-4">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 font-bold rounded text-[10px] font-mono tracking-wide border border-indigo-100 uppercase">
+                                      {req.courseCode || req.courseId || course.id}
+                                    </span>
+                                  </td>
                                   <td className="py-2.5 px-4 font-mono text-slate-600 font-bold">{req.bkashNumber}</td>
                                   <td className="py-2.5 px-4 font-mono font-bold text-indigo-600 uppercase">{req.trxId}</td>
                                   <td className="py-2.5 px-4 text-[10px] text-slate-400 font-bold">
