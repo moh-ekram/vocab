@@ -1044,20 +1044,19 @@ export default function FlashcardViewer({
                   </a>
                 </div>
                 {(() => {
-                  const p5 = currentActiveWord.extraWord?.trim();
-                  const p6 = currentActiveWord.extraMeaning?.trim();
-                  if (!p5 && !p6) return null;
-                  if (p5 && p6) {
-                    return (
-                      <p className="text-xs font-bold text-emerald-600 font-bengali pt-1 text-center">
-                        {p5}: {p6}
-                      </p>
-                    );
-                  }
+                  const p6Val = (currentActiveWord.mnemonic || currentActiveWord.extraMeaning || '').trim();
+                  if (!p6Val) return null;
                   return (
-                    <p className="text-xs font-bold text-emerald-600 font-bengali pt-1 text-center">
-                      {p5 || p6}
-                    </p>
+                    <div className="pt-2 text-center">
+                      {placeLabels?.place6 && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 block pb-0.5">
+                          {placeLabels.place6}
+                        </span>
+                      )}
+                      <p className="text-xs font-bold text-emerald-600 font-bengali text-center">
+                        {p6Val}
+                      </p>
+                    </div>
                   );
                 })()}
                 <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
@@ -1158,15 +1157,14 @@ export default function FlashcardViewer({
               {/* Center Content: Back Face */}
               {(() => {
                 const hasPlace2 = Boolean(currentActiveWord.meaning?.trim());
-                const hasPlace3 = Boolean(currentActiveWord.synonyms?.trim());
-                const hasMnemonic = Boolean(noteText?.trim());
-                const p5 = currentActiveWord.extraWord?.trim();
-                const p6 = currentActiveWord.extraMeaning?.trim();
-                const hasPlace5or6 = Boolean(p5 || p6);
+                const place3Val = (currentActiveWord.synonyms || currentActiveWord.example || '').trim();
+                const hasPlace3 = Boolean(place3Val);
+                const place5Val = currentActiveWord.extraWord?.trim();
+                const hasPlace5 = Boolean(place5Val);
 
                 const blocks: React.ReactNode[] = [];
 
-                // Block 1: Place 2 (Meaning) - Note: Place 1 (word) is strictly omitted on backside
+                // Block 1: Place 2 (Meaning) - Place 1 (word) omitted on backside
                 if (hasPlace2) {
                   blocks.push(
                     <div key="place2" className="text-center w-full">
@@ -1182,65 +1180,34 @@ export default function FlashcardViewer({
                   );
                 }
 
-                // Block 2: Place 3 (Synonyms) & Mnemonic (Place 4 / Notes)
-                if (hasPlace3 || hasMnemonic) {
+                // Block 2: Place 3 (Label & Value, No background)
+                if (hasPlace3) {
                   blocks.push(
-                    <div key="place3-mnemonic" className="w-full flex flex-col items-center justify-center space-y-2 text-xs font-semibold text-slate-600">
-                      {hasPlace3 && (
-                        <div className="w-full text-center">
-                          {placeLabels?.place3 && (
-                            <span className="text-[10px] uppercase font-bold text-indigo-400 block pb-0.5">
-                              {placeLabels.place3}
-                            </span>
-                          )}
-                          <span className="inline-block text-center">{currentActiveWord.synonyms}</span>
-                        </div>
+                    <div key="place3" className="w-full text-center space-y-0.5 my-1">
+                      {placeLabels?.place3 && (
+                        <span className="text-[10px] uppercase font-bold text-indigo-500 block pb-0.5">
+                          {placeLabels.place3}
+                        </span>
                       )}
-                      {hasMnemonic && (
-                        <div className="w-full text-center">
-                          <div className="text-xs font-bold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-bengali text-center max-w-full">
-                            "{noteText}"
-                          </div>
-                        </div>
-                      )}
+                      <p className="text-xs sm:text-sm font-semibold text-slate-700 text-center">
+                        {place3Val}
+                      </p>
                     </div>
                   );
                 }
 
-                // Block 3: Place 5 (Extra Word) & Place 6 (Extra Meaning)
-                if (hasPlace5or6) {
+                // Block 3: Place 5 (Label & Value, Place6 removed from here)
+                if (hasPlace5) {
                   blocks.push(
-                    <div key="place5-place6" className="w-full flex flex-col items-center justify-center text-xs font-semibold text-slate-600">
-                      {p5 && p6 ? (
-                        <div className="text-center w-full">
-                          {(placeLabels?.place5 || placeLabels?.place6) && (
-                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
-                              {[placeLabels?.place5, placeLabels?.place6].filter(Boolean).join(' / ')}
-                            </span>
-                          )}
-                          <p className="font-bold text-emerald-700">
-                            {p5} : {p6}
-                          </p>
-                        </div>
-                      ) : p5 ? (
-                        <div className="text-center w-full">
-                          {placeLabels?.place5 && (
-                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
-                              {placeLabels.place5}
-                            </span>
-                          )}
-                          <p className="font-bold text-emerald-700">{p5}</p>
-                        </div>
-                      ) : (
-                        <div className="text-center w-full">
-                          {placeLabels?.place6 && (
-                            <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
-                              {placeLabels.place6}
-                            </span>
-                          )}
-                          <p className="font-bold text-emerald-700">{p6}</p>
-                        </div>
+                    <div key="place5" className="w-full text-center space-y-0.5 my-1">
+                      {placeLabels?.place5 && (
+                        <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
+                          {placeLabels.place5}
+                        </span>
                       )}
+                      <p className="text-xs font-bold text-emerald-700 text-center">
+                        {place5Val}
+                      </p>
                     </div>
                   );
                 }

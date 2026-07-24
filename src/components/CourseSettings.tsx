@@ -1394,12 +1394,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
           const groupKey = findKey(['group', 'level']);
           const synonym1Key = findKey(['synonym1', 'syn1'], 'place5');
-          const synonym2Key = findKey(['synonym2', 'syn2'], 'place6');
+          const synonym2Key = findKey(['synonym2', 'syn2']);
           const synonymsKey = findKey(['synonyms', 'synonym']);
           const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example', 'example sentence'], 'place3');
-          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
+          const mnemonicKey = findKey(['place6', 'mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes'], 'place6');
 
           const baseWord = wordKey && row[wordKey] !== undefined ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey && row[meaningKey] !== undefined ? String(row[meaningKey]).trim() : '';

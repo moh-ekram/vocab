@@ -644,12 +644,12 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           const meaningKey = findKey(['meaning', 'bangla meaning', 'bengali meaning'], 'place2');
           const groupKey = findKey(['group', 'level']);
           const synonym1Key = findKey(['synonym1', 'synonm1', 'syn1'], 'place5');
-          const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2'], 'place6');
+          const synonym2Key = findKey(['synonym2', 'synonm2', 'syn2']);
           const synonymsKey = findKey(['synonyms', 'synonym']);
           const extraWordKey = findKey(['extra word', 'derivative'], 'place4');
           const extraMeaningKey = findKey(['extra meaning']);
           const exampleKey = findKey(['example', 'example sentence'], 'place3');
-          const mnemonicKey = findKey(['mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes']);
+          const mnemonicKey = findKey(['place6', 'mnemonic', 'mnemonics', 'personal notes', 'personal note', 'notes', 'note', 'nemonik', 'nemoniq', 'নেমোনিক', 'mnemonic note', 'mnemonic notes'], 'place6');
 
           const baseWord = wordKey ? String(row[wordKey]).trim() : '';
           const banglaMeaning = meaningKey ? String(row[meaningKey]).trim() : '';
