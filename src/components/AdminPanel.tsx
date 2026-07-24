@@ -41,7 +41,9 @@ import {
   Layers,
   Globe,
   Gamepad2,
-  DollarSign
+  DollarSign,
+  Megaphone,
+  Bell
 } from 'lucide-react';
 
 interface FirestoreUserDoc {
@@ -117,24 +119,11 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
   const [activeWordFilter, setActiveWordFilter] = useState<'all' | 'know' | 'confusion' | 'dont_know'>('all');
 
   // Course management and upload states
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'universal' | 'reports' | 'access-requests' | 'system-settings'>('courses');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'courses' | 'reports' | 'access-requests' | 'system-settings'>('courses');
   const [customCourses, setCustomCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
   const [coursesError, setCoursesError] = useState<string | null>(null);
   const [hasFetchedCourses, setHasFetchedCourses] = useState(false);
-
-  // Universal Course Management Control states
-  const [universalExpiryDate, setUniversalExpiryDate] = useState('');
-  const [universalPrice, setUniversalPrice] = useState<string>('');
-  const [universalBkashNumber, setUniversalBkashNumber] = useState<string>('');
-  const [isUniversalProcessing, setIsUniversalProcessing] = useState(false);
-  const [universalGameToggles, setUniversalGameToggles] = useState({
-    enableBlankFillingGame: true,
-    enableWordAnalogyGame: true,
-    enableOddOneOutGame: true,
-    enableSynonymCheck: true,
-    enableWordMatchGame: true
-  });
 
   // Pending Access Requests Expiry Inputs state
   const [requestExpiryDates, setRequestExpiryDates] = useState<Record<string, string>>({});
@@ -373,199 +362,57 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       const reqRef = doc(db, 'access_requests', req.id);
       await updateDoc(reqRef, { status: 'approved' });
 
-      // 2. Add email to the course's allowed users list with expiry
-      const courseId = req.courseId;
+      // 2. Add email to the course(s) allowed users list with expiry
       const userEmail = req.email.toLowerCase().trim();
+      const targetCourseIds = (req.courseIds && req.courseIds.length > 0) 
+        ? req.courseIds 
+        : [req.courseId];
 
-      let courseObj = customCourses.find(c => c.id === courseId);
-      let currentAllowed: string[] = [];
-      let currentAllowedExpiry: Record<string, string> = {};
-      
-      if (courseObj) {
-        currentAllowed = courseObj.allowedUsers || [];
-        currentAllowedExpiry = courseObj.allowedUsersExpiry || {};
-      } else {
-        const courseDoc = await getDoc(doc(db, 'courses', courseId));
-        if (courseDoc.exists()) {
-          const courseData = courseDoc.data() as Course;
-          currentAllowed = courseData.allowedUsers || [];
-          currentAllowedExpiry = courseData.allowedUsersExpiry || {};
+      for (const courseId of targetCourseIds) {
+        if (!courseId) continue;
+        let courseObj = customCourses.find(c => c.id === courseId);
+        let currentAllowed: string[] = [];
+        let currentAllowedExpiry: Record<string, string> = {};
+        
+        if (courseObj) {
+          currentAllowed = courseObj.allowedUsers || [];
+          currentAllowedExpiry = courseObj.allowedUsersExpiry || {};
+        } else {
+          const courseDoc = await getDoc(doc(db, 'courses', courseId));
+          if (courseDoc.exists()) {
+            const courseData = courseDoc.data() as Course;
+            currentAllowed = courseData.allowedUsers || [];
+            currentAllowedExpiry = courseData.allowedUsersExpiry || {};
+          }
         }
-      }
 
-      const updatedAllowed = currentAllowed.includes(userEmail) ? currentAllowed : [...currentAllowed, userEmail];
-      const updatedExpiryMap = { ...currentAllowedExpiry };
-      if (selectedExpiry) {
-        updatedExpiryMap[userEmail] = selectedExpiry;
-      }
+        const updatedAllowed = currentAllowed.includes(userEmail) ? currentAllowed : [...currentAllowed, userEmail];
+        const updatedExpiryMap = { ...currentAllowedExpiry };
+        if (selectedExpiry) {
+          updatedExpiryMap[userEmail] = selectedExpiry;
+        }
 
-      // Update the course in Firestore
-      const courseRef = doc(db, 'courses', courseId);
-      await setDoc(courseRef, { 
-        allowedUsers: updatedAllowed,
-        allowedUsersExpiry: updatedExpiryMap
-      }, { merge: true });
-      
-      // Update local state so it reflects immediately
-      setCustomCourses(prev => prev.map(c => c.id === courseId ? { 
-        ...c, 
-        allowedUsers: updatedAllowed,
-        allowedUsersExpiry: updatedExpiryMap
-      } : c));
+        // Update the course in Firestore
+        const courseRef = doc(db, 'courses', courseId);
+        await setDoc(courseRef, { 
+          allowedUsers: updatedAllowed,
+          allowedUsersExpiry: updatedExpiryMap
+        }, { merge: true });
+        
+        // Update local state
+        setCustomCourses(prev => prev.map(c => c.id === courseId ? { 
+          ...c, 
+          allowedUsers: updatedAllowed,
+          allowedUsersExpiry: updatedExpiryMap
+        } : c));
+      }
 
       // Update local requests state
       setAccessRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved' } : r));
-      alert(`Access request approved successfully! User ${userEmail} granted ${selectedExpiry ? `access until ${selectedExpiry}` : 'permanent access'}.`);
+      alert(`Access request approved successfully! User ${userEmail} granted access to ${targetCourseIds.length} course(s) ${selectedExpiry ? `until ${selectedExpiry}` : 'permanently'}.`);
     } catch (err) {
       console.error('Error approving request:', err);
       alert('Failed to approve request: ' + (err instanceof Error ? err.message : String(err)));
-    }
-  };
-
-  // --- UNIVERSAL COURSE MANAGEMENT HANDLERS ---
-  const handleUniversalSetRestricted = async (isRestricted: boolean) => {
-    const label = isRestricted ? 'Restricted Access (নিবন্ধিত শিক্ষার্থীদের জন্য)' : 'Public Access (সকলের জন্য উন্মুক্ত)';
-    if (!window.confirm(`Are you sure you want to set ALL ${customCourses.length} custom courses to "${label}"?`)) return;
-
-    setIsUniversalProcessing(true);
-    try {
-      for (const course of customCourses) {
-        const courseRef = doc(db, 'courses', course.id);
-        await setDoc(courseRef, { isRestricted }, { merge: true });
-      }
-      setCustomCourses(prev => prev.map(c => ({ ...c, isRestricted })));
-      alert(`Success! All ${customCourses.length} custom courses are now set to ${label}.`);
-    } catch (err) {
-      console.error('Error applying universal restricted mode:', err);
-      alert('Failed to update course access modes: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsUniversalProcessing(false);
-    }
-  };
-
-  const handleUniversalApplyExpiry = async () => {
-    if (!universalExpiryDate) {
-      alert('Please select an expiry date or month first.');
-      return;
-    }
-
-    if (!window.confirm(`Are you sure you want to set expiration date "${universalExpiryDate}" for ALL enrolled students across ALL ${customCourses.length} custom courses?`)) return;
-
-    setIsUniversalProcessing(true);
-    try {
-      for (const course of customCourses) {
-        const allowed = course.allowedUsers || [];
-        if (allowed.length === 0) continue;
-        
-        const newExpiryMap: Record<string, string> = { ...(course.allowedUsersExpiry || {}) };
-        allowed.forEach(student => {
-          newExpiryMap[student] = universalExpiryDate;
-        });
-
-        const courseRef = doc(db, 'courses', course.id);
-        await setDoc(courseRef, { allowedUsersExpiry: newExpiryMap }, { merge: true });
-      }
-
-      setCustomCourses(prev => prev.map(c => {
-        const allowed = c.allowedUsers || [];
-        if (allowed.length === 0) return c;
-        const newExpiryMap: Record<string, string> = { ...(c.allowedUsersExpiry || {}) };
-        allowed.forEach(student => {
-          newExpiryMap[student] = universalExpiryDate;
-        });
-        return { ...c, allowedUsersExpiry: newExpiryMap };
-      }));
-
-      alert(`Success! Expiration date "${universalExpiryDate}" applied to all enrolled students across all courses.`);
-    } catch (err) {
-      console.error('Error applying universal expiry date:', err);
-      alert('Failed to update expiry dates: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsUniversalProcessing(false);
-    }
-  };
-
-  const handleUniversalSetPriceAndBkash = async () => {
-    const priceNum = parseFloat(universalPrice);
-    if (isNaN(priceNum) && !universalBkashNumber.trim()) {
-      alert('Please enter a valid Price (BDT) or bKash Number.');
-      return;
-    }
-
-    if (!window.confirm(`Apply price ${!isNaN(priceNum) ? `${priceNum} BDT` : 'unchanged'} and bKash number "${universalBkashNumber || 'unchanged'}" to ALL ${customCourses.length} custom courses?`)) return;
-
-    setIsUniversalProcessing(true);
-    try {
-      const updateData: any = {};
-      if (!isNaN(priceNum)) updateData.price = priceNum;
-      if (universalBkashNumber.trim()) updateData.bkashNumber = universalBkashNumber.trim();
-
-      for (const course of customCourses) {
-        const courseRef = doc(db, 'courses', course.id);
-        await setDoc(courseRef, updateData, { merge: true });
-      }
-
-      setCustomCourses(prev => prev.map(c => ({
-        ...c,
-        ...(!isNaN(priceNum) ? { price: priceNum } : {}),
-        ...(universalBkashNumber.trim() ? { bkashNumber: universalBkashNumber.trim() } : {})
-      })));
-
-      alert(`Success! Updated price and bKash details across all ${customCourses.length} custom courses.`);
-    } catch (err) {
-      console.error('Error applying universal payment settings:', err);
-      alert('Failed to update payment details: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsUniversalProcessing(false);
-    }
-  };
-
-  const handleUniversalApplyGames = async () => {
-    if (!window.confirm(`Apply practice game configurations to ALL ${customCourses.length} custom courses?`)) return;
-
-    setIsUniversalProcessing(true);
-    try {
-      for (const course of customCourses) {
-        const courseRef = doc(db, 'courses', course.id);
-        await setDoc(courseRef, { enabledGames: universalGameToggles }, { merge: true });
-      }
-
-      setCustomCourses(prev => prev.map(c => ({
-        ...c,
-        enabledGames: { ...universalGameToggles }
-      })));
-
-      alert(`Success! Updated practice game features across all ${customCourses.length} custom courses.`);
-    } catch (err) {
-      console.error('Error applying universal game settings:', err);
-      alert('Failed to update game settings: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsUniversalProcessing(false);
-    }
-  };
-
-  const handleUniversalClearStudents = async () => {
-    if (!window.confirm('WARNING: Are you sure you want to CLEAR all student rosters and access expirations across ALL courses? This action cannot be undone.')) return;
-
-    setIsUniversalProcessing(true);
-    try {
-      for (const course of customCourses) {
-        const courseRef = doc(db, 'courses', course.id);
-        await setDoc(courseRef, { allowedUsers: [], allowedUsersExpiry: {} }, { merge: true });
-      }
-
-      setCustomCourses(prev => prev.map(c => ({
-        ...c,
-        allowedUsers: [],
-        allowedUsersExpiry: {}
-      })));
-
-      alert('Success! Cleared all enrolled student lists across all courses.');
-    } catch (err) {
-      console.error('Error clearing student lists:', err);
-      alert('Failed to clear student lists: ' + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setIsUniversalProcessing(false);
     }
   };
 
@@ -1279,17 +1126,6 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           <span>Course Upload & Creation</span>
         </button>
         <button
-          onClick={() => setActiveAdminTab('universal')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-            activeAdminTab === 'universal'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <Globe className="w-4 h-4 text-indigo-600" />
-          <span>Universal Course Controls (ইউনিভার্সাল সেটিং)</span>
-        </button>
-        <button
           onClick={() => setActiveAdminTab('users')}
           className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
             activeAdminTab === 'users'
@@ -1340,267 +1176,6 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           <span>System Settings & Banner</span>
         </button>
       </div>
-
-      {/* Universal Course Management Tab */}
-      {activeAdminTab === 'universal' && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-extrabold text-slate-900 text-lg">Universal Course Management & Global Controls</h3>
-              </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                এক বাটন দিয়েই সকল কোর্সের অ্যাক্সেস পারমিশন, অ্যাক্সেস মেয়াদ, কোর্স ফি, পেমেন্ট নাম্বার এবং গেম ফিচারসমূহ নিয়ন্ত্রণ ও আপডেট করুন।
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl border border-indigo-100/80 font-mono">
-                {customCourses.length} Custom Courses Registered
-              </span>
-            </div>
-          </div>
-
-          {/* Section 1: Universal Restricted / Public Access Mode */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-indigo-600" />
-                  <span>1. Global Course Access Permission Mode</span>
-                </h4>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  এক ক্লিকে আপনার সমস্ত কোর্সকে জনসাধারণের জন্য পাবলিক অথবা নিবন্ধিত শিক্ষার্থীদের জন্য রেস্ট্রিক্টেড করুন।
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-bold">
-                <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg">
-                  Restricted: {customCourses.filter(c => c.isRestricted).length}
-                </span>
-                <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg">
-                  Public: {customCourses.filter(c => !c.isRestricted).length}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                disabled={isUniversalProcessing}
-                onClick={() => handleUniversalSetRestricted(false)}
-                className="py-3 px-4 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <CheckCircle className="w-4 h-4" />
-                <span>Make ALL Courses Public (সকল কোর্স উন্মুক্ত করুন)</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isUniversalProcessing}
-                onClick={() => handleUniversalSetRestricted(true)}
-                className="py-3 px-4 bg-amber-600 hover:bg-amber-550 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Lock className="w-4 h-4" />
-                <span>Make ALL Courses Restricted (সকল কোর্স রেস্ট্রিক্টেড করুন)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Section 2: Universal Enrolled Student Access Expiration Manager */}
-          <div className="p-5 rounded-2xl bg-indigo-50/40 border border-indigo-150 space-y-4">
-            <div>
-              <h4 className="text-sm font-extrabold text-indigo-950 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-indigo-600" />
-                <span>2. Universal Student Access Expiration Control (মেয়াদ নির্ধারণ)</span>
-              </h4>
-              <p className="text-xs text-slate-600 font-medium mt-0.5">
-                এক ক্লিকে সকল কোর্সের সকল নিবন্ধিত শিক্ষার্থীদের এক্সেস মেয়াদ বা মেয়াদপূর্তির তারিখ নির্ধারণ করুন।
-              </p>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-indigo-100 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Exact Date Input</label>
-                  <input
-                    type="date"
-                    value={universalExpiryDate}
-                    onChange={(e) => setUniversalExpiryDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 transition cursor-pointer"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Month Input (Expires at end of Month)</label>
-                  <input
-                    type="month"
-                    onChange={(e) => {
-                      if (!e.target.value) return;
-                      const [yStr, mStr] = e.target.value.split('-');
-                      const y = parseInt(yStr, 10);
-                      const m = parseInt(mStr, 10);
-                      const lastDay = new Date(y, m, 0).getDate();
-                      setUniversalExpiryDate(`${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`);
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 transition cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Quick Presets */}
-              <div className="flex items-center gap-2 flex-wrap pt-1">
-                <span className="text-[10px] font-extrabold text-slate-500">Quick Validity Presets:</span>
-                {[
-                  { label: '1 Month', m: 1 },
-                  { label: '3 Months', m: 3 },
-                  { label: '6 Months', m: 6 },
-                  { label: '1 Year', m: 12 },
-                ].map(preset => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      const d = new Date();
-                      d.setMonth(d.getMonth() + preset.m);
-                      setUniversalExpiryDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-                    }}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-800 text-xs font-bold rounded-lg transition"
-                  >
-                    +{preset.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setUniversalExpiryDate('')}
-                  className="px-2.5 py-1 bg-rose-50 text-rose-700 text-xs font-bold rounded-lg transition hover:bg-rose-100"
-                >
-                  Clear / Permanent Access
-                </button>
-              </div>
-
-              <button
-                type="button"
-                disabled={isUniversalProcessing || !universalExpiryDate}
-                onClick={handleUniversalApplyExpiry}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-550 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <Clock className="w-4 h-4" />
-                <span>Apply Expiry Date ({universalExpiryDate || 'Select Date/Month'}) to ALL Students across ALL Courses</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Section 3: Universal Pricing & bKash Payment Control */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
-            <div>
-              <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span>3. Universal Course Pricing & Payment Number</span>
-              </h4>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                সকল কোর্সের কোর্স ফি (BDT) এবং বিকাশ পেমেন্ট একাউন্ট নম্বর এক সাথে সেট করুন।
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Course Fee (BDT)</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 500"
-                  value={universalPrice}
-                  onChange={(e) => setUniversalPrice(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Merchant / Payment bKash Number</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 01712345678"
-                  value={universalBkashNumber}
-                  onChange={(e) => setUniversalBkashNumber(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 font-mono"
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={isUniversalProcessing}
-              onClick={handleUniversalSetPriceAndBkash}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-550 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <DollarSign className="w-4 h-4" />
-              <span>Apply Price & bKash Number to ALL Courses</span>
-            </button>
-          </div>
-
-          {/* Section 4: Universal Practice Game Features Toggle */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
-            <div>
-              <h4 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <Gamepad2 className="w-4 h-4 text-purple-600" />
-                <span>4. Universal Practice Games & Learning Modules</span>
-              </h4>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                সকল কোর্সে এক সাথে কুইজ ও প্র্যাকটিস গেম মডিউলসমূহ অন অথবা অফ করুন।
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                { key: 'enableBlankFillingGame' as const, label: 'Fill-in-the-Blanks' },
-                { key: 'enableWordAnalogyGame' as const, label: 'Word Analogy' },
-                { key: 'enableOddOneOutGame' as const, label: 'Odd One Out' },
-                { key: 'enableSynonymCheck' as const, label: 'Synonym Practice' },
-                { key: 'enableWordMatchGame' as const, label: 'Word Match Pair' },
-              ].map(game => (
-                <div key={game.key} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200/60">
-                  <span className="text-xs font-bold text-slate-800">{game.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => setUniversalGameToggles(prev => ({ ...prev, [game.key]: !prev[game.key] }))}
-                    className={`relative inline-flex h-4.5 w-8 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                      universalGameToggles[game.key] ? 'bg-purple-600' : 'bg-slate-200'
-                    }`}
-                  >
-                    <span className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${universalGameToggles[game.key] ? 'translate-x-3.5' : 'translate-x-0'}`} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              disabled={isUniversalProcessing}
-              onClick={handleUniversalApplyGames}
-              className="w-full py-2.5 bg-purple-600 hover:bg-purple-550 text-white font-extrabold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>Apply Practice Modules Config to ALL Courses</span>
-            </button>
-          </div>
-
-          {/* Section 5: Universal Reset */}
-          <div className="p-4 rounded-xl bg-rose-50/50 border border-rose-100 flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <span className="block text-xs font-bold text-rose-800">Clear All Student Rosters (সকল স্টুডেন্ট লিস্ট রিসেট)</span>
-              <span className="block text-[11px] text-rose-600 font-medium">Remove all allowed student emails and access dates across every custom course.</span>
-            </div>
-            <button
-              type="button"
-              disabled={isUniversalProcessing}
-              onClick={handleUniversalClearStudents}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear Enrolled Students</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Main Grid: Directory */}
       {activeAdminTab === 'users' && (
@@ -2309,10 +1884,34 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   {accessRequests.map((req) => (
                     <tr key={req.id} className="hover:bg-slate-50/50 transition">
                       <td className="px-4 py-3">
-                        <div className="font-extrabold text-slate-800 text-sm">{req.courseTitle}</div>
-                        <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
-                          Course ID: {req.courseId}
-                        </div>
+                        {req.courseIds && req.courseIds.length > 1 ? (
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-800 font-extrabold text-[10px] rounded-full border border-indigo-200">
+                              🛒 Multi-Course Cart Bundle ({req.courseIds.length} Courses)
+                            </span>
+                            <div className="text-[11px] font-bold text-slate-800 pl-1 space-y-0.5">
+                              {req.courseTitles && req.courseTitles.length > 0 ? (
+                                req.courseTitles.map((t, idx) => (
+                                  <div key={idx} className="flex items-center gap-1 text-slate-700">
+                                    <span className="text-indigo-500 font-black">•</span> {t}
+                                  </div>
+                                ))
+                              ) : (
+                                <div>{req.courseTitle}</div>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-emerald-700 font-black font-mono mt-1">
+                              Total Paid Amount: ৳{req.totalPrice || req.price} BDT
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="font-extrabold text-slate-800 text-sm">{req.courseTitle}</div>
+                            <div className="text-[10px] text-indigo-600 font-bold font-mono uppercase tracking-wide mt-0.5">
+                              Course ID: {req.courseId} | Price: ৳{req.totalPrice || req.price || 30} BDT
+                            </div>
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-700">
                         {req.email}
@@ -2447,11 +2046,210 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-xs">
             <h3 className="font-extrabold text-slate-800 text-lg flex items-center gap-2">
               <Sliders className="w-5 h-5 text-indigo-600" />
-              <span>System Settings & Dashboard Banner Control</span>
+              <span>System Settings & Banner Control</span>
             </h3>
             <p className="text-xs text-slate-500 font-medium mt-1">
-              Configure global flashcard settings, popup banners, and default behaviors across the app from the Admin Panel.
+              Configure global app announcements, ads, notice banners, and system defaults across the platform.
             </p>
+          </div>
+
+          {/* User Announcement / Notice / Ad Banner Control */}
+          <div className="bg-white p-6 rounded-2xl border border-indigo-200/80 shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 flex-wrap gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Megaphone className="w-5 h-5 text-indigo-600" />
+                  <h4 className="font-extrabold text-slate-900 text-base">
+                    User Announcement / Ad / Notification Banner (ঘোষণা ও ব্যানার সিস্টেম)
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  ইউজারদের সামনে অ্যাপের উপরে বিশেষ নোটিশ, বিজ্ঞাপন বা ঘোষণার ব্যানার প্রদর্শন করার কন্ট্রোল।
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-700">Banner Status:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (settings && onUpdateSettings) {
+                      onUpdateSettings({
+                        ...settings,
+                        announcementEnabled: !settings.announcementEnabled
+                      });
+                    }
+                  }}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                    settings?.announcementEnabled 
+                      ? 'bg-emerald-600 text-white shadow-xs' 
+                      : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                  }`}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>{settings?.announcementEnabled ? 'Active (পাবলিশড)' : 'Disabled (বন্ধ)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Config Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Announcement Message */}
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-xs font-extrabold text-slate-700 block">
+                  Announcement / Notice Text (ঘোষণার বিবরণ):
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. 🎉 নতুন কোর্স এবং নতুন ফিচার যুক্ত করা হয়েছে! ৫০% ছাড় পেতে এখনই চেক করুন।"
+                  value={settings?.announcementText || ''}
+                  onChange={(e) => {
+                    if (settings && onUpdateSettings) {
+                      onUpdateSettings({
+                        ...settings,
+                        announcementText: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 transition"
+                />
+              </div>
+
+              {/* Banner Type / Theme Selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-slate-700 block">
+                  Banner Color Theme / Type:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'info', label: 'Info (Blue)', bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                    { key: 'warning', label: 'Notice (Amber)', bg: 'bg-amber-50 text-amber-800 border-amber-200' },
+                    { key: 'success', label: 'Offer (Emerald)', bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+                    { key: 'promo', label: 'Promo (Purple)', bg: 'bg-purple-50 text-purple-800 border-purple-200' },
+                  ].map(t => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => {
+                        if (settings && onUpdateSettings) {
+                          onUpdateSettings({
+                            ...settings,
+                            announcementType: t.key as any
+                          });
+                        }
+                      }}
+                      className={`p-2 rounded-xl text-xs font-bold border transition text-center ${
+                        (settings?.announcementType || 'info') === t.key 
+                          ? 'ring-2 ring-indigo-600 font-extrabold ' + t.bg
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Closable Toggle */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-slate-700 block">
+                  Dismissable / Closable by User?
+                </label>
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (settings && onUpdateSettings) {
+                        onUpdateSettings({
+                          ...settings,
+                          announcementClosable: settings.announcementClosable !== false ? false : true
+                        });
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                      settings?.announcementClosable !== false
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-extrabold'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    {settings?.announcementClosable !== false ? 'Yes (ইউজার ক্লোজ করতে পারবে)' : 'No (স্থায়ী ব্যানার)'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Link & Text */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-slate-700 block">
+                  Optional Button Link URL (বাটন লিঙ্ক):
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. https://facebook.com or /#courses"
+                  value={settings?.announcementLink || ''}
+                  onChange={(e) => {
+                    if (settings && onUpdateSettings) {
+                      onUpdateSettings({
+                        ...settings,
+                        announcementLink: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 transition"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-slate-700 block">
+                  Optional Button Label (বাটনের নাম):
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. বিস্তারিত দেখুন"
+                  value={settings?.announcementLinkText || ''}
+                  onChange={(e) => {
+                    if (settings && onUpdateSettings) {
+                      onUpdateSettings({
+                        ...settings,
+                        announcementLinkText: e.target.value
+                      });
+                    }
+                  }}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none text-xs font-bold text-slate-800 focus:bg-white focus:border-indigo-500 transition"
+                />
+              </div>
+            </div>
+
+            {/* Live Banner Preview */}
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Live Banner Preview (ইউজার যা দেখবে):</span>
+              {settings?.announcementEnabled ? (
+                <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 flex-wrap ${
+                  settings.announcementType === 'warning' ? 'bg-amber-50 text-amber-900 border-amber-200' :
+                  settings.announcementType === 'success' ? 'bg-emerald-50 text-emerald-900 border-emerald-200' :
+                  settings.announcementType === 'promo' ? 'bg-purple-50 text-purple-900 border-purple-200' :
+                  'bg-indigo-50 text-indigo-900 border-indigo-200'
+                }`}>
+                  <div className="flex items-center gap-2.5 text-xs font-bold">
+                    <Megaphone className="w-4 h-4 shrink-0" />
+                    <span>{settings.announcementText || 'আপনার ঘোষণা এখানে প্রদর্শিত হবে।'}</span>
+                  </div>
+                  {settings.announcementLink && (
+                    <a
+                      href={settings.announcementLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-white shadow-2xs rounded-lg text-xs font-extrabold border border-black/10 hover:bg-slate-50 transition"
+                    >
+                      {settings.announcementLinkText || 'বিস্তারিত দেখুন'}
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-white rounded-lg border border-slate-200 text-slate-400 text-xs font-semibold text-center italic">
+                  ঘোষণা ব্যানার বর্তমানে বন্ধ রয়েছে।
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -64,6 +64,11 @@ export default function MyCoursesView({
   // Detail popup modal
   const [selectedDetailCourse, setSelectedDetailCourse] = useState<Course | null>(null);
 
+  // Cart States
+  const [cart, setCart] = useState<Course[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCartCheckoutMode, setIsCartCheckoutMode] = useState(false);
+
   // Payment states
   const [selectedBuyCourse, setSelectedBuyCourse] = useState<Course | null>(null);
   const [bkashSender, setBkashSender] = useState('');
@@ -78,9 +83,30 @@ export default function MyCoursesView({
     }
   }, [user]);
 
+  const toggleCartCourse = (course: Course, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setCart(prev => {
+      if (prev.some(c => c.id === course.id)) {
+        return prev.filter(c => c.id !== course.id);
+      } else {
+        return [...prev, course];
+      }
+    });
+  };
+
+  const removeFromCart = (courseId: string) => {
+    setCart(prev => prev.filter(c => c.id !== courseId));
+  };
+
+  const cartTotalPrice = cart.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
+
   const handleRequestAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBuyCourse) return;
+    
+    const isCartPurchase = isCartCheckoutMode && cart.length > 0;
+    const targetCourses = isCartPurchase ? cart : (selectedBuyCourse ? [selectedBuyCourse] : []);
+
+    if (targetCourses.length === 0) return;
 
     const cleanSender = bkashSender.trim();
     const cleanEmail = accessEmail.trim();
@@ -99,29 +125,39 @@ export default function MyCoursesView({
       const matchTrx = cleanTrx.toLowerCase().trim();
       const matchPhone = cleanPhone(cleanSender);
 
-      const isAutoApproved = selectedBuyCourse.verifiedPayments && selectedBuyCourse.verifiedPayments.some(vp => {
-        const vpPhone = cleanPhone(vp.bkashNumber);
-        const vpTrx = vp.trxId.toLowerCase().trim();
-        return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
-      });
+      const courseIds = targetCourses.map(c => c.id);
+      const courseTitles = targetCourses.map(c => c.title);
+      const totalPrice = targetCourses.reduce((sum, c) => sum + ((c.price && c.price > 0) ? c.price : 30), 0);
+
+      let isAutoApproved = false;
+      if (!isCartPurchase && selectedBuyCourse?.verifiedPayments) {
+        isAutoApproved = selectedBuyCourse.verifiedPayments.some(vp => {
+          const vpPhone = cleanPhone(vp.bkashNumber);
+          const vpTrx = vp.trxId.toLowerCase().trim();
+          return (vpPhone === matchPhone || vp.bkashNumber.trim() === cleanSender) && vpTrx === matchTrx;
+        });
+      }
 
       const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const requestPayload = {
         id: requestId,
-        courseId: selectedBuyCourse.id,
-        courseTitle: selectedBuyCourse.title,
+        courseId: isCartPurchase ? 'multi_cart' : targetCourses[0].id,
+        courseTitle: isCartPurchase ? `Cart Purchase (${targetCourses.length} Courses)` : targetCourses[0].title,
+        courseIds,
+        courseTitles,
         bkashNumber: cleanSender,
         email: cleanEmail.toLowerCase(),
         trxId: cleanTrx,
         status: 'pending',
-        price: (selectedBuyCourse.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30,
+        price: targetCourses[0].price || 30,
+        totalPrice,
         createdAt: new Date().toISOString(),
         requestedBy: user?.email || 'anonymous'
       };
 
       await setDoc(doc(db, 'access_requests', requestId), requestPayload);
 
-      if (isAutoApproved) {
+      if (isAutoApproved && selectedBuyCourse) {
         onImportCourse(selectedBuyCourse);
         setCheckoutMessage({
           type: 'success',
@@ -130,8 +166,13 @@ export default function MyCoursesView({
       } else {
         setCheckoutMessage({
           type: 'success',
-          text: 'Access request submitted successfully! Admin will verify and activate your course access shortly.'
+          text: isCartPurchase 
+            ? `Access request for ${targetCourses.length} courses (Total ৳${totalPrice} BDT) submitted! Admin will verify and activate all courses shortly.`
+            : 'Access request submitted successfully! Admin will verify and activate your course access shortly.'
         });
+        if (isCartPurchase) {
+          setCart([]);
+        }
       }
     } catch (err) {
       console.error("Error submitting access request:", err);
@@ -293,38 +334,57 @@ export default function MyCoursesView({
                 </h3>
               </div>
 
-              {/* Word Count & Start Flashcard Button */}
-              <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-2 ${
+              {/* Word Count & Actions Row */}
+              <div className={`mt-3 pt-2.5 border-t flex items-center justify-between gap-1.5 flex-wrap ${
                 isActive ? 'border-emerald-400/50 text-emerald-100' : 'border-slate-100 text-slate-500'
               }`}>
                 <span className={`text-xs sm:text-sm font-black ${isActive ? 'text-white' : 'text-indigo-600'}`}>
                   {wordsCount} Words
                 </span>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isUserAllowed) {
-                      setSelectedBuyCourse(course);
-                      return;
-                    }
-                    setActiveCourseId(course.id);
-                    if (onSelectTab) {
-                      onSelectTab('flashcard');
-                    }
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
-                    isActive
-                      ? 'bg-white text-emerald-800 hover:bg-emerald-50 font-black'
-                      : isUserAllowed
-                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
-                      : 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold'
-                  }`}
-                >
-                  <Play className="w-3 h-3 fill-current" />
-                  <span>Start Flashcard</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {!isUserAllowed && (
+                    <button
+                      type="button"
+                      onClick={(e) => toggleCartCourse(course, e)}
+                      title={cart.some(c => c.id === course.id) ? "Remove from Cart" : "Add to Cart"}
+                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1 transition cursor-pointer border ${
+                        cart.some(c => c.id === course.id)
+                          ? 'bg-emerald-500 text-white border-emerald-600 font-black shadow-2xs'
+                          : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border-indigo-200/80 font-extrabold'
+                      }`}
+                    >
+                      <ShoppingBag className="w-3 h-3" />
+                      <span>{cart.some(c => c.id === course.id) ? 'In Cart ✓' : '+ Cart'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isUserAllowed) {
+                        setIsCartCheckoutMode(false);
+                        setSelectedBuyCourse(course);
+                        return;
+                      }
+                      setActiveCourseId(course.id);
+                      if (onSelectTab) {
+                        onSelectTab('flashcard');
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer ${
+                      isActive
+                        ? 'bg-white text-emerald-800 hover:bg-emerald-50 font-black'
+                        : isUserAllowed
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold'
+                        : 'bg-rose-500 hover:bg-rose-600 text-white font-extrabold'
+                    }`}
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>{isUserAllowed ? 'Start Flashcard' : 'Buy Now'}</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           );
@@ -573,9 +633,125 @@ export default function MyCoursesView({
         })()}
       </AnimatePresence>
 
-      {/* 5. Course Access Request Modal */}
+      {/* Floating Cart Button */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-40 bg-slate-900 text-white p-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-2xl border border-indigo-500/30 flex items-center gap-4 transition hover:scale-102">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <ShoppingBag className="w-5 h-5 text-indigo-400" />
+              <span className="absolute -top-2 -right-2 bg-pink-600 text-white font-black text-[10px] w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-slate-900">
+                {cart.length}
+              </span>
+            </div>
+            <div>
+              <span className="text-xs font-black block">{cart.length} Course{cart.length > 1 ? 's' : ''} in Cart</span>
+              <span className="text-[10px] text-indigo-300 font-bold font-mono">Total: ৳{cartTotalPrice} BDT</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCartOpen(true)}
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-sm"
+          >
+            View Cart
+          </button>
+        </div>
+      )}
+
+      {/* Cart Drawer / Modal */}
       <AnimatePresence>
-        {selectedBuyCourse && (
+        {isCartOpen && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col border border-slate-100"
+            >
+              {/* Header */}
+              <div className="p-5 border-b border-slate-150 bg-slate-50 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-extrabold text-slate-900 text-base">Course Shopping Cart ({cart.length})</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCartOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Cart Items List */}
+              <div className="p-5 overflow-y-auto space-y-3 flex-1">
+                {cart.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 space-y-2">
+                    <ShoppingBag className="w-8 h-8 mx-auto text-slate-300" />
+                    <p className="text-xs font-bold">Your cart is empty.</p>
+                  </div>
+                ) : (
+                  cart.map((item, index) => {
+                    const price = (item.price && item.price > 0) ? item.price : 30;
+                    return (
+                      <div key={item.id} className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-mono text-indigo-600 font-extrabold block">Course #{index + 1}</span>
+                          <h4 className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">{item.title}</h4>
+                          <span className="text-[11px] font-bold text-slate-500 font-mono">৳{price} BDT</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-xl transition cursor-pointer"
+                          title="Remove course from cart"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Cart Footer */}
+              {cart.length > 0 && (
+                <div className="p-5 border-t border-slate-150 bg-slate-50/80 space-y-3">
+                  <div className="flex items-center justify-between text-sm font-extrabold text-slate-900 px-1">
+                    <span>Total Bundle Amount:</span>
+                    <span className="text-indigo-600 font-black font-mono text-base">৳{cartTotalPrice} BDT</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setCart([])}
+                      className="py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Clear Cart
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCartCheckoutMode(true);
+                        setIsCartOpen(false);
+                      }}
+                      className="py-2.5 px-3 bg-pink-600 hover:bg-pink-700 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-md shadow-pink-600/10 flex items-center justify-center gap-1.5"
+                    >
+                      <span>Checkout ({cart.length})</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 5. Course Access Request Modal (Single or Multi-Course Cart Checkout) */}
+      <AnimatePresence>
+        {(selectedBuyCourse || (isCartCheckoutMode && cart.length > 0)) && (
           <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" id="course-hub-bkash-modal">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -590,12 +766,21 @@ export default function MyCoursesView({
                 <div>
                   <h3 className="font-black text-slate-850 text-base flex items-center gap-2">
                     <span className="p-1 bg-pink-500 rounded-lg text-white font-black text-xs font-mono px-2 py-0.5">bKash</span>
-                    Course Access Request
+                    {isCartCheckoutMode && cart.length > 0 
+                      ? `Cart Bundle Checkout (${cart.length} Courses)`
+                      : 'Course Access Request'}
                   </h3>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedBuyCourse.title}</p>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5 truncate max-w-[260px]">
+                    {isCartCheckoutMode && cart.length > 0
+                      ? cart.map(c => c.title).join(', ')
+                      : selectedBuyCourse?.title}
+                  </p>
                 </div>
                 <button 
-                  onClick={() => setSelectedBuyCourse(null)}
+                  onClick={() => {
+                    setSelectedBuyCourse(null);
+                    setIsCartCheckoutMode(false);
+                  }}
                   className="p-1.5 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -604,21 +789,40 @@ export default function MyCoursesView({
 
               {/* Form Content */}
               <form onSubmit={handleRequestAccess} className="p-6 overflow-y-auto space-y-4 flex-1">
+                {/* Cart Courses Breakdown Summary */}
+                {isCartCheckoutMode && cart.length > 0 && (
+                  <div className="p-3.5 bg-indigo-50/60 border border-indigo-100 rounded-2xl space-y-2">
+                    <span className="text-[10px] font-black uppercase text-indigo-700 tracking-wider block">Cart Items Summary:</span>
+                    <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+                      {cart.map((c, idx) => (
+                        <div key={c.id} className="flex items-center justify-between text-xs font-bold text-slate-800">
+                          <span className="truncate pr-2">{idx + 1}. {c.title}</span>
+                          <span className="font-mono text-indigo-700 shrink-0">৳{(c.price && c.price > 0) ? c.price : 30} BDT</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Instructions Box */}
                 <div className="p-4 bg-pink-50 border border-pink-100 rounded-2xl space-y-2 text-xs">
                   <p className="font-black text-pink-700">bKash Send Money Instructions:</p>
                   <p className="font-semibold text-slate-700 leading-relaxed">
-                    Send <strong className="text-pink-600 font-black text-sm">৳{(selectedBuyCourse.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30} BDT</strong> via Send Money to the bKash Personal number below, then fill out and submit this form.
+                    Send <strong className="text-pink-600 font-black text-sm">
+                      ৳{isCartCheckoutMode && cart.length > 0 ? cartTotalPrice : ((selectedBuyCourse?.price && selectedBuyCourse.price > 0) ? selectedBuyCourse.price : 30)} BDT
+                    </strong> via Send Money to the bKash Personal number below, then fill out and submit this form.
                   </p>
                   <div className="flex items-center justify-between p-2.5 bg-white border border-pink-100 rounded-xl mt-1.5">
                     <div>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">bKash Personal Number:</p>
-                      <p className="font-black text-slate-800 text-sm font-mono">{(selectedBuyCourse.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202'}</p>
+                      <p className="font-black text-slate-800 text-sm font-mono">
+                        {(selectedBuyCourse?.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202'}
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        const num = (selectedBuyCourse.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202';
+                        const num = (selectedBuyCourse?.bkashNumber && selectedBuyCourse.bkashNumber !== '01700000000' && selectedBuyCourse.bkashNumber.trim() !== '') ? selectedBuyCourse.bkashNumber : '01581624202';
                         navigator.clipboard.writeText(num);
                         alert('bKash number copied to clipboard!');
                       }}
@@ -691,7 +895,11 @@ export default function MyCoursesView({
                   disabled={isSubmittingRequest}
                   className="w-full py-3 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-300 text-white font-black text-xs rounded-xl transition cursor-pointer shadow-md shadow-pink-600/10"
                 >
-                  {isSubmittingRequest ? 'Submitting Request...' : 'Submit Access Request'}
+                  {isSubmittingRequest 
+                    ? 'Submitting Request...' 
+                    : isCartCheckoutMode && cart.length > 0 
+                    ? `Submit Request for ${cart.length} Courses (৳${cartTotalPrice})` 
+                    : 'Submit Access Request'}
                 </button>
               </form>
             </motion.div>

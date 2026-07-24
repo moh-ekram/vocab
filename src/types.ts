@@ -63,6 +63,14 @@ export interface AppSettings {
   enableSynonymCheck?: boolean;
   enableWordMatchGame?: boolean;
 
+  // Global Announcement / Notice / Ad Banner settings
+  announcementEnabled?: boolean;
+  announcementText?: string;
+  announcementLink?: string;
+  announcementLinkText?: string;
+  announcementType?: 'info' | 'warning' | 'success' | 'promo';
+  announcementClosable?: boolean;
+
   // System & Access Controls
   enableGlobalLeaderboard?: boolean;
   soundEffectsEnabled?: boolean;
@@ -125,13 +133,17 @@ export interface AccessRequest {
   id: string;
   courseId: string;
   courseTitle: string;
+  courseIds?: string[];
+  courseTitles?: string[];
   bkashNumber: string;
   email: string;
   trxId: string;
   status: 'pending' | 'approved' | 'rejected';
   price?: number;
+  totalPrice?: number;
   createdAt: string;
   requestedBy?: string;
+  expiryDate?: string;
 }
 
 export interface BlankQuestion {

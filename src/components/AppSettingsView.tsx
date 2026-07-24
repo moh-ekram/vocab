@@ -442,60 +442,7 @@ export default function AppSettingsView({
                 </button>
               </div>
 
-              {/* Full Banner Flashcard Overlay Setting */}
-              <div className="space-y-4 pt-3.5 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[11px] font-bold text-slate-700 tracking-wider uppercase">
-                    Daily Banner Flashcard Overlay
-                  </label>
-                  <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-extrabold uppercase">
-                    Popup Control
-                  </span>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Input Box: Times Per Day */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Times Per Day
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        value={settings.flashcardBannerCountPerDay !== undefined ? settings.flashcardBannerCountPerDay : (settings.flashcardBannerAnim === 'once_daily' ? 1 : settings.flashcardBannerAnim === 'disabled' ? 0 : 2)}
-                        onChange={(e) => handleBannerCountChange(parseInt(e.target.value, 10) || 0)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                      />
-                      <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
-                        times/day
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Input Box: Stay Duration in Seconds */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Stay Duration (Seconds)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0.5"
-                        max="30"
-                        step="0.5"
-                        value={settings.flashcardBannerDurationSec ?? 3.0}
-                        onChange={(e) => handleBannerDurationChange(parseFloat(e.target.value) || 3.0)}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-hidden"
-                      />
-                      <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
-                        seconds
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
             </div>
           </div>

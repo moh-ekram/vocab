@@ -9,6 +9,7 @@ import AppSettingsView from './components/AppSettingsView';
 import AdminPanel from './components/AdminPanel';
 import GlobalLeaderboard from './components/GlobalLeaderboard';
 import MyCoursesView from './components/MyCoursesView';
+import AnnouncementBanner from './components/AnnouncementBanner';
 
 import {
   LayoutDashboard,
@@ -1416,6 +1417,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 w-full max-w-full overflow-x-hidden" id="main-layout-stage">
+      {/* Global User Announcement / Notice / Ad Banner */}
+      <AnnouncementBanner settings={settings} />
+
       {/* Top Header / Main Banner (Unified for Mobile & Desktop) */}
       <header className="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white p-4 md:px-8 md:py-5 flex items-center justify-between shadow-md flex-shrink-0" id="main-header-banner">
         <div className="flex items-center gap-2.5 md:gap-3.5 min-w-0">
