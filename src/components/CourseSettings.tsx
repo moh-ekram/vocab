@@ -1265,10 +1265,48 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
     const uniqueIndexSuffix = localWords.length + 1;
     const finalId = singleWordId.trim() || `${course.id}_g${groupVal}_w_${Date.now()}_${uniqueIndexSuffix}`;
 
-    // Check duplicate
-    const hasDuplicate = localWords.some(w => w.id === finalId);
-    if (hasDuplicate) {
-      setAddFormMessage({ type: 'error', text: `The ID "${finalId}" is already in use.` });
+    // Check existing word by ID or by Word name
+    const existingIndex = localWords.findIndex(w => 
+      (singleWordId.trim() && String(w.id).trim().toLowerCase() === singleWordId.trim().toLowerCase()) ||
+      (!singleWordId.trim() && w.word.trim().toLowerCase() === singleWord.trim().toLowerCase())
+    );
+
+    if (existingIndex !== -1) {
+      // Update/Replace existing word
+      const targetId = singleWordId.trim() || localWords[existingIndex].id;
+      const updatedWordItem: VocabularyWord = {
+        ...localWords[existingIndex],
+        id: targetId,
+        word: singleWord.trim(),
+        meaning: singleMeaning.trim(),
+        group: groupVal,
+        synonyms: singleSynonyms.trim(),
+        extraWord: singleExtraWord.trim(),
+        extraMeaning: singleExtraMeaning.trim(),
+        example: singleExample.trim(),
+        mnemonic: singleMnemonic.trim()
+      };
+
+      setLocalWords(prev => {
+        const copy = [...prev];
+        copy[existingIndex] = updatedWordItem;
+        return copy;
+      });
+
+      // Reset single word inputs
+      setSingleWordId('');
+      setSingleWord('');
+      setSingleMeaning('');
+      setSingleSynonyms('');
+      setSingleExtraWord('');
+      setSingleExtraMeaning('');
+      setSingleExample('');
+      setSingleMnemonic('');
+
+      setAddFormMessage({ 
+        type: 'success', 
+        text: `"${updatedWordItem.word}" (ID: ${targetId}) has been successfully UPDATED/REPLACED in the word list! Click "Update Settings" below to save changes permanently.` 
+      });
       return;
     }
 
@@ -1515,13 +1553,13 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
         
         let msg = 'Spreadsheet processed successfully! ';
         if (updatedCount > 0 && addedCount > 0) {
-          msg += `Updated ${updatedCount} existing words (mnemonics/details) and added ${addedCount} new words.`;
+          msg += `Updated ${updatedCount} existing words and added ${addedCount} new words. `;
         } else if (updatedCount > 0) {
-          msg += `Successfully updated ${updatedCount} existing words with mnemonics/details.`;
+          msg += `Successfully updated ${updatedCount} existing words. `;
         } else {
-          msg += `Successfully added ${addedCount} new words.`;
+          msg += `Successfully added ${addedCount} new words. `;
         }
-        msg += ' Click "Update Settings" below to save permanently.';
+        msg += '⚠️ Important: Click "Update Settings" at the bottom to save these changes permanently to the course database.';
 
         setExcelSuccess(msg);
       } catch (err) {
@@ -2792,10 +2830,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             />
                           </th>
                           <th className="px-3 py-3 font-mono">Unique ID</th>
-                          <th className="px-4 py-3">Word (English)</th>
-                          <th className="px-4 py-3">Meaning (Bangla)</th>
+                          <th className="px-4 py-3">{localPlaceLabels.place1 || 'place1'}</th>
+                          <th className="px-4 py-3">{localPlaceLabels.place2 || 'place2'}</th>
                           <th className="px-4 py-3 text-center">Group</th>
-                          <th className="px-4 py-3 hidden sm:table-cell">Synonyms / Derivatives / Mnemonic</th>
+                          <th className="px-4 py-3 hidden sm:table-cell">
+                            {`${localPlaceLabels.place3 || 'place3'} / ${localPlaceLabels.place4 || 'place4'} / ${localPlaceLabels.place5 || 'place5'} / ${localPlaceLabels.place6 || 'place6'}`}
+                          </th>
                           <th className="px-4 py-3 w-24 text-center">Action</th>
                         </tr>
                       </thead>
@@ -2825,10 +2865,11 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                 <td className="px-4 py-2 font-black text-slate-900 font-sans">{w.word}</td>
                                 <td className="px-4 py-2 text-slate-600 font-bold">{w.meaning}</td>
                                 <td className="px-4 py-2 text-center"><span className="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-black text-[10px]">{w.group}</span></td>
-                                <td className="px-4 py-2 text-slate-400 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
-                                  {w.synonyms && <span className="block truncate">Synonyms: {w.synonyms}</span>}
-                                  {w.extraWord && <span className="block truncate mt-0.5">Derivative: {w.extraWord} ({w.extraMeaning})</span>}
-                                  {w.mnemonic && <span className="block truncate mt-0.5 text-indigo-600 font-semibold">Mnemonic: {w.mnemonic}</span>}
+                                <td className="px-4 py-2 text-slate-500 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
+                                  {w.synonyms && <span className="block truncate"><strong className="text-slate-700 font-bold">{localPlaceLabels.place3 || 'place3'}:</strong> {w.synonyms}</span>}
+                                  {w.extraWord && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place4 || 'place4'}:</strong> {w.extraWord}</span>}
+                                  {w.extraMeaning && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place5 || 'place5'}:</strong> {w.extraMeaning}</span>}
+                                  {(w.mnemonic || w.example) && <span className="block truncate mt-0.5 text-indigo-600 font-semibold"><strong className="text-indigo-500 font-bold">{localPlaceLabels.place6 || 'place6'}:</strong> {w.mnemonic || w.example}</span>}
                                 </td>
                                 <td className="px-4 py-2 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
@@ -2927,7 +2968,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">Word (English) <span className="text-rose-500">*</span></label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">
+                          {localPlaceLabels.place1 ? `place1: ${localPlaceLabels.place1}` : 'place1 (Front Main Display)'} <span className="text-rose-500">*</span>
+                        </label>
                         <input 
                           type="text" 
                           value={singleWord}
@@ -2937,12 +2980,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">Bangla Meaning <span className="text-rose-500">*</span></label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">
+                          {localPlaceLabels.place2 ? `place2: ${localPlaceLabels.place2}` : 'place2 (Back Main Display)'} <span className="text-rose-500">*</span>
+                        </label>
                         <input 
                           type="text" 
                           value={singleMeaning}
                           onChange={(e) => setSingleMeaning(e.target.value)}
-                          placeholder="e.g. decrease / reduce (or Bangla equivalent)" 
+                          placeholder="e.g. decrease / reduce" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800"
                         />
                       </div>
@@ -2960,7 +3005,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">Synonyms</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">
+                          {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display)'}
+                        </label>
                         <input 
                           type="text" 
                           value={singleSynonyms}
@@ -2973,7 +3020,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">Extra Word (Derivative)</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">
+                          {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header)'}
+                        </label>
                         <input 
                           type="text" 
                           value={singleExtraWord}
@@ -2983,12 +3032,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-extrabold text-slate-500 block">Extra Meaning (Derivative Meaning)</label>
+                        <label className="text-[10px] font-extrabold text-slate-500 block">
+                          {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1)'}
+                        </label>
                         <input 
                           type="text" 
                           value={singleExtraMeaning}
                           onChange={(e) => setSingleExtraMeaning(e.target.value)}
-                          placeholder="e.g. Bangla translation for derivative" 
+                          placeholder="e.g. Extra info / translation" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                       </div>
@@ -3006,7 +3057,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] font-extrabold text-slate-500 block">Mnemonic / Personal Note</label>
+                      <label className="text-[10px] font-extrabold text-slate-500 block">
+                        {localPlaceLabels.place6 ? `place6: ${localPlaceLabels.place6}` : 'place6 (Back Extra Section 2 / Mnemonic)'}
+                      </label>
                       <input 
                         type="text" 
                         value={singleMnemonic}
@@ -3036,12 +3089,12 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       <div className="text-[11px] text-slate-500 leading-relaxed mt-2 font-medium space-y-1">
                         <p className="font-extrabold text-slate-700">Excel Column Guidelines:</p>
                         <p>* <strong className="text-rose-600 font-extrabold">id</strong> (Unique ID)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place1:###</strong> — মেইন ওয়ার্ড বসে (Main Word)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place2:###</strong> — ফ্ল্যাশ কার্ড ফ্লিপ করলে যেখানে মিনিং বসে (Meaning)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — যেখানে এক্সাম্পল সেন্টেন্স বসে (Example Sentence)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — মেইন ওয়ার্ডের নিচে এক্সট্রা ইনফো বসে (Extra Info)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — যেখানে প্রথম সিনোনিম বসে (First Synonym)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place6:###</strong> — যেখানে ২য় সিনোনিম বসে (Second Synonym)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place1:###</strong> — কার্ডের সামনে প্রধান ডাটা (Front Main Display)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place2:###</strong> — কার্ডের পেছনে প্রধান ডাটা (Back Main Display)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</p>
+                        <p>* <strong className="text-indigo-600 font-extrabold">place6:###</strong> — কার্ডের পেছনে ৪র্থ সেকশন / নোটস (Back Extra Section 2 / Notes)</p>
                         <p>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</p>
                         <p className="mt-2 text-slate-400 text-[10px] italic">
                           📌 <strong>Dynamic Placement (place1-place6):</strong> You can name your column headings as place1:###, place2:###, place3:###, place4:###, place5:###, and place6:### (where ### can be any custom name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.
@@ -3830,7 +3883,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Word (English)</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                    {localPlaceLabels.place1 ? `place1: ${localPlaceLabels.place1}` : 'place1 (Front Main Display)'}
+                  </label>
                   <input 
                     type="text" 
                     value={editedWord}
@@ -3839,7 +3894,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Bangla Meaning</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                    {localPlaceLabels.place2 ? `place2: ${localPlaceLabels.place2}` : 'place2 (Back Main Display)'}
+                  </label>
                   <input 
                     type="text" 
                     value={editedMeaning}
@@ -3860,7 +3917,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Synonyms</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                    {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display)'}
+                  </label>
                   <input 
                     type="text" 
                     value={editedSynonyms}
@@ -3872,7 +3931,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
 
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Derivative / Extra Word</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                    {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header)'}
+                  </label>
                   <input 
                     type="text" 
                     value={editedExtraWord}
@@ -3881,7 +3942,9 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Derivative Meaning</label>
+                  <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                    {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1)'}
+                  </label>
                   <input 
                     type="text" 
                     value={editedExtraMeaning}
@@ -3902,12 +3965,14 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Mnemonic / Personal Note</label>
-                <textarea 
-                  rows={2}
+                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
+                  {localPlaceLabels.place6 ? `place6: ${localPlaceLabels.place6}` : 'place6 (Back Extra Section 2 / Notes)'}
+                </label>
+                <input 
+                  type="text" 
                   value={editedMnemonic}
                   onChange={(e) => setEditedMnemonic(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold"
                   placeholder="Memory trick or hint to display on flashcard..."
                 />
               </div>

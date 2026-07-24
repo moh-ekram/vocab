@@ -1589,12 +1589,12 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 <span className="font-extrabold text-slate-800 block text-sm">Excel Column Guidelines:</span>
                 <div className="flex flex-col space-y-1 text-[11px] font-bold">
                   <span className="text-rose-600 flex items-center gap-1.5">* <strong className="text-rose-600 font-black">id</strong> (Unique ID)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place1:###</strong> — মেইন ওয়ার্ড বসে</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place2:###</strong> — ফ্ল্যাশ কার্ড ফ্লিপ করলে যেখানে মিনিং বসে</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place3:###</strong> — যেখানে এক্সাম্পল সেন্টেন্স বসে</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place4:###</strong> — মেইন ওয়ার্ডের নিচে এক্সট্রা ইনফো বসে</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place5:###</strong> — যেখানে প্রথম সিনোনিম বসে</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place6:###</strong> — যেখানে ২য় সিনোনিম বসে</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place1:###</strong> — কার্ডের সামনে প্রধান ডাটা (Front Main Display)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place2:###</strong> — কার্ডের পেছনে প্রধান ডাটা (Back Main Display)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</span>
+                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place6:###</strong> — কার্ডের পেছনে ৪র্থ সেকশন / নোটস (Back Extra Section 2 / Notes)</span>
                   <span className="text-slate-600 flex items-center gap-1.5">* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</span>
                 </div>
                 

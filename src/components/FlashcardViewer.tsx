@@ -333,19 +333,6 @@ export default function FlashcardViewer({
 
   const rateAndMaybeConfirm = (newStatus: WordStatus, autoAdvance = true) => {
     if (!currentActiveWord.id) return;
-    const oldStatus = progress[currentActiveWord.id]?.status || 'unrated';
-
-    if (oldStatus !== 'unrated' && oldStatus !== newStatus) {
-      setPendingRating({
-        wordId: currentActiveWord.id,
-        newStatus,
-        oldStatus,
-        wordName: currentActiveWord.word,
-        autoAdvance
-      });
-      return;
-    }
-
     onRateWord(currentActiveWord.id, newStatus);
     if (autoAdvance) {
       handleNext();
@@ -1085,14 +1072,18 @@ export default function FlashcardViewer({
 
                 <div className="flex flex-col items-center gap-1">
                   <button
-                    onClick={() => setIsFlipped(prev => !prev)}
-                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                    title="Flip Card"
+                    onClick={() => rateAndMaybeConfirm('confusion', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'confusion'
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
+                        : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                    }`}
+                    title="Confused / Medium"
                   >
-                    <RotateCcw className="w-5 h-5" />
+                    <HelpCircle className="w-6 h-6 stroke-[2.5]" />
                   </button>
                   <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
-                    flip
+                    confusion
                   </span>
                 </div>
 
@@ -1257,14 +1248,18 @@ export default function FlashcardViewer({
 
                 <div className="flex flex-col items-center gap-1">
                   <button
-                    onClick={() => setIsFlipped(prev => !prev)}
-                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200 flex items-center justify-center transition cursor-pointer"
-                    title="Flip Card"
+                    onClick={() => rateAndMaybeConfirm('confusion', true)}
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer border ${
+                      activeStatus === 'confusion'
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-md scale-105'
+                        : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200'
+                    }`}
+                    title="Confused / Medium"
                   >
-                    <RotateCcw className="w-5 h-5" />
+                    <HelpCircle className="w-6 h-6 stroke-[2.5]" />
                   </button>
                   <span className="text-[9px] sm:text-[10px] font-medium text-slate-400 tracking-tight leading-none whitespace-nowrap">
-                    flip
+                    confusion
                   </span>
                 </div>
 
