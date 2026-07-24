@@ -139,19 +139,23 @@ export default function MyCoursesView({
       const matchPhone = cleanPhone(cleanSender);
 
       // --- TRANSACTION ID UNIQUENESS CHECK ---
-      const requestsSnap = await getDocs(query(collection(db, 'access_requests')));
-      const existingWithTrx = requestsSnap.docs.find(d => {
-        const reqData = d.data();
-        return reqData.trxId && reqData.trxId.toLowerCase().trim() === matchTrx;
-      });
-
-      if (existingWithTrx) {
-        setIsSubmittingRequest(false);
-        setCheckoutMessage({
-          type: 'error',
-          text: `এই ট্রাঞ্জেকশন আইডিটি (${cleanTrx}) ইতোমধ্যে একবার একটি কোর্স রিকুয়েস্টে ব্যবহৃত হয়েছে। একই ট্রাঞ্জেকশন আইডি দিয়ে একাধিকবার রিকুয়েস্ট করা সম্ভব নয়।`
+      try {
+        const requestsSnap = await getDocs(query(collection(db, 'access_requests')));
+        const existingWithTrx = requestsSnap.docs.find(d => {
+          const reqData = d.data();
+          return reqData.trxId && reqData.trxId.toLowerCase().trim() === matchTrx;
         });
-        return;
+
+        if (existingWithTrx) {
+          setIsSubmittingRequest(false);
+          setCheckoutMessage({
+            type: 'error',
+            text: `এই ট্রাঞ্জেকশন আইডিটি (${cleanTrx}) ইতোমধ্যে একবার একটি কোর্স রিকুয়েস্টে ব্যবহৃত হয়েছে। একই ট্রাঞ্জেকশন আইডি দিয়ে একাধিকবার রিকুয়েস্ট করা সম্ভব নয়।`
+          });
+          return;
+        }
+      } catch (trxCheckErr) {
+        console.warn("Trx ID check notice:", trxCheckErr);
       }
 
       const courseIds = targetCourses.map(c => c.id);
@@ -305,11 +309,11 @@ export default function MyCoursesView({
         });
         if (isCartPurchase) setCart([]);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error submitting access request:", err);
       setCheckoutMessage({
         type: "error",
-        text: "Error submitting request. Please try again."
+        text: err?.message ? `ত্রুটি: ${err.message}` : "Error submitting request. Please try again."
       });
     } finally {
       setIsSubmittingRequest(false);
