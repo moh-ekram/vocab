@@ -760,7 +760,8 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
         synonyms: 4,
         extraWord: 5,
         extraMeaning: 6,
-        example: 7
+        example: 7,
+        mnemonic: -1
       };
 
       if (lines.length > 0) {
@@ -789,33 +790,38 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           
           const findPos = (candidates: string[], placePrefix?: string) => {
             if (placePrefix) {
-              const placeIdx = firstLineCells.findIndex(c => c.startsWith(placePrefix.toLowerCase() + ':'));
+              const placeIdx = firstLineCells.findIndex(c => {
+                const cleanC = c.trim().toLowerCase();
+                return new RegExp(`^${placePrefix.toLowerCase()}(\\s*[:_\\-]|\\s*$)`, 'i').test(cleanC);
+              });
               if (placeIdx !== -1) return placeIdx;
             }
-            return firstLineCells.findIndex(c => candidates.some(cand => c === cand));
+            return firstLineCells.findIndex(c => {
+              const cleanC = c.trim().toLowerCase();
+              if (/^place[1-6](\s*[:_\-]|\s*$)/i.test(cleanC)) return false;
+              return candidates.some(cand => cleanC === cand || cleanC.includes(cand));
+            });
           };
 
           const idPos = findPos(['id', 'unique id', 'word id', 'uid']);
           const wordPos = findPos(['word', 'main word'], 'place1');
           const meaningPos = findPos(['meaning', 'bangla meaning'], 'place2');
           const groupPos = findPos(['group']);
-          const syn1Pos = findPos(['synonym1', 'synonm1', 'syn1'], 'place5');
-          const syn2Pos = findPos(['synonym2', 'synonm2', 'syn2'], 'place6');
-          const synsPos = findPos(['synonyms']);
-          const extraWPos = findPos(['extra word'], 'place4');
+          const exPos = findPos(['example', 'example sentence'], 'place3');
+          const extraWPos = findPos(['extra word', 'derivative'], 'place4');
+          const synsPos = findPos(['synonyms', 'synonym', 'syn1', 'synonym1'], 'place5');
           const extraMPos = findPos(['extra meaning']);
-          const exPos = findPos(['example'], 'place3');
+          const mnemPos = findPos(['mnemonic', 'mnemonics', 'notes', 'note', 'nemonik', 'নেমোনিক'], 'place6');
 
           if (idPos !== -1) colIdxs.id = idPos;
           if (wordPos !== -1) colIdxs.word = wordPos;
           if (meaningPos !== -1) colIdxs.meaning = meaningPos;
           colIdxs.group = groupPos !== -1 ? groupPos : -1;
-          colIdxs.synonym1 = syn1Pos !== -1 ? syn1Pos : -1;
-          colIdxs.synonym2 = syn2Pos !== -1 ? syn2Pos : -1;
           colIdxs.synonyms = synsPos !== -1 ? synsPos : -1;
           colIdxs.extraWord = extraWPos !== -1 ? extraWPos : -1;
           colIdxs.extraMeaning = extraMPos !== -1 ? extraMPos : -1;
           colIdxs.example = exPos !== -1 ? exPos : -1;
+          colIdxs.mnemonic = mnemPos !== -1 ? mnemPos : -1;
         }
       }
 
@@ -872,6 +878,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
         const extraWord = colIdxs.extraWord !== -1 ? cells[colIdxs.extraWord]?.trim() || '' : '';
         const extraMeaning = colIdxs.extraMeaning !== -1 ? cells[colIdxs.extraMeaning]?.trim() || '' : '';
         const example = colIdxs.example !== -1 ? cells[colIdxs.example]?.trim() || '' : '';
+        const mnemonic = colIdxs.mnemonic && colIdxs.mnemonic !== -1 ? cells[colIdxs.mnemonic]?.trim() || '' : '';
 
         parsedWords.push({
           id: rawId,
@@ -881,7 +888,8 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           synonyms,
           extraWord,
           extraMeaning,
-          example
+          example,
+          mnemonic
         });
 
         index++;

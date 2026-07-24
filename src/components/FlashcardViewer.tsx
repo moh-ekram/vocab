@@ -1029,6 +1029,11 @@ export default function FlashcardViewer({
 
               {/* Center Content: Front Face */}
               <div className="my-auto text-center space-y-2 py-4">
+                {placeLabels?.place1?.trim() && (
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 block font-sans">
+                    {placeLabels.place1.trim()}
+                  </span>
+                )}
                 <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} ${getWordColorClass(activeStatus)} tracking-tight font-sans transition-colors duration-200`}>
                   {currentActiveWord.word}
                 </h1>
@@ -1133,11 +1138,12 @@ export default function FlashcardViewer({
 
               {/* Center Content: Back Face */}
               {(() => {
-                const place2Label = placeLabels?.place2?.trim();
-                const place3Label = placeLabels?.place3?.trim();
-                const place4Label = placeLabels?.place4?.trim();
-                const place5Label = placeLabels?.place5?.trim();
-                const place6Label = placeLabels?.place6?.trim();
+                const place1Label = placeLabels?.place1?.trim() || 'Word';
+                const place2Label = placeLabels?.place2?.trim() || 'Meaning';
+                const place3Label = placeLabels?.place3?.trim() || 'Example Sentence';
+                const place4Label = placeLabels?.place4?.trim() || 'Derivative';
+                const place5Label = placeLabels?.place5?.trim() || 'Synonyms';
+                const place6Label = placeLabels?.place6?.trim() || 'Mnemonic / Note';
 
                 const place2Val = currentActiveWord.meaning?.trim();
                 const hasPlace2 = Boolean(place2Val);
@@ -1145,19 +1151,12 @@ export default function FlashcardViewer({
                 const hasPlace3 = Boolean(place3Val);
                 const place4Val = currentActiveWord.extraWord?.trim();
                 const hasPlace4 = Boolean(place4Val);
-                const place5Val = (currentActiveWord.synonyms || currentActiveWord.extraMeaning)?.trim();
+                const place5Val = currentActiveWord.synonyms?.trim();
                 const hasPlace5 = Boolean(place5Val);
                 const place6Val = (currentActiveWord.mnemonic || progress[currentActiveWord.id]?.notes)?.trim();
                 const hasPlace6 = Boolean(place6Val);
 
-                const placeLabelStyle: React.CSSProperties = {
-                  fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
-                  fontSize: '10px',
-                  color: 'oklch(0.704 0.04 256.788)',
-                  fontWeight: 500,
-                  lineHeight: '10px',
-                  letterSpacing: '-0.25px',
-                };
+                const labelClass = "text-[11px] font-extrabold uppercase tracking-widest text-slate-400 block pb-0.5 font-sans";
 
                 const blocks: React.ReactNode[] = [];
 
@@ -1166,7 +1165,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place2" className="text-center w-full">
                       {place2Label && (
-                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                        <span className={labelClass}>
                           {place2Label}
                         </span>
                       )}
@@ -1182,7 +1181,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place3" className="w-full text-center space-y-0.5">
                       {place3Label && (
-                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                        <span className={labelClass}>
                           {place3Label}
                         </span>
                       )}
@@ -1198,7 +1197,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place4" className="w-full text-center space-y-0.5">
                       {place4Label && (
-                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                        <span className={labelClass}>
                           {place4Label}
                         </span>
                       )}
@@ -1214,7 +1213,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place5" className="w-full text-center space-y-0.5">
                       {place5Label && (
-                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                        <span className={labelClass}>
                           {place5Label}
                         </span>
                       )}
@@ -1230,7 +1229,7 @@ export default function FlashcardViewer({
                   blocks.push(
                     <div key="place6" className="w-full text-center space-y-0.5">
                       {place6Label && (
-                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                        <span className={labelClass}>
                           {place6Label}
                         </span>
                       )}

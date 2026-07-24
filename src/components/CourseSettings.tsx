@@ -2952,7 +2952,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                           <th className="px-4 py-3">{localPlaceLabels.place2 || 'place2'}</th>
                           <th className="px-4 py-3 text-center">Group</th>
                           <th className="px-4 py-3 hidden sm:table-cell">
-                            {`${localPlaceLabels.place3 || 'place3'} / ${localPlaceLabels.place4 || 'place4'} / ${localPlaceLabels.place5 || 'place5'} / ${localPlaceLabels.place6 || 'place6'}`}
+                            {[localPlaceLabels.place3, localPlaceLabels.place4, localPlaceLabels.place5, localPlaceLabels.place6].filter(Boolean).join(' / ') || 'Extra Details'}
                           </th>
                           <th className="px-4 py-3 w-24 text-center">Action</th>
                         </tr>
@@ -2986,7 +2986,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                                 <td className="px-4 py-2 text-slate-500 text-[10px] hidden sm:table-cell truncate max-w-xs leading-relaxed">
                                   {w.example && <span className="block truncate"><strong className="text-slate-700 font-bold">{localPlaceLabels.place3 || 'place3'}:</strong> {w.example}</span>}
                                   {w.extraWord && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place4 || 'place4'}:</strong> {w.extraWord}</span>}
-                                  {(w.synonyms || w.extraMeaning) && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place5 || 'place5'}:</strong> {w.synonyms || w.extraMeaning}</span>}
+                                  {w.synonyms && <span className="block truncate mt-0.5"><strong className="text-slate-700 font-bold">{localPlaceLabels.place5 || 'place5'}:</strong> {w.synonyms}</span>}
                                   {w.mnemonic && <span className="block truncate mt-0.5 text-indigo-600 font-semibold"><strong className="text-indigo-500 font-bold">{localPlaceLabels.place6 || 'place6'}:</strong> {w.mnemonic}</span>}
                                 </td>
                                 <td className="px-4 py-2 text-center">
@@ -3123,13 +3123,13 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-extrabold text-slate-500 block">
-                          {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display)'}
+                          {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display / Example)'}
                         </label>
                         <input 
                           type="text" 
-                          value={singleSynonyms}
-                          onChange={(e) => setSingleSynonyms(e.target.value)}
-                          placeholder="e.g. decrease, subside" 
+                          value={singleExample}
+                          onChange={(e) => setSingleExample(e.target.value)}
+                          placeholder="e.g. Example sentence or secondary info" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                       </div>
@@ -3138,7 +3138,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-[10px] font-extrabold text-slate-500 block">
-                          {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header)'}
+                          {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header / Derivative)'}
                         </label>
                         <input 
                           type="text" 
@@ -3150,27 +3150,16 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-extrabold text-slate-500 block">
-                          {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1)'}
+                          {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1 / Synonyms)'}
                         </label>
                         <input 
                           type="text" 
-                          value={singleExtraMeaning}
-                          onChange={(e) => setSingleExtraMeaning(e.target.value)}
-                          placeholder="e.g. Extra info / translation" 
+                          value={singleSynonyms}
+                          onChange={(e) => setSingleSynonyms(e.target.value)}
+                          placeholder="e.g. decrease, subside" 
                           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
                       </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-extrabold text-slate-500 block">Example Sentence</label>
-                      <input 
-                        type="text" 
-                        value={singleExample}
-                        onChange={(e) => setSingleExample(e.target.value)}
-                        placeholder="e.g. The storm abated after midnight." 
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
                     </div>
 
                     <div className="space-y-1">
@@ -4033,13 +4022,13 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
-                    {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display)'}
+                    {localPlaceLabels.place3 ? `place3: ${localPlaceLabels.place3}` : 'place3 (Back Secondary Display / Example)'}
                   </label>
-                  <input 
-                    type="text" 
-                    value={editedSynonyms}
-                    onChange={(e) => setEditedSynonyms(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold"
+                  <textarea 
+                    rows={2}
+                    value={editedExample}
+                    onChange={(e) => setEditedExample(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
                   />
                 </div>
               </div>
@@ -4047,7 +4036,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="space-y-1">
                   <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
-                    {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header)'}
+                    {localPlaceLabels.place4 ? `place4: ${localPlaceLabels.place4}` : 'place4 (Front Sub-Header / Derivative)'}
                   </label>
                   <input 
                     type="text" 
@@ -4058,25 +4047,15 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">
-                    {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1)'}
+                    {localPlaceLabels.place5 ? `place5: ${localPlaceLabels.place5}` : 'place5 (Back Extra Section 1 / Synonyms)'}
                   </label>
                   <input 
                     type="text" 
-                    value={editedExtraMeaning}
-                    onChange={(e) => setEditedExtraMeaning(e.target.value)}
+                    value={editedSynonyms}
+                    onChange={(e) => setEditedSynonyms(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Example Sentence</label>
-                <textarea 
-                  rows={2}
-                  value={editedExample}
-                  onChange={(e) => setEditedExample(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none leading-relaxed"
-                />
               </div>
 
               <div className="space-y-1">
