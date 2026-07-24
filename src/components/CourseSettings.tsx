@@ -2605,7 +2605,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">টাকার পরিমাণ (Amount BDT ৳)</label>
+                          <label className="text-[10px] font-extrabold text-slate-500 block uppercase tracking-wider">Payment Amount (BDT ৳)</label>
                           <input
                             type="number"
                             value={newVpAmount}
@@ -2613,7 +2613,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                             placeholder="e.g. 75"
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs font-bold transition text-slate-800"
                           />
-                          <p className="text-[9px] text-slate-400 font-semibold">এই অংকের উপর ভিত্তি করে ইউজারকে অটোভেরিফিকেশনে কোর্স বরাদ্দ দেওয়া হবে।</p>
+                          <p className="text-[9px] text-slate-400 font-semibold">Course access will be granted automatically based on this payment amount.</p>
                         </div>
 
                         <button

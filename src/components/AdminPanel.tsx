@@ -1039,6 +1039,13 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
     }
   };
 
+  const cleanVpRecord = (vp: any) => ({
+    bkashNumber: String(vp.bkashNumber || '').trim(),
+    trxId: String(vp.trxId || '').trim(),
+    amount: Number(vp.amount) || 30,
+    createdAt: String(vp.createdAt || new Date().toISOString())
+  });
+
   const handleAddGlobalVerifiedPayment = async () => {
     const num = newGlobalVpNumber.trim();
     const trx = newGlobalVpTrxId.trim();
@@ -1049,32 +1056,37 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       return;
     }
 
-    const newRecord = {
+    const newRecord = cleanVpRecord({
       bkashNumber: num,
       trxId: trx,
       amount: amt,
       createdAt: new Date().toISOString()
-    };
+    });
 
-    const updated = [newRecord, ...globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase()))];
-    setGlobalVerifiedPayments(updated);
+    const updated = [newRecord, ...globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase()))].map(cleanVpRecord);
 
     try {
       await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
+      setGlobalVerifiedPayments(updated);
       setNewGlobalVpNumber('');
       setNewGlobalVpTrxId('');
       setNewGlobalVpAmount(75);
-      
-      await handleRunCentralAutoVerification(updated);
     } catch (err) {
       console.error("Error saving global verified payment:", err);
-      alert("Failed to save verified payment.");
+      alert("Failed to save verified payment: " + (err instanceof Error ? err.message : String(err)));
+      return;
+    }
+
+    try {
+      await handleRunCentralAutoVerification(updated);
+    } catch (err) {
+      console.error("Auto verification error:", err);
     }
   };
 
   const handleDeleteGlobalVerifiedPayment = async (num: string, trx: string) => {
-    if (!confirm(`Are you sure you want to remove bKash ${num} (${trx}) from global auto-verification?`)) return;
-    const updated = globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase()));
+    if (!confirm(`Remove bKash ${num} (${trx}) from verification gateway?`)) return;
+    const updated = globalVerifiedPayments.filter(vp => !(vp.bkashNumber === num && vp.trxId.toLowerCase() === trx.toLowerCase())).map(cleanVpRecord);
     setGlobalVerifiedPayments(updated);
     try {
       await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
@@ -1086,7 +1098,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
   const handleBulkImportGlobalVp = async (textInput: string) => {
     if (!textInput.trim()) return;
     const lines = textInput.split(/\r?\n/);
-    const parsed: { bkashNumber: string; trxId: string; amount?: number; createdAt?: string }[] = [];
+    const parsed: { bkashNumber: string; trxId: string; amount: number; createdAt: string }[] = [];
 
     for (const line of lines) {
       const cleanLine = line.trim();
@@ -1116,17 +1128,22 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
     const existingKeys = new Set(globalVerifiedPayments.map(v => `${v.bkashNumber}_${v.trxId.toLowerCase()}`));
     const newItems = parsed.filter(item => !existingKeys.has(`${item.bkashNumber}_${item.trxId.toLowerCase()}`));
 
-    const updated = [...newItems, ...globalVerifiedPayments];
-    setGlobalVerifiedPayments(updated);
+    const updated = [...newItems, ...globalVerifiedPayments].map(cleanVpRecord);
 
     try {
       await setDoc(doc(db, 'system_settings', 'global_verified_payments'), { verifiedPayments: updated }, { merge: true });
+      setGlobalVerifiedPayments(updated);
       setGlobalVpPasteInput('');
-      alert(`Successfully added ${newItems.length} new verified payment records! Running central auto-verification now...`);
-      await handleRunCentralAutoVerification(updated);
     } catch (e) {
       console.error("Error saving bulk verified payments:", e);
-      alert("Error saving bulk verified payments.");
+      alert("Error saving bulk verified payments: " + (e instanceof Error ? e.message : String(e)));
+      return;
+    }
+
+    try {
+      await handleRunCentralAutoVerification(updated);
+    } catch (err) {
+      console.error("Auto verification error:", err);
     }
   };
 
@@ -1160,7 +1177,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       const pendingReqs = requestsSnap.docs.map(d => ({ id: d.id, ...(d.data() as Record<string, any>) } as unknown as AccessRequest));
 
       if (pendingReqs.length === 0) {
-        setAutoVerifyResultMessage("কোনো অপেক্ষমাণ রিকুয়েস্ট পাওয়া যায়নি (No pending requests found).");
+        setAutoVerifyResultMessage("No pending requests found.");
         setIsAutoVerifyingAll(false);
         return;
       }
@@ -1243,10 +1260,10 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       }
 
       fetchAccessRequests();
-      setAutoVerifyResultMessage(`সফলভাবে অটোভেরিফিকেশন প্রসেস সম্পন্ন হয়েছে! ${autoApprovedRequestsCount}টি রিকুয়েস্টের মোট ${totalCoursesGranted}টি কোর্সে স্বয়ংক্রিয়ভাবে অ্যাক্সেস দেওয়া হয়েছে।`);
+      setAutoVerifyResultMessage(`Auto-verification complete! Approved ${autoApprovedRequestsCount} requests and granted access to ${totalCoursesGranted} courses.`);
     } catch (err) {
       console.error("Error running central auto-verification:", err);
-      setAutoVerifyResultMessage("অটোভেরিফিকেশন প্রসেস চলাকালে সমস্যা দেখা দিয়েছে।");
+      setAutoVerifyResultMessage("Error occurred during auto-verification execution.");
     } finally {
       setIsAutoVerifyingAll(false);
     }
@@ -1401,82 +1418,90 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
         </div>
       </div>
 
-      {/* Admin Tab Navigation */}
-      <div className="flex border-b border-slate-200 overflow-x-auto">
+      {/* Admin Tab Navigation - Responsive Wrapping Pill Grid */}
+      <div className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
         <button
           onClick={() => setActiveAdminTab('courses')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
             activeAdminTab === 'courses'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-white text-indigo-700 shadow-xs font-black border border-indigo-200/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Course Upload & Creation</span>
+          <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="truncate">Courses ({customCourses.length})</span>
         </button>
+
         <button
           onClick={() => setActiveAdminTab('users')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
             activeAdminTab === 'users'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-white text-indigo-700 shadow-xs font-black border border-indigo-200/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>Users & Analytics</span>
+          <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="truncate">Users & Stats</span>
         </button>
+
         <button
           onClick={() => {
             setActiveAdminTab('reports');
             fetchReports();
           }}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
             activeAdminTab === 'reports'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-white text-indigo-700 shadow-xs font-black border border-indigo-200/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <AlertTriangle className="w-4 h-4" />
-          <span>Reported Errors ({reports.length})</span>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="truncate">Reports ({reports.length})</span>
         </button>
+
         <button
           onClick={() => {
             setActiveAdminTab('access-requests');
             fetchAccessRequests();
           }}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center relative ${
             activeAdminTab === 'access-requests'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-white text-indigo-700 shadow-xs font-black border border-indigo-200/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <ShieldCheck className="w-4 h-4" />
-          <span>Pending Requests ({accessRequests.filter(r => r.status === 'pending').length})</span>
+          <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="truncate">Pending ({accessRequests.filter(r => r.status === 'pending').length})</span>
+          {accessRequests.filter(r => r.status === 'pending').length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 animate-pulse" />
+          )}
         </button>
+
         <button
           onClick={() => {
             setActiveAdminTab('autoverify');
             fetchGlobalVerifiedPayments();
           }}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
             activeAdminTab === 'autoverify'
-              ? 'border-amber-500 text-amber-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-amber-400 text-slate-950 font-black shadow-xs border border-amber-300'
+              : 'bg-amber-50/80 text-amber-900 hover:bg-amber-100/80 border border-amber-200/50'
           }`}
         >
-          <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
-          <span>⚡ bKash Gateway (অটোভেরিফিকেশন)</span>
+          <Zap className="w-3.5 h-3.5 fill-amber-500 text-amber-700 shrink-0" />
+          <span className="truncate">bKash Gateway</span>
         </button>
+
         <button
           onClick={() => setActiveAdminTab('system-settings')}
-          className={`px-5 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+          className={`px-3 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center ${
             activeAdminTab === 'system-settings'
-              ? 'border-indigo-600 text-indigo-600 font-extrabold'
-              : 'border-transparent text-slate-400 hover:text-slate-600'
+              ? 'bg-white text-indigo-700 shadow-xs font-black border border-indigo-200/60'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
           }`}
         >
-          <Sliders className="w-4 h-4" />
-          <span>System Settings & Banner</span>
+          <Sliders className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+          <span className="truncate">Settings</span>
         </button>
       </div>
 
@@ -2160,14 +2185,14 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       {activeAdminTab === 'access-requests' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm space-y-6">
           {/* Central Gateway Quick Action Banner */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-indigo-800/60 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-4 sm:p-5 rounded-2xl border border-indigo-800/60 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 font-sans" style={{ fontFamily: "'Poppins', sans-serif" }}>
             <div className="space-y-1">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-400/20 text-amber-300 rounded-full text-[10px] font-extrabold border border-amber-400/30">
                 <Zap className="w-3 h-3 fill-amber-300" />
-                <span>সেন্ট্রাল বিকাশ গ্লোবাল ভেরিফিকেশন ইঞ্জিন</span>
+                <span>Central bKash Gateway</span>
               </div>
-              <h4 className="font-black text-white text-sm sm:text-base">মাল্টিপল কোর্স ও গ্লোবাল অটোভেরিফিকেশন সিস্টেম</h4>
-              <p className="text-xs text-indigo-200 font-medium">ইনডিভিজুয়াল কোর্সের বাইরে সেন্ট্রাল ট্রানজেকশন তালিকা অনুযায়ী সব অপেক্ষমাণ রিকুয়েস্ট একসাথে ভেরিফাই করুন।</p>
+              <h4 className="font-black text-white text-sm sm:text-base">Auto-Verification Engine</h4>
+              <p className="text-xs text-indigo-200 font-medium">Verify pending requests automatically against verified transaction records.</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
@@ -2177,7 +2202,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <Zap className={`w-3.5 h-3.5 fill-slate-950 ${isAutoVerifyingAll ? 'animate-spin' : ''}`} />
-                <span>{isAutoVerifyingAll ? 'অটোভেরিফাই চলছে...' : '⚡ অটোভেরিফাই চালান'}</span>
+                <span>{isAutoVerifyingAll ? 'Verifying...' : '⚡ Auto-Verify All'}</span>
               </button>
               <button
                 type="button"
@@ -2187,7 +2212,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 }}
                 className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs transition flex items-center gap-1 cursor-pointer border border-white/20"
               >
-                <span>গেটওয়ে ম্যানেজ করুন ➔</span>
+                <span>Manage Gateway ➔</span>
               </button>
             </div>
           </div>
@@ -2401,18 +2426,18 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
       )}
 
       {activeAdminTab === 'autoverify' && (
-        <div className="space-y-6">
+        <div className="space-y-6 font-sans" style={{ fontFamily: "'Poppins', sans-serif" }}>
           {/* Header Banner */}
           <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl border border-indigo-800/60 shadow-md">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-extrabold border border-amber-400/30 mb-2">
                   <Zap className="w-3.5 h-3.5 fill-amber-300" />
-                  <span>Central bKash Gateway (গ্লোবাল অটোভেরিফিকেশন)</span>
+                  <span>Central bKash Gateway</span>
                 </div>
-                <h2 className="text-xl font-black tracking-tight text-white">সেন্ট্রাল বিকাশ পেমেন্ট অটো-ভেরিফিকেশন সেন্টার</h2>
+                <h2 className="text-xl font-black tracking-tight text-white">Payment Auto-Verification Center</h2>
                 <p className="text-xs text-indigo-200 mt-1 max-w-3xl leading-relaxed">
-                  এখানে বিকাশ ট্রানজেকশন যুক্ত করলে সিঙ্গেল কোর্স বা মাল্টিপল-কোর্স (কার্ট) যেকোনো রিকুয়েস্টের সাথে বিকাশ নাম্বার, TrxID ও পেমেন্ট অংক মিলিয়ে অটোমেটিক সব কোর্সে অ্যাক্সেস ও ওয়ালেট ব্যালেন্স ক্রেডিট প্রদান করা হবে।
+                  Add verified payment records to automatically approve course access and credit user wallet balances.
                 </p>
               </div>
               <div className="flex items-center gap-2.5 shrink-0">
@@ -2423,7 +2448,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Zap className={`w-4 h-4 fill-slate-950 ${isAutoVerifyingAll ? 'animate-spin' : ''}`} />
-                  <span>{isAutoVerifyingAll ? 'অটোভেরিফাই চলছে...' : '⚡ অটোভেরিফিকেশন চালান (Run Engine)'}</span>
+                  <span>{isAutoVerifyingAll ? 'Verifying...' : '⚡ Run Verification'}</span>
                 </button>
               </div>
             </div>
@@ -2452,7 +2477,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 ৳
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">মোট ভেরিফাইড ট্রানজেকশন</span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Total Verified Records</span>
                 <span className="text-xl font-black text-slate-800 font-mono">{globalVerifiedPayments.length} Recs</span>
               </div>
             </div>
@@ -2462,7 +2487,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 <Layers className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">মাল্টিপল কোর্স (কার্ট) সাপোর্ট</span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Multi-Course Cart</span>
                 <span className="text-xl font-black text-indigo-600 font-mono">100% Active</span>
               </div>
             </div>
@@ -2472,7 +2497,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 <Wallet className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">অটো ওয়ালেট ক্রেডিট সিস্টেম</span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Auto Wallet Credit</span>
                 <span className="text-xl font-black text-emerald-600 font-mono">Enabled</span>
               </div>
             </div>
@@ -2484,12 +2509,12 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
             <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
                 <PlusCircle className="w-4 h-4 text-indigo-600" />
-                <h3 className="font-extrabold text-slate-800 text-sm">সিঙ্গেল বিকাশ পেমেন্ট যুক্ত করুন</h3>
+                <h3 className="font-extrabold text-slate-800 text-sm">Add Single Payment</h3>
               </div>
 
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">বিকাশ মোবাইল নম্বর (bKash Sender Number)</label>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">bKash Mobile Number</label>
                   <input
                     type="text"
                     value={newGlobalVpNumber}
@@ -2500,7 +2525,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">ট্রানজেকশন আইডি (bKash TrxID)</label>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Transaction ID (TrxID)</label>
                   <input
                     type="text"
                     value={newGlobalVpTrxId}
@@ -2511,7 +2536,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">টাকার পরিমাণ (Payment Amount ৳ BDT)</label>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Amount (BDT ৳)</label>
                   <input
                     type="number"
                     value={newGlobalVpAmount}
@@ -2519,7 +2544,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                     placeholder="e.g. 75"
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-indigo-500 focus:bg-white outline-none text-xs font-mono font-bold transition text-slate-800"
                   />
-                  <p className="text-[10px] text-slate-400 font-medium">এই টাকার পরিমাণের উপর ভিত্তি করে ১টি বা একাধিক (কার্ট) কোর্সের জন্য সার্ভিসটি অটোমেটিক অ্যাক্সেস মঞ্জুর করবে।</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Auto-grants course access based on this paid amount.</p>
                 </div>
 
                 <button
@@ -2528,7 +2553,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  <span>সেভ ও অটোভেরিফাই চালান</span>
+                  <span>Save & Verify</span>
                 </button>
               </div>
             </div>
@@ -2537,12 +2562,12 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
             <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
               <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
                 <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                <h3 className="font-extrabold text-slate-800 text-sm">একসাথে একাধিক পেমেন্ট পেস্ট / ইম্পোর্ট</h3>
+                <h3 className="font-extrabold text-slate-800 text-sm">Bulk Import Payments</h3>
               </div>
 
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">পেস্ট ফরম্যাট: নাম্বার, TrxID, টাকা (প্রতি লাইনে ১টি)</label>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider block">Format: Mobile, TrxID, Amount (1 per line)</label>
                   <textarea
                     rows={4}
                     value={globalVpPasteInput}
@@ -2558,7 +2583,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <UploadCloud className="w-4 h-4" />
-                  <span>বাল্ক ইম্পোর্ট ও অটোভেরিফাই চালান</span>
+                  <span>Bulk Import & Verify</span>
                 </button>
               </div>
             </div>
@@ -2568,8 +2593,8 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
           <div className="bg-white p-5 rounded-2xl border border-slate-200/70 shadow-2xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">ভেরিফাইড ট্রানজেকশন তালিকা</h3>
-                <p className="text-xs text-slate-400 font-medium">সেন্ট্রাল ডাটাবেজে সংরক্ষিত সকল অনুমোদিত বিকাশ ট্রানজেকশন রেকর্ড।</p>
+                <h3 className="font-extrabold text-slate-800 text-sm">Verified Transactions</h3>
+                <p className="text-xs text-slate-400 font-medium">All verified bKash payment records stored in system settings.</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -2595,7 +2620,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
 
             {globalVerifiedPayments.length === 0 ? (
               <div className="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-semibold">
-                কোনো সেন্ট্রাল ট্রানজেকশন রেকর্ড পাওয়া যায়নি। উপরে নতুন পেমেন্ট যুক্ত করুন।
+                No verified records found. Add payments above.
               </div>
             ) : (
               <div className="overflow-x-auto border border-slate-200 rounded-xl">
