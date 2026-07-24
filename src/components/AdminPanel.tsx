@@ -1594,19 +1594,7 @@ export default function AdminPanel({ words, settings, onUpdateSettings, onCourse
                   <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</span>
                   <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</span>
                   <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</span>
-                  <span className="text-indigo-650 flex items-center gap-1.5">* <strong className="text-indigo-600 font-black">place6:###</strong> — কার্ডের পেছনে ৪র্থ সেকশন / নোটস (Back Extra Section 2 / Notes)</span>
                   <span className="text-slate-600 flex items-center gap-1.5">* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</span>
-                </div>
-                
-                <div className="border-t border-slate-200/80 pt-3 space-y-2 text-[11px] leading-relaxed font-semibold text-slate-500">
-                  <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Dynamic Placement (place1-place6):</span>
-                    <span>You can name your column headings as <b>place1:###</b>, <b>place2:###</b>, <b>place3:###</b>, <b>place4:###</b>, <b>place5:###</b>, and <b>place6:###</b> (where ### can be any name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.</span>
-                  </p>
-                  <p className="flex gap-1.5 items-start">
-                    <span className="text-indigo-500 font-extrabold flex-shrink-0">📌 Group Name Mapping:</span>
-                    <span>Group names will be assigned exactly as written in the spreadsheet group column. For example, if group column contains '1', the word will be added to 'Group 1'.</span>
-                  </p>
                 </div>
               </div>
 

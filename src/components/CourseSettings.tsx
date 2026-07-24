@@ -3094,11 +3094,7 @@ export const CourseSettings: React.FC<CourseSettingsProps> = ({
                         <p>* <strong className="text-indigo-600 font-extrabold">place3:###</strong> — কার্ডের পেছনে ২য় সেকশন (Back Secondary Display)</p>
                         <p>* <strong className="text-indigo-600 font-extrabold">place4:###</strong> — কার্ডের সামনে সাব-হেডার ডাটা (Front Sub-Header)</p>
                         <p>* <strong className="text-indigo-600 font-extrabold">place5:###</strong> — কার্ডের পেছনে ৩য় সেকশন (Back Extra Section 1)</p>
-                        <p>* <strong className="text-indigo-600 font-extrabold">place6:###</strong> — কার্ডের পেছনে ৪র্থ সেকশন / নোটস (Back Extra Section 2 / Notes)</p>
                         <p>* <strong className="text-slate-600 font-bold">group</strong> (Optional Group Name/Number)</p>
-                        <p className="mt-2 text-slate-400 text-[10px] italic">
-                          📌 <strong>Dynamic Placement (place1-place6):</strong> You can name your column headings as place1:###, place2:###, place3:###, place4:###, place5:###, and place6:### (where ### can be any custom name you want). The system will automatically detect the headings and label them dynamically inside the flashcard viewer.
-                        </p>
                       </div>
 
                       {excelError && (

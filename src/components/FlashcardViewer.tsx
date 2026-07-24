@@ -965,7 +965,7 @@ export default function FlashcardViewer({
             }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className={`relative w-full h-[380px] sm:h-[420px] z-10 cursor-pointer transform-style-3d anim-${activeAnimKey} ${
+            className={`relative w-full h-[450px] sm:h-[470px] z-10 cursor-pointer transform-style-3d anim-${activeAnimKey} ${
               isFlipped ? 'is-flipped' : ''
             }`}
           >
@@ -1000,52 +1000,6 @@ export default function FlashcardViewer({
                 <h1 className={`${getDynamicFontSizeClass(currentActiveWord.word)} ${getWordColorClass(activeStatus)} tracking-tight font-sans transition-colors duration-200`}>
                   {currentActiveWord.word}
                 </h1>
-                <div className="pt-1">
-                  <a
-                    href={getGoogleSearchUrl(currentActiveWord.word, googleSearchQuery)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-semibold transition cursor-pointer shadow-xs"
-                    title={`Search on Google (${googleSearchQuery || 'word meaning'})`}
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.15C3.26 21.3 7.31 24 12 24z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.28 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.39l3.99-3.15z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.72-4.96z"
-                      />
-                    </svg>
-                    <span>Google</span>
-                  </a>
-                </div>
-                {(() => {
-                  const p6Val = (currentActiveWord.mnemonic || currentActiveWord.extraMeaning || '').trim();
-                  if (!p6Val) return null;
-                  return (
-                    <div className="pt-2 text-center">
-                      {placeLabels?.place6 && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 block pb-0.5">
-                          {placeLabels.place6}
-                        </span>
-                      )}
-                      <p className="text-xs font-bold text-emerald-600 font-bengali text-center">
-                        {p6Val}
-                      </p>
-                    </div>
-                  );
-                })()}
                 <p className="text-[11px] text-indigo-400 font-medium pt-3 animate-pulse font-sans">
                   Tap card to reveal definition ↺
                 </p>
@@ -1148,19 +1102,30 @@ export default function FlashcardViewer({
               {/* Center Content: Back Face */}
               {(() => {
                 const hasPlace2 = Boolean(currentActiveWord.meaning?.trim());
-                const place3Val = (currentActiveWord.synonyms || currentActiveWord.example || '').trim();
+                const place3Val = currentActiveWord.example?.trim();
                 const hasPlace3 = Boolean(place3Val);
-                const place5Val = currentActiveWord.extraWord?.trim();
+                const place4Val = currentActiveWord.extraWord?.trim();
+                const hasPlace4 = Boolean(place4Val);
+                const place5Val = currentActiveWord.synonyms?.trim();
                 const hasPlace5 = Boolean(place5Val);
+
+                const placeLabelStyle: React.CSSProperties = {
+                  fontFamily: 'Poppins, Inter, ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '10px',
+                  color: 'oklch(0.704 0.04 256.788)',
+                  fontWeight: 500,
+                  lineHeight: '10px',
+                  letterSpacing: '-0.25px',
+                };
 
                 const blocks: React.ReactNode[] = [];
 
-                // Block 1: Place 2 (Meaning) - Place 1 (word) omitted on backside
+                // Block 1: Place 2 (Meaning)
                 if (hasPlace2) {
                   blocks.push(
                     <div key="place2" className="text-center w-full">
                       {placeLabels?.place2 && (
-                        <span className="text-[10px] uppercase font-bold text-slate-400 block pb-0.5">
+                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {placeLabels.place2}
                         </span>
                       )}
@@ -1171,12 +1136,12 @@ export default function FlashcardViewer({
                   );
                 }
 
-                // Block 2: Place 3 (Label & Value, No background)
+                // Block 2: Place 3 (Example Sentence / Secondary)
                 if (hasPlace3) {
                   blocks.push(
                     <div key="place3" className="w-full text-center space-y-0.5 my-1">
                       {placeLabels?.place3 && (
-                        <span className="text-[10px] uppercase font-bold text-indigo-500 block pb-0.5">
+                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {placeLabels.place3}
                         </span>
                       )}
@@ -1187,12 +1152,28 @@ export default function FlashcardViewer({
                   );
                 }
 
-                // Block 3: Place 5 (Label & Value, Place6 removed from here)
+                // Block 3: Place 4 (Extra Word / Derivatives)
+                if (hasPlace4) {
+                  blocks.push(
+                    <div key="place4" className="w-full text-center space-y-0.5 my-1">
+                      {placeLabels?.place4 && (
+                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
+                          {placeLabels.place4}
+                        </span>
+                      )}
+                      <p className="text-xs sm:text-sm font-semibold text-slate-800 text-center">
+                        {place4Val}
+                      </p>
+                    </div>
+                  );
+                }
+
+                // Block 4: Place 5 (Synonyms / Extra Section 1)
                 if (hasPlace5) {
                   blocks.push(
                     <div key="place5" className="w-full text-center space-y-0.5 my-1">
                       {placeLabels?.place5 && (
-                        <span className="text-[10px] uppercase font-bold text-amber-500 block pb-0.5">
+                        <span className="uppercase block pb-0.5 tracking-wider" style={placeLabelStyle}>
                           {placeLabels.place5}
                         </span>
                       )}
@@ -1297,46 +1278,7 @@ export default function FlashcardViewer({
           </div>
         </div>
 
-        {/* "Word in Use" Box (Below Card Stack as seen in attached images) */}
-        <div className="w-full bg-white/10 backdrop-blur-md border border-white/15 p-4 rounded-2xl space-y-2 text-indigo-100 font-sans shadow-lg">
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-            <Lightbulb className="w-4 h-4 text-amber-300 fill-amber-300/20" />
-            <span>Word in use</span>
-          </div>
-          <p className="text-xs sm:text-sm font-medium leading-relaxed text-white">
-            {renderSentence(activeExampleSentence)}
-          </p>
-        </div>
 
-        {/* Interactive Sentence Writer Input Box */}
-        <div className="w-full space-y-2">
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 p-1.5 rounded-full flex items-center gap-2 w-full shadow-lg">
-            <input
-              type="text"
-              value={customSentenceInput}
-              onChange={(e) => setCustomSentenceInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSaveCustomSentence();
-                }
-              }}
-              placeholder="Write your sentence..."
-              className="bg-transparent border-0 px-4 py-2 text-xs sm:text-sm text-white placeholder-indigo-300/60 focus:outline-none flex-1 font-sans"
-            />
-            <button
-              onClick={handleSaveCustomSentence}
-              disabled={!customSentenceInput.trim()}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 text-white p-2.5 rounded-full transition cursor-pointer shadow-md flex-shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </div>
-          {sentenceSaveToast && (
-            <p className="text-[11px] font-bold text-emerald-400 text-center animate-fadeIn">
-              ✓ Sentence saved to your word notes!
-            </p>
-          )}
-        </div>
       </main>
 
       {/* Word Issue Report Modal */}
