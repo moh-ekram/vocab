@@ -1005,8 +1005,8 @@ export default function FlashcardViewer({
             }`}
           >
             {/* FRONT FACE */}
-            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden transition-opacity duration-300 ${
-              isFlipped ? 'opacity-0 pointer-events-none invisible' : 'opacity-100 pointer-events-auto visible'
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden ${
+              isFlipped ? 'pointer-events-none' : 'pointer-events-auto'
             }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
               <div className="flex items-center justify-between w-full">
@@ -1109,8 +1109,8 @@ export default function FlashcardViewer({
             </div>
 
             {/* BACK FACE */}
-            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${activeAnimKey} transition-opacity duration-300 ${
-              isFlipped ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'
+            <div className={`absolute inset-0 w-full h-full bg-white text-slate-900 rounded-3xl p-5 sm:p-6 md:p-7 shadow-2xl border border-slate-100 flex flex-col justify-between backface-hidden backface-${activeAnimKey} ${
+              isFlipped ? 'pointer-events-auto' : 'pointer-events-none'
             }`}>
               {/* Top Row: Speaker Icon & Word Meta */}
               <div className="flex items-center justify-between w-full">

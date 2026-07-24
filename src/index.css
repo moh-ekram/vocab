@@ -91,12 +91,11 @@ html, body, #root {
 
 /* 5. Fade & Flip (fade) */
 .anim-fade {
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-in-out;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .anim-fade.is-flipped {
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
-  opacity: 0.98;
+  transform: scale(0.96) rotateY(180deg);
+  -webkit-transform: scale(0.96) rotateY(180deg);
 }
 .backface-fade {
   transform: rotateY(180deg);
